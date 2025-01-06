@@ -1,6 +1,6 @@
 ## [0.1.0] - 2024-11-01
 
-### Added
+### New
 - Created folder structure for `/src`, `/docs`, `/assets`, and `/tests`.
 - Initialized virtual environment in project directory.
 - Added `requirements.txt` with key dependencies (e.g., `PyQt5`, `pygame`, `scikit-learn`, `sympy`, `matplotlib`).
@@ -15,3 +15,14 @@
 - Added initial test suite in `/tests` directory.
 - Created basic UI structure in `/src/ui` with placeholder widgets and layouts.
 - Created `README.md` with project overview, installation steps, and usage instructions.
+
+## [0.1.0] - 2024-12-18
+
+### New
+- 
+
+### Updated
+- 
+
+### Removed
+- 
