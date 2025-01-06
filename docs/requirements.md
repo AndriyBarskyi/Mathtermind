@@ -1,1 +1,0 @@
-an interactive platform for studying mathematics and informatics with elements of gamification and adaptive learning
