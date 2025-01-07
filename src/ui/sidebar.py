@@ -1,6 +1,7 @@
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFrame
+from functools import partial
 
 # Constants for styling and layout
 LOGO_ICON_PATH = "../../assets/icons/white_logo.svg"
@@ -81,7 +82,7 @@ class Sidebar(QWidget):
             button.setIcon(QIcon(icon_path))
             button.setIconSize(SIDEBAR_ICON_SIZE)
             button.setFixedSize(BUTTON_SIZE)
-            button.clicked.connect(lambda _, n=name: self.on_button_clicked(n))
+            button.clicked.connect(partial(self.on_button_clicked, name))
             self.buttons[name] = button
             button_layout.addWidget(button)
 
