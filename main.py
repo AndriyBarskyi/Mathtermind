@@ -1,27 +1,15 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget
-from sidebar import Sidebar
-from content_area import ContentArea
-from database_manager import DatabaseManager
-
-# Constants for layout and styling
-WINDOW_WIDTH = 900
-WINDOW_HEIGHT = 600
-SIDEBAR_WIDTH = 64
-SIDEBAR_RATIO = 1
-CONTENT_RATIO = 18
-STYLESHEET_PATH = "styles.qss"
+from src.ui.sidebar import Sidebar
+from src.ui.content_area import ContentArea
+from config import (WINDOW_WIDTH, WINDOW_HEIGHT, SIDEBAR_WIDTH,
+                    SIDEBAR_RATIO, CONTENT_RATIO, STYLESHEET_PATH)
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Mathtermind")
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
-        
-         # Initialize the database
-        self.db_manager = DatabaseManager()
-        self.db_manager.setup_database()
-        self.db_manager.connect()
 
         # Initialize content area and sidebar
         self.content_area = ContentArea()
@@ -51,11 +39,6 @@ class MainWindow(QMainWindow):
     def change_page(self, page_name):
         """Handle page navigation."""
         self.content_area.update_content(page_name)
-        
-    def closeEvent(self, event):
-        """Ensure the database connection is closed properly."""
-        self.db_manager.close()
-        event.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

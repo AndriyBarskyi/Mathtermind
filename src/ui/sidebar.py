@@ -4,8 +4,8 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFra
 from functools import partial
 
 # Constants for styling and layout
-LOGO_ICON_PATH = "../../assets/icons/white_logo.svg"
-PROFILE_ICON_PATH = "../../assets/icons/profile.svg"
+LOGO_ICON_PATH = "src/ui/assets/icons/white_logo.svg"
+PROFILE_ICON_PATH = "src/ui/assets/icons/profile.svg"
 SIDEBAR_ICON_SIZE = QSize(24, 24)
 LOGO_SIZE = QSize(64, 64)
 LOGO_ICON_SIZE = QSize(96, 96)
@@ -15,9 +15,9 @@ BUTTON_TOP_MARGIN = 80
 BUTTON_BOTTOM_MARGIN = 80
 
 ICON_PATHS = {
-    "Dashboard": "../../assets/icons/dashboard.svg",
-    "Courses": "../../assets/icons/courses.svg",
-    "Quiz": "../../assets/icons/quiz.svg"
+    "Dashboard": "src/ui/assets/icons/dashboard.svg",
+    "Courses": "src/ui/assets/icons/courses.svg",
+    "Quiz": "src/ui/assets/icons/quiz.svg"
 }
 
 class Sidebar(QWidget):
