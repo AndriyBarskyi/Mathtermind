@@ -1,3 +1,6 @@
-PyQt6
-SQLAlchemy
-python-dotenv
+[tool.poetry.dependencies]
+python = "^3.13.1"
+PyQt6 = "^6.8.0"
+sqlalchemy = "^2.0.36.dev0"
+python-dotenv = "^1.0.1"
+pytest = "^8.3.4"

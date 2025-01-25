@@ -2,8 +2,16 @@ import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget
 from src.ui.sidebar import Sidebar
 from src.ui.content_area import ContentArea
-from config import (WINDOW_WIDTH, WINDOW_HEIGHT, SIDEBAR_WIDTH,
-                    SIDEBAR_RATIO, CONTENT_RATIO, STYLESHEET_PATH)
+from src.db import get_db, init_db
+from config import (
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
+    SIDEBAR_WIDTH,
+    SIDEBAR_RATIO,
+    CONTENT_RATIO,
+    STYLESHEET_PATH,
+)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -29,6 +37,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         self.sidebar.setFixedWidth(SIDEBAR_WIDTH)
 
+        # Test Database Interaction
+        self.init_sample_data()
+
         # Load stylesheet
         try:
             with open(STYLESHEET_PATH, "r") as f:
@@ -40,8 +51,16 @@ class MainWindow(QMainWindow):
         """Handle page navigation."""
         self.content_area.update_content(page_name)
 
+    def init_sample_data(self):
+        """Insert a test user into the database."""
+        db = next(get_db())
+        # something here
+        print("Test user created successfully!")
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    init_db.init_db()
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
