@@ -1,6 +1,20 @@
+/* Global Styles */
+QWidget {
+    font-family: Inter;
+    color: #0F1D35;
+}
+
+/* Main Window */
+QMainWindow {
+    background-color: #F7F8FA;
+}
+
+/* Menu Buttons */
 QPushButton[class="menu"] {
-    background-color: rgb(255, 255, 255);
-    font-size: 18px;
+    background-color: #FFFFFF;
+    color: #0F1D35;
+    font-size: 16px;
+    border: 1px solid #E5E7EB;
     border-radius: 15px;
     min-width: 100px;
     min-height: 50px;
@@ -9,55 +23,110 @@ QPushButton[class="menu"] {
 }
 
 QPushButton[class="menu"]:hover {
-    background-color: rgba(175, 173, 173, 0.98);
+    background-color: #F7F8FA;
+    border-color: #D1D5DB;
 }
 
 QPushButton[class="menu"]:checked {
-    border-radius: 5px;
-    font-weight: bold;
-    background-color: rgb(0, 85, 255);
-    color: rgb(255, 255, 255);
-}
-QLineEdit[class="search"] {
-    font-size: 16px;
     border-radius: 15px;
-    min-height: 50px;
-    max-height: 100px;
+    font-weight: 600;
+    background-color: #566CD2;
+    color: #FFFFFF;
 }
+
+/* Search Input */
+QLineEdit[class="search"] {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 8px 16px;
+    color: #0F1D35;
+    font-size: 14px;
+    min-height: 40px;
+    max-height: 60px;
+}
+
+QLineEdit[class="search"]:focus {
+    border: 2px solid #566CD2;
+    padding: 7px 15px;
+}
+
+/* Progress Bar */
 QProgressBar {
-    border: 2px solid #f3f3f3;
+    border: 2px solid #F3F4F6;
     border-radius: 8px;
-    background-color: #f3f3f3;
+    background-color: #F3F4F6;
     height: 10px;
 }
+
 QProgressBar::chunk {
-    background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #6c9dfd,stop: 1 #8fb4ff);
+    background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #566CD2, stop: 1 #7A8FE6);
     border-radius: 6px;
 }
 
+/* Tab Bar */
 QTabBar::tab {
-    width:160;
-    background: #8fbcd4;
-    color: white;
-    border: 1px solid #5a8d9f;
+    width: 160px;
+    background: #DDE2F6;
+    color: #566CD2;
+    border: 1px solid #E5E7EB;
     border-radius: 15px;
     padding: 10px 20px;
+    font-weight: 500;
 }
 
 QTabBar::tab:selected {
-    background: #5a8d9f;  
-    font-weight: bold; 
+    background: #566CD2;
+    color: #FFFFFF;
+    font-weight: 600;
 }
 
 QTabBar::tab:hover {
-    background: #a3d4e7;   
+    background: #C5CFEF;
 }
 
+/* Blue Button */
 QPushButton[class="blue"] {
-    border: 1px solid #C0C0C0;
-    border-radius: 25px;
-    background: #516ed9;
-    text-align: center;
-    font: 75 15pt "Bahnschrift";
-    color: rgb(255, 255, 255);
+    background-color: #566CD2;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+QPushButton[class="blue"]:hover {
+    background-color: #4557B9;
+}
+
+/* Scrollbar Styling */
+QScrollBar:vertical {
+    border: none;
+    background: #F3F4F6;
+    width: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #D1D5DB;
+    border-radius: 3px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #858A94;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+    border: none;
 }

@@ -1,27 +1,256 @@
-/* Sidebar Styling */
+/* Global Styles */
 QWidget {
-    background-color: #2E3440;
-    border-right: 2px solid #4C566A;
+    font-family: Inter;
+    color: #0F1D35;
 }
 
-QPushButton {
+/* Main Window */
+QMainWindow {
+    background-color: #F7F8FA;
+}
+
+/* Central Widget */
+QWidget#centralWidget {
+    background-color: #F7F8FA;
+}
+
+/* Sidebar Styling */
+QWidget#sidebar {
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #E5E7EB;
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+    margin: 10px 0px 10px 10px;
+}
+
+/* Sidebar Buttons */
+QWidget#sidebar QPushButton {
     background-color: transparent;
     border: none;
-    font-size: 16px;
-    font-weight: bold;
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin: 4px 0px;
+    qproperty-iconSize: 24px 24px;
+    color: #0F1D35;
+    text-align: left;
+    font-size: 14px;
+}
+
+QWidget#sidebar QPushButton:hover {
+    background-color: #DDE2F6;
+}
+
+QWidget#sidebar QPushButton:pressed {
+    background-color: rgba(86, 108, 210, 0.2);
+}
+
+QWidget#sidebar QPushButton:checked {
+    background-color: #DDE2F6;
+    color: #566CD2;
+    font-weight: 500;
+}
+
+/* Content Area */
+QWidget#contentArea {
+    background-color: #F7F8FA;
+    border: none;
+    margin: 10px 10px 10px 0px;
+}
+
+/* Default Button Style */
+QPushButton {
+    background-color: #566CD2;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 QPushButton:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* slight white background on hover */
+    background-color: #4557B9;
 }
 
 QPushButton:pressed {
-    background-color: rgba(255, 255, 255, 0.2); /* slightly darker white background on press */
+    background-color: #3A4A9E;
 }
 
-/* Content Area Styling */
+/* Label Styling */
 QLabel {
-    font-size: 28px;
-    color: #ECEFF4;
-    background-color: #3B4252;
+    color: #0F1D35;
+    font-size: 14px;
+}
+
+/* Line Edit Styling */
+QLineEdit {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 8px 16px;
+    color: #0F1D35;
+    font-size: 14px;
+}
+
+QLineEdit:focus {
+    border: 2px solid #566CD2;
+    padding: 7px 15px;
+}
+
+QLineEdit::placeholder {
+    color: #858A94;
+}
+
+/* Scrollbar Styling */
+QScrollBar:vertical {
+    border: none;
+    background: #F3F4F6;
+    width: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #D1D5DB;
+    border-radius: 3px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #858A94;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+    border: none;
+}
+
+/* Course Card Styling */
+QFrame[frameShape="6"] {  /* StyledPanel */
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    min-width: 320px;
+    max-width: 320px;
+    min-height: 420px;
+    max-height: 420px;
+}
+
+QFrame[frameShape="6"]:hover {
+    border-color: #D1D5DB;
+    border-width: 2px;
+}
+
+/* Course Title */
+QFrame[frameShape="6"] QLabel:first-child {
+    color: #0F1D35;
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 8px;
+    min-height: 60px;
+    max-height: 60px;
+}
+
+/* Course Tags */
+QFrame[frameShape="6"] QPushButton:not([text="Розпочати курс"]) {
+    background-color: #F3F4F6;
+    color: #858A94;
+    border: none;
+    border-radius: 12px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    min-height: 24px;
+    max-height: 24px;
+}
+
+/* Course Description */
+QFrame[frameShape="6"] QLabel:not(:first-child):not(.metadata) {
+    color: #858A94;
+    line-height: 1.5;
+    font-size: 14px;
+    margin: 8px 0;
+    min-height: 120px;
+    max-height: 120px;
+}
+
+/* Course Metadata */
+QFrame[frameShape="6"] QLabel.metadata {
+    color: #858A94;
+    font-size: 12px;
+}
+
+/* Start Course Button */
+QFrame[frameShape="6"] QPushButton:last-child {
+    background-color: #566CD2;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 18px;
+    padding: 8px 24px;
+    font-weight: 600;
+    font-size: 14px;
+    min-height: 36px;
+    max-height: 36px;
+}
+
+QFrame[frameShape="6"] QPushButton:last-child:hover {
+    background-color: #4557B9;
+}
+
+/* Tab Widget Styling */
+QTabWidget::pane {
+    border: none;
+    background: transparent;
+}
+
+QTabWidget::tab-bar {
+    left: 5px;
+}
+
+QTabBar::tab {
+    background: #DDE2F6;
+    color: #566CD2;
+    border: 1px solid #E5E7EB;
+    border-radius: 15px;
+    padding: 10px 20px;
+    margin-right: 5px;
+    font-weight: 500;
+}
+
+QTabBar::tab:selected {
+    background: #566CD2;
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+QTabBar::tab:hover {
+    background: #C5CFEF;
+}
+
+/* Section Title */
+QLabel[class="section_title"] {
+    color: #0F1D35;
+    font-weight: 600;
+    font-size: 16px;
+    margin: 20px 0 10px 0;
+}
+
+/* Progress Bar */
+QProgressBar {
+    border: 2px solid #F3F4F6;
+    border-radius: 8px;
+    background-color: #F3F4F6;
+    height: 10px;
+}
+
+QProgressBar::chunk {
+    background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #566CD2, stop: 1 #7A8FE6);
+    border-radius: 6px;
 }

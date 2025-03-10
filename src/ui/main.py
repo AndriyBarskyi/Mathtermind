@@ -37,14 +37,20 @@ class MainApp(QtWidgets.QMainWindow):
         sys.exit(app.exec_())
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    with open("style.qss", "r") as file:
-        style_sheet = file.read()
+    
+    # Load and apply both style files
+    style_sheet = ""
+    
+    # Load the main style file
+    with open("src/ui/style.qss", "r") as file:
+        style_sheet += file.read()
+    
+    # Load the additional styles file
+    with open("src/ui/styles.qss", "r") as file:
+        style_sheet += "\n" + file.read()
         
-
     app.setStyleSheet(style_sheet)
    
-    
-
     window = MainApp()
     window.show()
     sys.exit(app.exec_())
