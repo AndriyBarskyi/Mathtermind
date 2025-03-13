@@ -40,3 +40,19 @@ def get_progress_by_user_and_course(
 
 def get_progress_by_user(db: Session, user_id: uuid.UUID):
     return db.query(Progress).filter(Progress.user_id == user_id).all()
+
+
+def get_user_progress(db: Session, user_id: uuid.UUID):
+    """
+    Get all progress records for a user, grouped by course.
+    This is used to determine which courses are active for a user.
+    """
+    return db.query(Progress).filter(Progress.user_id == user_id).all()
+
+
+def get_completed_progress(db: Session, user_id: uuid.UUID):
+    """
+    Get all completed progress records for a user.
+    A course is considered completed if the user has a progress record with a progress_percentage of 100.
+    """
+    return db.query(Progress).filter(Progress.user_id == user_id, Progress.progress_percentage == 100).all()

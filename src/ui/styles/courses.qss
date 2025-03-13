@@ -1,0 +1,289 @@
+/* General Styling */
+QWidget {
+    background-color: #FFFFFF;
+    color: #111827;
+}
+
+/* Filter Tabs Styling */
+QPushButton[checkable="true"] {
+    background-color: transparent;
+    border: none;
+    padding: 8px 16px;
+    color: #6B7280;
+    border-radius: 20px;
+    min-width: 100px;
+    font-weight: 500;
+}
+
+QPushButton[checkable="true"]:checked {
+    color: #4F46E5;
+    background-color: #EEF2FF;
+    font-weight: 600;
+}
+
+QPushButton[checkable="true"]:hover:!checked {
+    background-color: #F3F4F6;
+}
+
+/* Search Bar Styling */
+QLineEdit {
+    background-color: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 8px 16px;
+    color: #111827;
+    font-size: 14px;
+}
+
+QLineEdit:focus {
+    border: 2px solid #4F46E5;
+    padding: 7px 15px;  /* Adjust padding to maintain size with thicker border */
+}
+
+QLineEdit::placeholder {
+    color: #9CA3AF;
+}
+
+/* Filter Button Styling */
+QPushButton#filterButton {
+    background-color: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 8px;
+    qproperty-iconSize: 20px 20px;
+}
+
+QPushButton#filterButton:hover {
+    background-color: #F9FAFB;
+    border-color: #D1D5DB;
+}
+
+/* Course Card Styling */
+QFrame[frameShape="6"] {  /* StyledPanel */
+    background-color: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    min-width: 320px;
+    max-width: 320px;
+    min-height: 420px;
+    max-height: 420px;
+}
+
+QFrame[frameShape="6"]:hover {
+    border-color: #D1D5DB;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Course Title Styling */
+QFrame[frameShape="6"] QLabel:first-child {
+    color: #111827;
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 8px;
+    min-height: 60px;
+    max-height: 60px;
+}
+
+/* Course Tags Container */
+QFrame[frameShape="6"] QWidget {
+    background-color: transparent;
+    min-height: 60px;
+    max-height: 60px;
+}
+
+/* Course Tags Styling */
+QFrame[frameShape="6"] QPushButton {
+    background-color: #F3F4F6;
+    color: #4B5563;
+    border: none;
+    border-radius: 12px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    min-height: 24px;
+    max-height: 24px;
+}
+
+/* Course Description Styling */
+QFrame[frameShape="6"] QLabel:not(:first-child):not(.metadata) {
+    color: #6B7280;
+    line-height: 1.5;
+    font-size: 14px;
+    margin: 8px 0;
+    min-height: 120px;
+    max-height: 120px;
+}
+
+/* Metadata Text Styling */
+QFrame[frameShape="6"] QLabel.metadata {
+    color: #9CA3AF;
+    font-size: 12px;
+}
+
+/* Start Course Button Styling */
+QFrame[frameShape="6"] QPushButton:last-child {
+    background-color: #4F46E5;
+    color: white;
+    border: none;
+    border-radius: 18px;
+    padding: 8px 24px;
+    font-weight: 600;
+    font-size: 14px;
+    min-height: 36px;
+    max-height: 36px;
+}
+
+QFrame[frameShape="6"] QPushButton:last-child:hover {
+    background-color: #4338CA;
+}
+
+/* Filter Sidebar Styling */
+QFrame[frameShape="6"]:last-child {
+    background-color: white;
+    padding: 24px;
+    border-radius: 16px;
+    min-width: auto;
+    max-width: none;
+    min-height: auto;
+    max-height: none;
+}
+
+/* Filter Header Styling */
+QFrame[frameShape="6"]:last-child QLabel:first-child {
+    color: #111827;
+    font-weight: 600;
+    font-size: 16px;
+    min-height: auto;
+    max-height: none;
+}
+
+/* Clear Button Styling */
+QPushButton[text="Очистити"] {
+    color: #4F46E5;
+    background: transparent;
+    border: none;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+QPushButton[text="Очистити"]:hover {
+    color: #4338CA;
+    text-decoration: underline;
+}
+
+/* Section Labels */
+QFrame[frameShape="6"]:last-child QLabel:not(:first-child) {
+    color: #111827;
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 20px;
+    min-height: auto;
+    max-height: none;
+}
+
+/* Checkbox Styling */
+QCheckBox {
+    color: #4B5563;
+    font-size: 14px;
+    spacing: 8px;
+    padding: 4px 0;
+}
+
+QCheckBox:hover {
+    color: #111827;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #E5E7EB;
+    border-radius: 4px;
+    background-color: white;
+}
+
+QCheckBox::indicator:hover {
+    border-color: #4F46E5;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #4F46E5;
+    border-color: #4F46E5;
+    image: url(src/ui/assets/icons/check.svg);
+}
+
+/* Range Slider Styling */
+QRangeSlider {
+    height: 40px;
+    margin: 8px 0;
+}
+
+/* Year Labels */
+QFrame[frameShape="6"]:last-child QHBoxLayout QLabel {
+    color: #6B7280;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Apply Button Styling */
+QPushButton[text="Застосувати"] {
+    background-color: #4F46E5;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 12px;
+}
+
+QPushButton[text="Застосувати"]:hover {
+    background-color: #4338CA;
+}
+
+/* Scroll Area Styling */
+QScrollArea {
+    border: none;
+    background-color: transparent;
+}
+
+QScrollArea > QWidget > QWidget {
+    background-color: transparent;
+}
+
+/* Scrollbar Styling */
+QScrollBar:vertical {
+    border: none;
+    background: #F3F4F6;
+    width: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #D1D5DB;
+    border-radius: 3px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #9CA3AF;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+    border: none;
+}
+
+/* Courses Container Styling */
+QWidget#coursesContainer {
+    background-color: transparent;
+    padding: 0;
+} 

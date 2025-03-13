@@ -3,6 +3,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from src.ui.ui import MainWindowUI
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QMenu, QAction
 from src.db import get_db, init_db
+from src.db.seed_courses import seed_courses
 from src.config import (
     DATABASE_URL,
     DEBUG_MODE,
@@ -53,6 +54,9 @@ if __name__ == "__main__":
     
     # Initialize database
     init_db.init_db()
+    
+    # Seed courses and lessons
+    seed_courses()
     
     # Load stylesheet
     try:

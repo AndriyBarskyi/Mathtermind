@@ -1,7 +1,6 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 from src.ui.main_win import DashboardPage
 from src.ui.course_win import CoursesPage
-from src.ui.lessons_win import LessonsPage
 from src.ui.progress_win import ProgressPage
 from src.ui.settings_win import SettingsPage
 from src.ui.lesson_win import LessonDetailPage
@@ -272,18 +271,12 @@ class MainWindowUI(object):
         self.pg_courses = CoursesPage()
         self.pg_courses.setObjectName("pg_courses")
         self.stackedWidget.addWidget(self.pg_courses)
-        self.pg_lessons = LessonsPage()
+        self.pg_lessons = LessonDetailPage()
         self.pg_lessons.setObjectName("pg_lessons")
         self.stackedWidget.addWidget(self.pg_lessons)
         self.pg_settings = SettingsPage()
         self.pg_settings.setObjectName("pg_settings")
         self.stackedWidget.addWidget(self.pg_settings)
-        
-
-
-        self.pg_lesson=LessonDetailPage()
-        self.pg_lesson.setObjectName("pg_lesson")
-        self.stackedWidget.addWidget(self.pg_lesson)
         
         self.gridLayout_3.addWidget(self.stackedWidget, 0, 0, 1, 1)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents_2)
