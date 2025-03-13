@@ -1,66 +1,67 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget
-from src.ui.sidebar import Sidebar
-from src.ui.content_area import ContentArea
+from PyQt5 import QtWidgets, QtCore, QtGui
+from src.ui.ui import MainWindowUI
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QMenu, QAction
 from src.db import get_db, init_db
-from config import (
-    WINDOW_WIDTH,
-    WINDOW_HEIGHT,
-    SIDEBAR_WIDTH,
-    SIDEBAR_RATIO,
-    CONTENT_RATIO,
-    STYLESHEET_PATH,
+from src.config import (
+    DATABASE_URL,
+    DEBUG_MODE,
 )
 
 
-class MainWindow(QMainWindow):
+class MathtermindApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        self.ui = MainWindowUI()
+        self.ui.setupUi(self)
         self.setWindowTitle("Mathtermind")
-        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
-
-        # Initialize content area and sidebar
-        self.content_area = ContentArea()
-        self.sidebar = Sidebar(self.change_page)
-
-        # Setup central widget and layout
-        central_widget = QWidget()
-        layout = QHBoxLayout(central_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        # Add sidebar and content area to the layout
-        layout.addWidget(self.sidebar, SIDEBAR_RATIO)
-        layout.addWidget(self.content_area, CONTENT_RATIO)
-
-        # Apply layout and sidebar width
-        self.setCentralWidget(central_widget)
-        self.sidebar.setFixedWidth(SIDEBAR_WIDTH)
-
+        
+        # Connect button signals
+        self.ui.btn_user.clicked.connect(self.show_user_menu)
+        
         # Test Database Interaction
-        self.init_sample_data()
+        self.initialize_sample_data()
 
-        # Load stylesheet
-        try:
-            with open(STYLESHEET_PATH, "r") as f:
-                self.setStyleSheet(f.read())
-        except FileNotFoundError:
-            print(f"Warning: {STYLESHEET_PATH} file not found.")
+    def show_user_menu(self):
+        menu = QMenu(self)
 
-    def change_page(self, page_name):
-        """Handle page navigation."""
-        self.content_area.update_content(page_name)
+        change_user_action = QAction("Змінити користувача", self)
+        exit_action = QAction("Вихід", self)
 
-    def init_sample_data(self):
+        change_user_action.triggered.connect(self.on_change_user)
+        exit_action.triggered.connect(self.on_exit)
+        menu.addAction(change_user_action)
+        menu.addAction(exit_action)
+
+        menu.exec_(self.ui.btn_user.mapToGlobal(self.ui.btn_user.rect().bottomLeft()))
+
+    def on_change_user(self):
+        print("Вибрана дія: Змінити користувача")
+        
+    def on_exit(self):
+        sys.exit(app.exec_())
+        
+    def initialize_sample_data(self):
         """Insert a test user into the database."""
         db = next(get_db())
-        # something here
+        # Add your database operations here
         print("Test user created successfully!")
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
+    
+    # Initialize database
     init_db.init_db()
-    window = MainWindow()
+    
+    # Load stylesheet
+    try:
+        with open("src/ui/style.qss", "r") as file:
+            style_sheet = file.read()
+            app.setStyleSheet(style_sheet)
+    except FileNotFoundError:
+        print("Warning: style.qss file not found.")
+
+    window = MathtermindApp()
     window.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec_())

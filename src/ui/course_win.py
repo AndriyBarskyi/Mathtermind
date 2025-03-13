@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
 #from course import*
-class Page2(QWidget):
+class CoursesPage(QWidget):
     def add_course_widget(self, name, description, subject, level, lessons):
         new_widget = QtWidgets.QWidget(self.scrollAreaWidgetContents_7)
         new_widget.setMinimumSize(QtCore.QSize(360, 330))

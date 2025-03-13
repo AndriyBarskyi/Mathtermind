@@ -1,27 +1,453 @@
-/* Sidebar Styling */
+/* Global Styles */
 QWidget {
-    background-color: #2E3440;
-    border-right: 2px solid #4C566A;
+    font-family: Inter;
+    color: #0F1D35;
 }
 
-QPushButton {
+/* Main Window */
+QMainWindow {
+    background-color: #F7F8FA;
+}
+
+/* Central Widget */
+QWidget#centralWidget {
+    background-color: #F7F8FA;
+}
+
+/* ==================== SIDEBAR COMPONENTS ==================== */
+
+/* Sidebar Styling */
+QWidget#sidebar {
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #E5E7EB;
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+    margin: 10px 0px 10px 10px;
+}
+
+/* Sidebar Frame */
+QFrame#sidebarFrame {
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #E5E7EB;
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+    margin: 10px 0px 10px 10px;
+}
+
+/* Sidebar Buttons */
+QWidget#sidebar QPushButton {
     background-color: transparent;
     border: none;
-    font-size: 16px;
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin: 4px 0px;
+    qproperty-iconSize: 24px 24px;
+    color: #0F1D35;
+    text-align: left;
+    font-size: 14px;
+}
+
+QWidget#sidebar QPushButton:hover {
+    background-color: #DDE2F6;
+}
+
+QWidget#sidebar QPushButton:pressed {
+    background-color: rgba(86, 108, 210, 0.2);
+}
+
+QWidget#sidebar QPushButton:checked {
+    background-color: #DDE2F6;
+    color: #566CD2;
+    font-weight: 500;
+}
+
+/* Sidebar Logo */
+QWidget#sidebar QPushButton#logo {
+    padding: 5px;
+    qproperty-iconSize: 32px 32px;
+    background-color: transparent;
+}
+
+/* App Name Label */
+QWidget#sidebar QLabel#appName {
     font-weight: bold;
+    font-size: 16px;
+    color: #0F1D35;
+}
+
+/* Sidebar Profile Button */
+QWidget#sidebar QPushButton#profileButton {
+    margin-bottom: 10px;
+}
+
+/* Sidebar Separator */
+QWidget#sidebar QFrame[frameShape="4"] {  /* HLine */
+    background-color: rgba(133, 138, 148, 0.2);
+    max-height: 1px;
+    margin: 5px 0px;
+}
+
+/* ==================== CONTENT AREA ==================== */
+
+/* Content Area */
+QWidget#contentArea {
+    background-color: #F7F8FA;
+    border: none;
+    margin: 10px 10px 10px 0px;
+}
+
+/* ==================== COURSES PAGE COMPONENTS ==================== */
+
+/* 1. Filter Tabs Section */
+QPushButton[checkable="true"] {
+    background-color: transparent;
+    border: none;
+    padding: 8px 16px;
+    color: #858A94;
+    border-radius: 20px;
+    min-width: 100px;
+    font-weight: 500;
+}
+
+QPushButton[checkable="true"]:checked {
+    color: #566CD2;
+    background-color: #DDE2F6;
+    font-weight: 600;
+}
+
+QPushButton[checkable="true"]:hover:!checked {
+    background-color: #F7F8FA;
+}
+
+/* 2. Search Bar Section */
+QLineEdit {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 8px 16px;
+    color: #0F1D35;
+    font-size: 14px;
+}
+
+QLineEdit:focus {
+    border: 2px solid #566CD2;
+    padding: 7px 15px;
+}
+
+QLineEdit::placeholder {
+    color: #858A94;
+}
+
+QPushButton#filterButton {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 8px;
+    qproperty-iconSize: 20px 20px;
+}
+
+QPushButton#filterButton:hover {
+    background-color: #F7F8FA;
+    border-color: #D1D5DB;
+}
+
+/* 3. Course Cards Section */
+QFrame[frameShape="6"] {  /* StyledPanel */
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+}
+
+QFrame[frameShape="6"]:hover {
+    border-color: #D1D5DB;
+}
+
+/* Course Title */
+QFrame[frameShape="6"] QLabel:first-child {
+    color: #0F1D35;
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+/* Course Tags */
+QFrame[frameShape="6"] QPushButton:not([text="Розпочати курс"]) {
+    background-color: #F3F4F6;
+    color: #858A94;
+    border: none;
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Course Description */
+QFrame[frameShape="6"] QLabel:not(:first-child):not(.metadata) {
+    color: #858A94;
+    font-size: 14px;
+    margin: 12px 0;
+    line-height: 1.5;
+}
+
+/* Course Metadata */
+QFrame[frameShape="6"] QLabel.metadata {
+    color: #858A94;
+    font-size: 12px;
+}
+
+/* 4. Filter Sidebar Section */
+QFrame[frameShape="6"]:last-child {
+    background-color: #FFFFFF;
+    padding: 0;
+    border-radius: 16px;
+}
+
+/* Filter Header */
+QFrame[frameShape="6"]:last-child QLabel:first-child {
+    color: #0F1D35;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* Section Labels */
+QFrame[frameShape="6"]:last-child QLabel:not(:first-child) {
+    color: #0F1D35;
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+/* Checkboxes */
+QCheckBox {
+    color: #858A94;
+    font-size: 14px;
+    spacing: 8px;
+    padding: 4px 0;
+}
+
+QCheckBox:hover {
+    color: #0F1D35;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #E5E7EB;
+    border-radius: 4px;
+    background-color: #FFFFFF;
+}
+
+QCheckBox::indicator:hover {
+    border-color: #566CD2;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #566CD2;
+    border-color: #566CD2;
+    image: url(src/ui/assets/icons/check.svg);
+}
+
+/* Range Slider */
+QRangeSlider {
+    height: 40px;
+    margin: 8px 0;
+}
+
+/* ==================== BUTTON STYLES ==================== */
+
+/* Default Button Style - Blue */
+QPushButton {
+    background-color: #566CD2;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 QPushButton:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* slight white background on hover */
+    background-color: #4557B9;
 }
 
-QPushButton:pressed {
-    background-color: rgba(255, 255, 255, 0.2); /* slightly darker white background on press */
+/* Start Course Button Style */
+QPushButton[text="Розпочати курс"] {
+    background-color: #566CD2;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 14px;
 }
 
-/* Content Area Styling */
-QLabel {
-    font-size: 28px;
-    color: #ECEFF4;
-    background-color: #3B4252;
+QPushButton[text="Розпочати курс"]:hover {
+    background-color: #4557B9;
+}
+
+/* Clear Button Style - Text Only */
+QPushButton[text="Очистити"] {
+    background-color: transparent;
+    color: #566CD2;
+    border: none;
+    padding: 4px 8px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+QPushButton[text="Очистити"]:hover {
+    color: #4557B9;
+    text-decoration: underline;
+}
+
+/* Apply Button Style */
+QPushButton[text="Застосувати"] {
+    background-color: #566CD2;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 20px;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 12px;
+}
+
+QPushButton[text="Застосувати"]:hover {
+    background-color: #4557B9;
+}
+
+/* Menu Button Style */
+QPushButton[class="menu"] {
+    background-color: transparent;
+    font-size: 14px;
+    border-radius: 10px;
+    min-width: 100px;
+    min-height: 40px;
+    text-align: left;
+    padding: 8px 12px;
+    color: #0F1D35;
+}
+
+QPushButton[class="menu"]:hover {
+    background-color: #DDE2F6;
+}
+
+QPushButton[class="menu"]:checked {
+    background-color: #DDE2F6;
+    color: #566CD2;
+    font-weight: 500;
+}
+
+/* Blue Button Style */
+QPushButton[class="blue"] {
+    background-color: #566CD2;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+QPushButton[class="blue"]:hover {
+    background-color: #4557B9;
+}
+
+/* Tab Bar Style */
+QTabBar::tab {
+    width: 160px;
+    background-color: transparent;
+    color: #858A94;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+QTabBar::tab:selected {
+    background-color: #DDE2F6;
+    color: #566CD2;
+    font-weight: 600;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #F7F8FA;
+}
+
+/* Progress Bar Style */
+QProgressBar {
+    border: none;
+    border-radius: 8px;
+    background-color: #F3F4F6;
+    height: 10px;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #566CD2;
+    border-radius: 8px;
+}
+
+/* ==================== SCROLLBAR STYLES ==================== */
+
+/* Scrollbar Styling */
+QScrollBar:vertical {
+    border: none;
+    background: #F3F4F6;
+    width: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #D1D5DB;
+    border-radius: 3px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #858A94;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+    border: none;
+}
+
+/* Horizontal Scrollbar */
+QScrollBar:horizontal {
+    border: none;
+    background: #F3F4F6;
+    height: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:horizontal {
+    background: #D1D5DB;
+    border-radius: 3px;
+    min-width: 30px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #858A94;
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: none;
+    border: none;
 }

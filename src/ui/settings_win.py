@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
-class Page5(QWidget):
+class SettingsPage(QWidget):
     def __init__(self):
         super().__init__()
         self.pg_settings = QtWidgets.QWidget()

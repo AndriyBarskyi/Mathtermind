@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
-class Page3(QWidget):    
+class LessonsPage(QWidget):    
     def create_card(self, title_text="Назва", labels_text=("TextLabel1", "TextLabel2"), desc_text="Опис"):
         
         card = QtWidgets.QWidget()

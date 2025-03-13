@@ -1,9 +1,9 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
+from PyQt5.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QLabel, QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import Qt
 
-from graphs import *
-class Page1(QWidget):
+from src.ui.graphs import *
+class DashboardPage(QWidget):
     def __init__(self):
         super().__init__()
         self.pg_main = QtWidgets.QWidget(self)
@@ -263,7 +263,7 @@ class Page1(QWidget):
         self.layout = QVBoxLayout(self.graph1)
         self.plot = pg.PlotWidget() 
         self.layout.addWidget(self.plot)
-        chart = MyGraph(self.plot)
+        chart = BarChartGraph(self.plot)
         data = [10, 15, 30, 40, 50]
         labels = ["X", "Y", "Z", "W", "V"]
         chart.plot_bar_chart(data, labels)

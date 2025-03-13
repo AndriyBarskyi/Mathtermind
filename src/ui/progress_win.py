@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
 #from course import*
-class Page4(QWidget):
+class ProgressPage(QWidget):
     def create_tab_with_widgets(self, name, num_widgets, rows=3, cols=5):
         tab_widget = QtWidgets.QWidget()
         tab_widget.setObjectName("tab_widget")

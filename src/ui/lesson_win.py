@@ -2,9 +2,9 @@ from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-from graphs import *
+from src.ui.graphs import *
 #from listw import *
-class Page6(QWidget):
+class LessonDetailPage(QWidget):
     def __init__(self):
         super().__init__()
         self.pg_lesson = QtWidgets.QWidget()

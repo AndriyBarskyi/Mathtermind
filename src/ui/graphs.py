@@ -1,7 +1,7 @@
 import pyqtgraph as pg
 import numpy as np
 
-class MyGraph:
+class BarChartGraph:
     def __init__(self, plot_widget):
         self.plot = plot_widget  
 

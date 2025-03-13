@@ -1,11 +1,11 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-from main_win import Page1
-from course_win import Page2
-from lessons_win import Page3
-from progress_win import Page4
-from settings_win import Page5
-from lesson_win import Page6
-class Ui_MainWindow(object):
+from src.ui.main_win import DashboardPage
+from src.ui.course_win import CoursesPage
+from src.ui.lessons_win import LessonsPage
+from src.ui.progress_win import ProgressPage
+from src.ui.settings_win import SettingsPage
+from src.ui.lesson_win import LessonDetailPage
+class MainWindowUI(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1742, 865)
@@ -263,25 +263,25 @@ class Ui_MainWindow(object):
         self.stackedWidget.setMinimumSize(QtCore.QSize(500, 600))
         self.stackedWidget.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.stackedWidget.setObjectName("stackedWidget")
-        self.pg_main = Page1()
+        self.pg_main = DashboardPage()
         self.pg_main.setObjectName("pg_main")
         self.stackedWidget.addWidget(self.pg_main)
-        self.pg_progress = Page4()
+        self.pg_progress = ProgressPage()
         self.pg_progress.setObjectName("pg_progress")
         self.stackedWidget.addWidget(self.pg_progress)
-        self.pg_courses = Page2()
+        self.pg_courses = CoursesPage()
         self.pg_courses.setObjectName("pg_courses")
         self.stackedWidget.addWidget(self.pg_courses)
-        self.pg_lessons = Page3()
+        self.pg_lessons = LessonsPage()
         self.pg_lessons.setObjectName("pg_lessons")
         self.stackedWidget.addWidget(self.pg_lessons)
-        self.pg_settings = Page5()
+        self.pg_settings = SettingsPage()
         self.pg_settings.setObjectName("pg_settings")
         self.stackedWidget.addWidget(self.pg_settings)
         
 
 
-        self.pg_lesson=Page6()
+        self.pg_lesson=LessonDetailPage()
         self.pg_lesson.setObjectName("pg_lesson")
         self.stackedWidget.addWidget(self.pg_lesson)
         
