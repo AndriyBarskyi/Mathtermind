@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QScrollArea, QLayout
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QRect, QPoint
-from PyQt6.QtGui import QFont, QFontMetrics
+from PyQt6.QtGui import QFont, QFontMetrics, QIcon
 
 from src.ui.models.course import Course
 from src.ui.styles.constants import COLORS, FONTS
@@ -110,7 +110,18 @@ class CourseCard(QFrame):
         self.setFrameShape(QFrame.Shape.StyledPanel)
         # Use minimum size instead of fixed size for responsiveness
         self.setMinimumSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.setMaximumSize(int(self.MIN_CARD_WIDTH * 1.5), int(self.MIN_CARD_HEIGHT * 1.5))
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border-radius: 8px;
+                border: 1px solid #E0E0E0;
+            }
+            QFrame:hover {
+                border: 1px solid #DDE2F6;
+            }
+        """)
         
         # Create card layout
         layout = QVBoxLayout(self)
@@ -118,7 +129,7 @@ class CourseCard(QFrame):
         layout.setContentsMargins(16, 16, 16, 16)
         
         # 1. Course title (fixed height)
-        title = QLabel(self.course.title)
+        title = QLabel(self.course.name)
         title.setFont(FONTS.TITLE)
         title.setWordWrap(True)
         title.setFixedHeight(60)  # Fixed height for title
@@ -151,18 +162,43 @@ class CourseCard(QFrame):
         layout.addWidget(start_btn)
     
     def _create_tags_layout(self, parent):
-        """Create the flow layout for course tags"""
-        tags_layout = FlowLayout(parent)
-        tags_layout.setSpacing(6)
+        """Create a flow layout for tags"""
+        tags_layout = FlowLayout(parent, margin=0, spacing=8)
         
-        # Create tag buttons
-        for tag_text in self.course.tags:
-            tag = QPushButton(tag_text)
+        # Add subject tag
+        subject_tag = QLabel(self.course.topic)
+        subject_tag.setProperty("class", "tag subject")
+        
+        # Add level tag
+        level_tag = QLabel(self.course.difficulty_level)
+        level_tag.setProperty("class", "tag level")
+        
+        # Style tags
+        for tag in [subject_tag, level_tag]:
             tag.setFont(QFont("Inter", 10))
-            tag.setFixedHeight(24)
-            tag.setCursor(Qt.CursorShape.ArrowCursor)
-            tag.setStyleSheet(f"background-color: {COLORS.TAG_BG}; color: {COLORS.TAG_TEXT}; "
-                             f"border: none; border-radius: 12px; padding: 0 12px;")
+            tag.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            tag.setStyleSheet(f"""
+                padding: 4px 8px;
+                background-color: {COLORS.TAG_BG};
+                color: {COLORS.TAG_TEXT};
+                border-radius: 4px;
+            """)
+        
+        # Add tags to layout
+        tags_layout.addWidget(subject_tag)
+        tags_layout.addWidget(level_tag)
+        
+        # Add additional tags from course
+        for tag_text in self.course.tags[:3]:  # Limit to 3 additional tags
+            tag = QLabel(tag_text)
+            tag.setFont(QFont("Inter", 10))
+            tag.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            tag.setStyleSheet(f"""
+                padding: 4px 8px;
+                background-color: {COLORS.TAG_BG};
+                color: {COLORS.TAG_TEXT};
+                border-radius: 4px;
+            """)
             tags_layout.addWidget(tag)
         
         return tags_layout
@@ -172,29 +208,40 @@ class CourseCard(QFrame):
         metadata_layout = QHBoxLayout()
         metadata_layout.setSpacing(8)
         
-        # Updated date
-        updated = QLabel(f"Оновлено: {self.course.formatted_updated_date}")
-        
         # Duration
         duration = QLabel(self.course.formatted_duration)
         
-        for label in [updated, duration]:
+        # Updated date
+        updated = QLabel(self.course.formatted_created_date)
+        
+        for label in [duration, updated]:
             label.setFont(QFont("Inter", 10))
             label.setProperty("class", "metadata")
             label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
         
-        metadata_layout.addWidget(updated)
-        metadata_layout.addStretch()
         metadata_layout.addWidget(duration)
+        metadata_layout.addStretch()
+        metadata_layout.addWidget(updated)
         
         return metadata_layout
     
     def _create_start_button(self):
         """Create the start course button"""
-        start_btn = QPushButton("Розпочати курс")
+        start_btn = QPushButton("Почати курс")
         start_btn.setFont(QFont("Inter", 13, QFont.Weight.DemiBold))
         start_btn.setFixedHeight(36)
-        start_btn.setStyleSheet(f"background-color: {COLORS.PRIMARY}; color: white; border-radius: 18px;")
+        start_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        start_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS.PRIMARY};
+                color: white;
+                border-radius: 18px;
+                padding: 0 16px;
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS.PRIMARY_DARK};
+            }}
+        """)
         
         # Connect the button click to emit the signal
         start_btn.clicked.connect(lambda: self.course_started.emit(self.course.id))
@@ -205,4 +252,8 @@ class CourseCard(QFrame):
         """Truncate text and add ellipsis if it's longer than max_length"""
         if len(text) <= max_length:
             return text
-        return text[:max_length].rstrip() + "..." 
+        return text[:max_length].rstrip() + "..."
+
+    def sizeHint(self):
+        """Return the preferred size of the card"""
+        return QSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT) 

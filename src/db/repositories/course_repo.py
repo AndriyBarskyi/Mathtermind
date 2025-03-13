@@ -78,7 +78,7 @@ def delete_course(db: Session, course_id: uuid.UUID) -> Optional[Course]:
     return course
 
 
-def get_course(db: Session, course_id: uuid.UUID) -> Optional[Course]:
+def get_course(db: Session, course_id: str) -> Optional[Course]:
     """
     Get a course by ID
     
@@ -89,7 +89,12 @@ def get_course(db: Session, course_id: uuid.UUID) -> Optional[Course]:
     Returns:
         Course or None if not found
     """
-    return db.query(Course).filter(Course.id == course_id).first()
+    try:
+        course_uuid = uuid.UUID(course_id)
+        return db.query(Course).filter(Course.id == course_uuid).first()
+    except ValueError:
+        # Invalid UUID format
+        return None
 
 
 def update_course(db: Session, 

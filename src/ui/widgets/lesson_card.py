@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QFrame, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QSizePolicy, QWidget
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from PyQt6.QtGui import QFont
 
 from src.ui.models.course import Course
@@ -31,7 +31,18 @@ class LessonCard(QFrame):
         # Configure frame
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setMinimumSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.setMaximumSize(int(self.MIN_CARD_WIDTH * 1.5), int(self.MIN_CARD_HEIGHT * 1.5))
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setStyleSheet(f"""
+            QFrame {{
+                background-color: white;
+                border-radius: 8px;
+                border: 1px solid #E0E0E0;
+            }}
+            QFrame:hover {{
+                border: 1px solid {COLORS.PRIMARY_LIGHT};
+            }}
+        """)
         
         # Create card layout
         layout = QVBoxLayout(self)
@@ -61,60 +72,107 @@ class LessonCard(QFrame):
         title.setFixedHeight(60)
         title.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         
-        # 3. Lesson description
-        description = QLabel(self._truncate_description(self.lesson.description, self.MAX_DESCRIPTION_LENGTH))
-        description.setWordWrap(True)
-        description.setFont(FONTS.BODY)
-        description.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        description.setFixedHeight(80)
-        
-        # 4. Lesson metadata
+        # 3. Metadata layout (difficulty, time, tasks)
         metadata_layout = self._create_metadata_layout()
         
-        # 5. Start button
+        # 4. Start button or completion status
+        button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(0, 8, 0, 0)
+        
+        # Create start button
         start_btn = self._create_start_button()
+        button_layout.addStretch()
+        button_layout.addWidget(start_btn)
         
         # Add all elements to card layout
         layout.addLayout(header_layout)
         layout.addWidget(title)
-        layout.addWidget(description)
         layout.addStretch()
         layout.addLayout(metadata_layout)
-        layout.addWidget(start_btn)
+        layout.addLayout(button_layout)
     
     def _create_metadata_layout(self):
         """Create the layout for lesson metadata"""
         metadata_layout = QHBoxLayout()
-        metadata_layout.setSpacing(8)
+        metadata_layout.setSpacing(16)
+        
+        # Video duration
+        video_label = QLabel(f"Відео {self.lesson.estimated_time} хв")
+        video_label.setFont(QFont("Inter", 11))
+        video_label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
+        
+        # Number of tasks if available
+        tasks_count = getattr(self.lesson, 'tasks_count', 0)
+        if tasks_count > 0:
+            tasks_text = f"{tasks_count} {'Завдань' if tasks_count != 1 else 'Завдання'}"
+            tasks_label = QLabel(tasks_text)
+            tasks_label.setFont(QFont("Inter", 11))
+            tasks_label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
+            metadata_layout.addWidget(tasks_label)
         
         # Difficulty level
-        difficulty = QLabel(self._get_difficulty_ukr())
+        difficulty_label = QLabel(self._get_difficulty_ukr())
+        difficulty_label.setFont(QFont("Inter", 11))
+        difficulty_label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
         
-        # Duration
-        duration = QLabel(f"{self.lesson.estimated_time} хв")
-        
-        for label in [difficulty, duration]:
-            label.setFont(QFont("Inter", 10))
-            label.setProperty("class", "metadata")
-            label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
-        
-        metadata_layout.addWidget(difficulty)
+        metadata_layout.addWidget(video_label)
+        metadata_layout.addWidget(difficulty_label)
         metadata_layout.addStretch()
-        metadata_layout.addWidget(duration)
         
         return metadata_layout
     
     def _create_start_button(self):
         """Create the start lesson button"""
-        start_btn = QPushButton("Почати урок")
-        start_btn.setFont(QFont("Inter", 13, QFont.Weight.DemiBold))
+        start_btn = QPushButton("Продовжити урок" if self._is_in_progress() else "Почати урок")
+        start_btn.setFont(QFont("Inter", 13))
+        start_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         start_btn.setFixedHeight(36)
-        start_btn.setStyleSheet(f"background-color: {COLORS.PRIMARY}; color: white; border-radius: 18px;")
+        start_btn.setMinimumWidth(140)
+        
+        # Style based on completion status
+        if self._is_completed():
+            start_btn.setText("Пройдено")
+            start_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {COLORS.SUCCESS_LIGHT};
+                    color: {COLORS.SUCCESS};
+                    border: 1px solid {COLORS.SUCCESS};
+                    border-radius: 18px;
+                    padding: 0 16px;
+                }}
+                QPushButton:hover {{
+                    background-color: {COLORS.SUCCESS_LIGHT};
+                }}
+            """)
+        else:
+            start_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {COLORS.PRIMARY};
+                    color: white;
+                    border-radius: 18px;
+                    padding: 0 16px;
+                }}
+                QPushButton:hover {{
+                    background-color: {COLORS.PRIMARY_DARK};
+                }}
+            """)
         
         # Connect the button click to emit the signal
         start_btn.clicked.connect(lambda: self.lesson_started.emit(str(self.lesson.id)))
         
         return start_btn
+    
+    def _is_completed(self):
+        """Check if the lesson is completed"""
+        # This would normally check user progress data
+        # For now, return False as a placeholder
+        return False
+    
+    def _is_in_progress(self):
+        """Check if the lesson is in progress"""
+        # This would normally check user progress data
+        # For now, return False as a placeholder
+        return False
     
     def _truncate_description(self, text, max_length):
         """Truncate text and add ellipsis if it's longer than max_length"""
@@ -139,4 +197,8 @@ class LessonCard(QFrame):
             "Quiz": "Тест",
             "Challenge": "Завдання"
         }
-        return type_map.get(self.lesson.lesson_type, self.lesson.lesson_type) 
+        return type_map.get(self.lesson.lesson_type, self.lesson.lesson_type)
+    
+    def sizeHint(self):
+        """Return the preferred size of the card"""
+        return QSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT) 

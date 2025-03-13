@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QStackedWidget
 from .pages.courses_page import CoursePage
 from .pages.placeholder_page import PlaceholderPage
 from .pages.settings_page import SettingsPage
+from .pages.lessons_page import LessonsPage
 
 
 class ContentArea(QStackedWidget):
@@ -29,9 +30,11 @@ class ContentArea(QStackedWidget):
         # Create the settings page
         self.settings_page = SettingsPage()
         
+        # Create the lessons page
+        self.lessons_page = LessonsPage()
+        
         # Create placeholder pages for other sections
         self.home_page = PlaceholderPage("Головна")
-        self.lessons_page = PlaceholderPage("Уроки")
         self.progress_page = PlaceholderPage("Успішність")
         self.profile_page = PlaceholderPage("Профіль")
         

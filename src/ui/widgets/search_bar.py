@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
-    QWidget, QHBoxLayout, QLineEdit, QPushButton
+    QWidget, QHBoxLayout, QLineEdit, QPushButton, QLabel
 )
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, QTimer, Qt
 from PyQt6.QtGui import QIcon, QFont
 
 from src.ui.styles.constants import FONTS, STYLES, COLORS
@@ -9,15 +9,22 @@ from src.ui.styles.constants import FONTS, STYLES, COLORS
 class SearchBar(QWidget):
     """
     Widget representing the search bar in the courses page.
-    Provides search functionality and filter button.
+    Provides search functionality with a clear visual separation from filtering.
     """
     # Signals
     search_changed = pyqtSignal(str)  # Emits search text
-    filter_button_clicked = pyqtSignal()
+    
+    # Delay in milliseconds before emitting search signal
+    SEARCH_DELAY = 300
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self._setup_ui()
+        
+        # Setup search delay timer
+        self.search_timer = QTimer()
+        self.search_timer.setSingleShot(True)
+        self.search_timer.timeout.connect(self._emit_search_text)
     
     def _setup_ui(self):
         """Set up the search bar UI"""
@@ -27,53 +34,48 @@ class SearchBar(QWidget):
         
         # Create search input
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Пошук")
+        self.search_input.setPlaceholderText("Введіть текст для пошуку")
         self.search_input.setFixedWidth(300)
         self.search_input.setFixedHeight(40)
         self.search_input.setFont(FONTS.TAB)
         
-        # Connect search input to signal
-        self.search_input.textChanged.connect(self.search_changed.emit)
+        # Add clear button to search input
+        self.search_input.setClearButtonEnabled(True)
         
-        # Create filter button
-        self.filter_btn = QPushButton("Фільтри")
-        self.filter_btn.setObjectName("filterButton")
-        self.filter_btn.setIcon(QIcon("src/ui/assets/icons/filter.svg"))
-        self.filter_btn.setFixedHeight(40)
-        self.filter_btn.setFont(FONTS.TAB)
-        self.filter_btn.setStyleSheet(STYLES.FILTER_BUTTON)
-        
-        # Connect filter button to signal
-        self.filter_btn.clicked.connect(self.filter_button_clicked.emit)
+        # Connect search input to delayed signal
+        self.search_input.textChanged.connect(self._on_text_changed)
         
         # Add to layout
         search_layout.addWidget(self.search_input)
-        search_layout.addWidget(self.filter_btn)
+    
+    def _on_text_changed(self, text):
+        """Handle text changes with a delay to avoid excessive filtering"""
+        # Reset the timer on each text change
+        self.search_timer.stop()
+        
+        # If text is empty, emit immediately to show all courses
+        if not text.strip():
+            self.search_changed.emit("")
+        else:
+            # Otherwise, start the timer for delayed search
+            self.search_timer.start(self.SEARCH_DELAY)
+    
+    def _emit_search_text(self):
+        """Emit the search text after the delay"""
+        text = self.search_input.text().strip()
+        self.search_changed.emit(text)
     
     def get_search_text(self):
         """Get the current search text"""
-        return self.search_input.text()
+        return self.search_input.text().strip()
     
     def clear_search(self):
         """Clear the search input"""
         self.search_input.clear()
-        
-    def update_filter_button_state(self, is_active):
-        """Update the filter button state to indicate if filters are visible"""
-        if is_active:
-            self.filter_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {COLORS.PRIMARY_LIGHT};
-                    color: {COLORS.PRIMARY};
-                    border: 1px solid {COLORS.PRIMARY};
-                    border-radius: 20px;
-                    padding: 8px 16px;
-                    font-weight: 600;
-                }}
-                QPushButton:hover {{
-                    background-color: {COLORS.PRIMARY_LIGHT};
-                    border-color: {COLORS.PRIMARY};
-                }}
-            """)
-        else:
-            self.filter_btn.setStyleSheet(STYLES.FILTER_BUTTON) 
+        # Emit empty search immediately
+        self.search_changed.emit("")
+    
+    def set_search_text(self, text):
+        """Set the search text programmatically"""
+        self.search_input.setText(text)
+        # The textChanged signal will handle the rest 

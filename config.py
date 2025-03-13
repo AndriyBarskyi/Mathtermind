@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # UI constants (fixed)
-WINDOW_WIDTH = 1000  # Increased window width
+WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 600
-SIDEBAR_WIDTH = 240  # Increased sidebar width to accommodate text buttons
+SIDEBAR_WIDTH = 240
 SIDEBAR_RATIO = 1
 CONTENT_RATIO = 10
 STYLESHEET_PATH = "src/ui/styles.qss"

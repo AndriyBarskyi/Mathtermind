@@ -1,3 +1,4 @@
+import datetime
 from PyQt6.QtWidgets import (
     QFrame, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QCheckBox, QScrollArea, QWidget
@@ -21,11 +22,15 @@ class FilterSidebar(QFrame):
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.StyledPanel)
         
-        # Filter state
+        # Define constants
+        self.MIN_YEAR = 2013
+        self.MAX_YEAR = datetime.datetime.now().year
+        
+        # Initialize default filter state
         self.filter_state = {
-            "subjects": [],
-            "levels": [],
-            "year_range": (2013, 2020)
+            "subjects": ["info"],  # Default to "info" selected
+            "levels": ["basic"],   # Default to "basic" selected
+            "year_range": (self.MIN_YEAR, self.MAX_YEAR)
         }
         
         self._setup_ui()
@@ -49,8 +54,7 @@ class FilterSidebar(QFrame):
         layout.addLayout(header_layout)
         
         # 2. Subject section
-        subject_label = self._create_section_label("Предмет")
-        layout.addWidget(subject_label)
+        layout.addWidget(self._create_section_label("Предмет"))
         
         # Create checkboxes for subjects
         self.subject_checkboxes = {
@@ -62,8 +66,7 @@ class FilterSidebar(QFrame):
             layout.addWidget(checkbox)
         
         # 3. Level section
-        level_label = self._create_section_label("Рівень")
-        layout.addWidget(level_label)
+        layout.addWidget(self._create_section_label("Рівень"))
         
         # Create checkboxes for levels
         self.level_checkboxes = {
@@ -76,21 +79,21 @@ class FilterSidebar(QFrame):
             layout.addWidget(checkbox)
         
         # 4. Updated period section with range slider
-        updated_label = self._create_section_label("Оновлено")
-        layout.addWidget(updated_label)
+        layout.addWidget(self._create_section_label("Оновлено"))
         
+        # Setup range slider with consistent values
         self.range_slider = QRangeSlider()
-        # Set range values directly instead of using setRange
-        self.range_slider.min_value = 2013
-        self.range_slider.max_value = 2020
-        self.range_slider.current_min = 2013
-        self.range_slider.current_max = 2020
+        self.range_slider.min_value = self.MIN_YEAR
+        self.range_slider.max_value = self.MAX_YEAR
+        self.range_slider.current_min = self.MIN_YEAR
+        self.range_slider.current_max = self.MAX_YEAR
+        self.range_slider.valueChanged.connect(self._on_range_changed)
         layout.addWidget(self.range_slider)
         
         # Date range labels
         date_range_layout = QHBoxLayout()
-        self.start_year_label = QLabel("2013")
-        self.end_year_label = QLabel("2020")
+        self.start_year_label = QLabel(str(self.MIN_YEAR))
+        self.end_year_label = QLabel(str(self.MAX_YEAR))
         
         for label in [self.start_year_label, self.end_year_label]:
             label.setFont(FONTS.BODY_SMALL)
@@ -118,15 +121,12 @@ class FilterSidebar(QFrame):
         sidebar_layout = QVBoxLayout(self)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.addWidget(scroll_area)
-        
-        # Connect signals
-        self.range_slider.valueChanged.connect(self._on_range_changed)
     
     def _create_header(self):
         """Create the header with title and clear button"""
         header_layout = QHBoxLayout()
         
-        filter_label = QLabel("Фільтри (4)")
+        filter_label = QLabel("Фільтри")
         filter_label.setFont(FONTS.SUBTITLE)
         filter_label.setStyleSheet(f"color: {COLORS.TEXT_PRIMARY};")
         
@@ -169,6 +169,9 @@ class FilterSidebar(QFrame):
             key for key, checkbox in self.level_checkboxes.items() 
             if checkbox.isChecked()
         ]
+        
+        # Update the filter count in the header
+        self._update_filter_count()
     
     def _on_range_changed(self, min_val, max_val):
         """Handle range slider changes"""
@@ -192,18 +195,44 @@ class FilterSidebar(QFrame):
         self.level_checkboxes["basic"].setChecked(True)
         
         # Reset range slider
-        self.range_slider.current_min = 2013
-        self.range_slider.current_max = 2020
-        self.start_year_label.setText("2013")
-        self.end_year_label.setText("2020")
+        self.range_slider.current_min = self.MIN_YEAR
+        self.range_slider.current_max = self.MAX_YEAR
+        self.start_year_label.setText(str(self.MIN_YEAR))
+        self.end_year_label.setText(str(self.MAX_YEAR))
         self.range_slider.update()  # Force redraw
         
         # Reset filter state
         self.filter_state = {
             "subjects": ["info"],
             "levels": ["basic"],
-            "year_range": (2013, 2020)
+            "year_range": (self.MIN_YEAR, self.MAX_YEAR)
         }
         
+        # Update the filter count
+        self._update_filter_count()
+        
         # Emit signal
-        self.filters_cleared.emit() 
+        self.filters_cleared.emit()
+    
+    def _update_filter_count(self):
+        """Update the filter count in the header"""
+        # Count active filters (excluding default ones)
+        count = 0
+        
+        # Count selected subjects (excluding the default "info")
+        subject_count = len(self.filter_state["subjects"])
+        if subject_count > 0 and not (subject_count == 1 and "info" in self.filter_state["subjects"]):
+            count += 1
+            
+        # Count selected levels (excluding the default "basic")
+        level_count = len(self.filter_state["levels"])
+        if level_count > 0 and not (level_count == 1 and "basic" in self.filter_state["levels"]):
+            count += 1
+            
+        # Check if year range is different from default
+        if self.filter_state["year_range"] != (self.MIN_YEAR, self.MAX_YEAR):
+            count += 1
+            
+        # Update the filter label
+        filter_text = f"Фільтри{f' ({count})' if count > 0 else ''}"
+        self.findChild(QLabel, "", Qt.FindChildOption.FindDirectChildrenOnly).setText(filter_text) 

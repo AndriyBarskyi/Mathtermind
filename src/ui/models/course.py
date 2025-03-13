@@ -1,27 +1,52 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict, Any
 from datetime import datetime
 
 @dataclass
 class Course:
     """Data model representing a course"""
     id: str
-    title: str
+    topic: str  # "Informatics" or "Math"
+    name: str
     description: str
-    tags: List[str]
-    updated_date: datetime
-    duration_hours: float
-    level: str
-    subject: str
-    is_active: bool = False
-    is_completed: bool = False
+    metadata: Dict[str, Any]
+    created_at: datetime
     
     @property
-    def formatted_updated_date(self) -> str:
+    def formatted_created_date(self) -> str:
         """Return formatted date string"""
-        return self.updated_date.strftime("%d %B %Y")
+        return self.created_at.strftime("%d %B %Y")
     
     @property
     def formatted_duration(self) -> str:
         """Return formatted duration string"""
-        return f"Тривалість: {self.duration_hours} годин" 
+        estimated_time = self.metadata.get("estimated_time", 0)
+        hours = estimated_time // 60
+        minutes = estimated_time % 60
+        
+        if hours > 0 and minutes > 0:
+            return f"Тривалість: {hours} год {minutes} хв"
+        elif hours > 0:
+            return f"Тривалість: {hours} год"
+        else:
+            return f"Тривалість: {minutes} хв"
+    
+    @property
+    def difficulty_level(self) -> str:
+        """Get the difficulty level from metadata"""
+        return self.metadata.get("difficulty_level", "Beginner")
+    
+    @property
+    def tags(self) -> List[str]:
+        """Get tags from metadata"""
+        return self.metadata.get("tags", [])
+    
+    @property
+    def points_reward(self) -> int:
+        """Get points reward from metadata"""
+        return self.metadata.get("points_reward", 0)
+    
+    @property
+    def target_age_group(self) -> str:
+        """Get target age group from metadata"""
+        return self.metadata.get("target_age_group", "13-14") 

@@ -1,12 +1,13 @@
 from PyQt6.QtWidgets import (
     QScrollArea, QWidget, QGridLayout, QFrame, QVBoxLayout,
-    QSizePolicy
+    QSizePolicy, QLabel
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer
 from typing import List
 
 from src.ui.models.course import Course
 from src.ui.widgets.course_card import CourseCard
+from src.ui.widgets.flow_layout import FlowLayout
 
 class CoursesGrid(QScrollArea):
     """
@@ -18,89 +19,122 @@ class CoursesGrid(QScrollArea):
     
     # Grid configuration
     GRID_SPACING = 24
-    # No longer using fixed CARDS_PER_ROW
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self.courses = []
+        self.current_filter_state = {}
+        self.refresh_timer = QTimer()
+        self.refresh_timer.setSingleShot(True)
+        self.refresh_timer.timeout.connect(self._refresh_grid)
         self._setup_ui()
-    
+        
     def _setup_ui(self):
         """Set up the grid UI"""
+        # Make the scroll area take up all available space
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setFrameShape(QFrame.Shape.NoFrame)
         
-        # Create container widget
+        # Create a container widget for the grid
         self.container = QWidget()
-        self.container.setObjectName("coursesContainer")
+        self.setWidget(self.container)
         
-        # Create main layout
+        # Create a main layout for the container
         self.main_layout = QVBoxLayout(self.container)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
         
-        # Create grid layout
-        self.grid_layout = QGridLayout()
-        self.grid_layout.setSpacing(self.GRID_SPACING)
-        self.grid_layout.setContentsMargins(0, 0, 0, self.GRID_SPACING)
+        # Create a flow layout for the course cards
+        self.flow_layout = FlowLayout()
+        self.flow_layout.setSpacing(self.GRID_SPACING)
         
-        # Set alignment to ensure cards are properly aligned
-        self.grid_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        # Create a label for no results message
+        self.no_results_label = QLabel("Немає результатів")
+        self.no_results_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.no_results_label.setStyleSheet("""
+            font-size: 18px;
+            color: #858A94;
+            margin: 40px 0;
+        """)
+        self.no_results_label.hide()
         
-        # Add grid layout to main layout
-        self.main_layout.addLayout(self.grid_layout)
+        # Add layouts to main layout
+        self.main_layout.addLayout(self.flow_layout)
+        self.main_layout.addWidget(self.no_results_label)
         self.main_layout.addStretch()
         
-        self.setWidget(self.container)
-        
-        # Set size policy to allow the grid to expand
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # Set background color
+        self.setStyleSheet("background-color: #F7F8FA;")
     
     def set_courses(self, courses: List[Course]):
         """Set the courses to display in the grid"""
         self.courses = courses
-        self._refresh_grid()
+        self._delayed_refresh()
     
     def _refresh_grid(self):
         """Refresh the grid with current courses"""
-        # Clear existing widgets
+        # Clear existing courses
         self._clear_grid()
         
-        # Calculate cards per row based on available width
-        available_width = self.viewport().width()
-        min_card_width = CourseCard.MIN_CARD_WIDTH + self.GRID_SPACING
-        cards_per_row = max(1, available_width // min_card_width)
+        if not self.courses:
+            self.show_no_results_message()
+            return
         
-        # Add course cards to the grid
+        # Calculate number of columns
+        columns = self._calculate_columns()
+        
+        # Add new course cards
         for i, course in enumerate(self.courses):
+            # Calculate row and column
+            row = i // columns
+            col = i % columns
+            
+            # Create and add course card
             card = CourseCard(course)
-            # Connect the card's signal to our signal
             card.course_started.connect(self.course_started.emit)
             
-            # Add cards with proper spacing
-            row = i // cards_per_row
-            col = i % cards_per_row
-            self.grid_layout.addWidget(card, row, col, Qt.AlignmentFlag.AlignCenter)
+            # Set a maximum size to prevent cards from becoming too large
+            card.setMaximumWidth(int(CourseCard.MIN_CARD_WIDTH * 1.5))
+            card.setMaximumHeight(int(CourseCard.MIN_CARD_HEIGHT * 1.5))
+            
+            self.flow_layout.addWidget(card)
     
     def _clear_grid(self):
-        """Clear all widgets from the grid"""
-        # Remove all widgets from the grid
-        while self.grid_layout.count():
-            item = self.grid_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+        """Remove all course cards from the grid"""
+        self.flow_layout.clear()
+    
+    def _calculate_columns(self):
+        """Calculate number of columns based on container width"""
+        width = self.viewport().width()
+        card_width = CourseCard.MIN_CARD_WIDTH + self.GRID_SPACING
+        columns = max(1, width // card_width)
+        return columns
+    
+    def _delayed_refresh(self):
+        """Delayed refresh to prevent excessive updates during resize"""
+        self._refresh_grid()
     
     def resizeEvent(self, event):
-        """Handle resize events to adjust the grid layout"""
+        """Handle resize events to reflow the grid"""
         super().resizeEvent(event)
-        # Refresh the grid when the widget is resized
-        if hasattr(self, 'courses') and self.courses:
-            self._refresh_grid()
+        
+        # Cancel any pending timer and start a new one
+        self.refresh_timer.stop()
+        self.refresh_timer.start(150)  # 150ms delay before refresh
     
     def filter_courses(self, filter_state: dict):
-        """Filter courses based on filter state"""
-        # This would be implemented to filter the courses based on the filter state
-        # For now, we'll just refresh the grid
-        self._refresh_grid() 
+        """Apply filters to the courses"""
+        # This would be implemented to filter courses based on filter_state
+        # For now, just refresh the grid
+        self._refresh_grid()
+    
+    def show_no_results_message(self, message: str = "Немає результатів"):
+        """Show a message when no results are found"""
+        self.no_results_label.setText(message)
+        self.no_results_label.show()
+    
+    def hide_no_results_message(self):
+        """Hide the no results message"""
+        self.no_results_label.hide() 

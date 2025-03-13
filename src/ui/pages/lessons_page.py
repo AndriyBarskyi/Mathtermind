@@ -20,7 +20,7 @@ class CourseTab(QPushButton):
     def __init__(self, course, parent=None):
         super().__init__(parent)
         self.course = course
-        self.setText(course.title)
+        self.setText(course.name)  # Use name instead of title to match Course model
         self.setCheckable(True)
         self.setFont(QFont("Inter", 12))
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -46,11 +46,11 @@ class CourseTab(QPushButton):
 
 class LessonsPage(QWidget):
     """
-    Page displaying lessons for a selected course.
+    Page displaying lessons for enrolled courses.
     Features:
-    1. Course tabs at the top for quick navigation between courses
-    2. Current course title and details
-    3. Grid of lesson cards
+    1. Course tabs at the top for quick navigation between enrolled courses
+    2. Current course title and details button
+    3. Grid of lesson cards sorted by lesson order
     """
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -65,6 +65,7 @@ class LessonsPage(QWidget):
         
         self._setup_ui()
         self._connect_signals()
+        self._load_active_courses()
     
     def _setup_ui(self):
         """Set up the main UI layout"""
@@ -92,7 +93,7 @@ class LessonsPage(QWidget):
         header_layout = QHBoxLayout()
         
         # Course title
-        self.course_title = QLabel()
+        self.course_title = QLabel("Виберіть курс")
         self.course_title.setFont(FONTS.H1)
         
         # Course details button
@@ -128,18 +129,36 @@ class LessonsPage(QWidget):
     def _connect_signals(self):
         """Connect all signals"""
         self.details_btn.clicked.connect(self._on_details_clicked)
+        self.lessons_grid.lesson_started.connect(self._on_lesson_started)
+    
+    def _load_active_courses(self):
+        """Load active courses for the current user"""
+        # Get active courses from the service
+        self.active_courses = self.course_service.get_active_courses()
+        
+        # Update the course tabs
+        self.update_course_tabs(self.active_courses)
+        
+        # Load the first course if available
+        if self.active_courses:
+            self.load_course(self.active_courses[0].id)
     
     def _on_details_clicked(self):
         """Handle course details button click"""
         if self.current_course:
             # TODO: Show course details dialog or navigate to details page
-            pass
+            print(f"Showing details for course: {self.current_course.name}")
     
     def _on_course_tab_clicked(self):
         """Handle course tab selection"""
         tab = self.sender()
         if tab and isinstance(tab, CourseTab):
             self.load_course(tab.course.id)
+    
+    def _on_lesson_started(self, lesson_id):
+        """Handle lesson started signal"""
+        # TODO: Navigate to lesson content page
+        print(f"Starting lesson: {lesson_id}")
     
     def load_course(self, course_id):
         """Load a course and its lessons"""
@@ -151,17 +170,21 @@ class LessonsPage(QWidget):
         self.current_course = course
         
         # Update UI
-        self.course_title.setText(course.title)
+        self.course_title.setText(course.name)
         
         # Get and display lessons
         lessons = self.lesson_service.get_lessons_by_course_id(course_id)
-        self.lessons_grid.set_lessons(lessons)
+        
+        # Sort lessons by lesson_order
+        sorted_lessons = sorted(lessons, key=lambda lesson: lesson.lesson_order)
+        
+        self.lessons_grid.set_lessons(sorted_lessons)
         
         # Update active tab
         for i in range(self.tabs_layout.count()):
-            tab = self.tabs_layout.itemAt(i).widget()
-            if isinstance(tab, CourseTab):
-                tab.setChecked(tab.course.id == course_id)
+            widget = self.tabs_layout.itemAt(i).widget()
+            if isinstance(widget, CourseTab):
+                widget.setChecked(widget.course.id == course_id)
     
     def update_course_tabs(self, active_courses):
         """Update the course tabs with active courses"""
@@ -183,6 +206,6 @@ class LessonsPage(QWidget):
         # If we have a current course, make sure its tab is selected
         if self.current_course:
             for i in range(self.tabs_layout.count()):
-                tab = self.tabs_layout.itemAt(i).widget()
-                if isinstance(tab, CourseTab):
-                    tab.setChecked(tab.course.id == self.current_course.id) 
+                widget = self.tabs_layout.itemAt(i).widget()
+                if isinstance(widget, CourseTab) and widget.course.id == self.current_course.id:
+                    widget.setChecked(True) 

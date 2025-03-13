@@ -4,6 +4,10 @@ class COLORS:
     """Color constants used throughout the application"""
     PRIMARY = "#566CD2"
     PRIMARY_LIGHT = "#DDE2F6"
+    PRIMARY_DARK = "#4A5EBF"
+    
+    SUCCESS = "#10B981"
+    SUCCESS_LIGHT = "#ECFDF5"
     
     TEXT_PRIMARY = "#0F1D35"
     TEXT_SECONDARY = "#858A94"
@@ -21,6 +25,8 @@ class COLORS:
 
 class FONTS:
     """Font constants used throughout the application"""
+    H1 = QFont("Inter", 24, QFont.Weight.Bold)
+    H2 = QFont("Inter", 20, QFont.Weight.Bold)
     TITLE = QFont("Inter", 16, QFont.Weight.Bold)
     SUBTITLE = QFont("Inter", 14, QFont.Weight.Bold)
     BODY = QFont("Inter", 13)
