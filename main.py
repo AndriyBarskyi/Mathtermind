@@ -18,7 +18,7 @@ class MathtermindApp(QtWidgets.QMainWindow):
         self.setWindowTitle("Mathtermind")
         
         # Connect button signals
-        self.ui.btn_user.clicked.connect(self.show_user_menu)
+        self.ui.userButton.clicked.connect(self.show_user_menu)
         
         # Test Database Interaction
         self.initialize_sample_data()
@@ -34,7 +34,7 @@ class MathtermindApp(QtWidgets.QMainWindow):
         menu.addAction(change_user_action)
         menu.addAction(exit_action)
 
-        menu.exec_(self.ui.btn_user.mapToGlobal(self.ui.btn_user.rect().bottomLeft()))
+        menu.exec_(self.ui.userButton.mapToGlobal(self.ui.userButton.rect().bottomLeft()))
 
     def on_change_user(self):
         print("Вибрана дія: Змінити користувача")

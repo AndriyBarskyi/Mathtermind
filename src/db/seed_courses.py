@@ -1,6 +1,6 @@
 """
-Script to seed the database with sample courses.
-Run this script to populate the database with sample courses for testing.
+Script to seed the database with sample courses and lessons.
+Run this script to populate the database with sample data for testing.
 """
 
 from src.db import get_db
@@ -13,7 +13,7 @@ import json
 
 def seed_courses(force_add_lessons=False):
     """
-    Seed the database with sample courses.
+    Seed the database with sample courses and lessons.
     
     Args:
         force_add_lessons: If True, add new lessons to courses even if they already have lessons
@@ -23,14 +23,14 @@ def seed_courses(force_add_lessons=False):
     # Check if courses already exist
     existing_courses = course_repo.get_all_courses(db)
     if existing_courses:
-        print(f"Database already contains {len(existing_courses)} courses. Skipping seeding.")
+        print(f"Database already contains {len(existing_courses)} courses. Skipping course seeding.")
         
         # Check if lessons exist
         try:
             has_lessons = False
             for course in existing_courses:
-                lessons = db.query(Lesson).filter(Lesson.course_id == course.id).all()
-                if lessons:
+                course_lessons = db.query(Lesson).filter(Lesson.course_id == course.id).all()
+                if course_lessons:
                     has_lessons = True
                     break
         except Exception as e:
@@ -49,8 +49,8 @@ def seed_courses(force_add_lessons=False):
         
         return
     
-    # Sample courses
-    courses = [
+    # Sample course data
+    course_templates = [
         {
             "topic": "Informatics",
             "name": "Вступ до машинного навчання",
@@ -145,18 +145,18 @@ def seed_courses(force_add_lessons=False):
     
     # Create courses
     created_courses = []
-    for course_data in courses:
+    for course_template in course_templates:
         course = course_repo.create_course(
             db,
-            topic=course_data["topic"],
-            name=course_data["name"],
-            description=course_data["description"],
-            difficulty_level=course_data["difficulty_level"],
-            target_age_group=course_data["target_age_group"],
-            estimated_time=course_data["estimated_time"],
-            points_reward=course_data["points_reward"],
-            prerequisites=course_data["prerequisites"],
-            tags=course_data["tags"]
+            topic=course_template["topic"],
+            name=course_template["name"],
+            description=course_template["description"],
+            difficulty_level=course_template["difficulty_level"],
+            target_age_group=course_template["target_age_group"],
+            estimated_time=course_template["estimated_time"],
+            points_reward=course_template["points_reward"],
+            prerequisites=course_template["prerequisites"],
+            tags=course_template["tags"]
         )
         created_courses.append(course)
     
@@ -167,12 +167,18 @@ def seed_courses(force_add_lessons=False):
 
 
 def add_lessons_to_courses(db, courses):
-    """Add sample lessons to courses."""
-    total_lessons = 0
+    """
+    Add sample lessons to courses.
+    
+    Args:
+        db: Database session
+        courses: List of course objects to add lessons to
+    """
+    total_lessons_added = 0
     
     for course in courses:
         # Define lessons for each course
-        lessons = create_lessons_for_course(course)
+        lesson_templates = generate_lesson_templates_for_course(course)
         
         # Check if this course already has lessons
         try:
@@ -183,46 +189,59 @@ def add_lessons_to_courses(db, courses):
             existing_lesson_orders = []
         
         # Add lessons to database
-        for lesson_data in lessons:
+        for lesson_template in lesson_templates:
             # Skip if a lesson with this order already exists
-            if lesson_data["lesson_order"] in existing_lesson_orders:
+            if lesson_template["lesson_order"] in existing_lesson_orders:
                 continue
                 
             try:
                 # Get difficulty level from course metadata or use default
-                difficulty_level = "Beginner"
-                if hasattr(course, 'course_metadata') and course.course_metadata and 'difficulty_level' in course.course_metadata:
-                    difficulty_level = course.course_metadata['difficulty_level']
+                course_difficulty = "Beginner"
+                if hasattr(course, 'course_metadata') and course.course_metadata:
+                    if isinstance(course.course_metadata, dict) and 'difficulty_level' in course.course_metadata:
+                        course_difficulty = course.course_metadata['difficulty_level']
                 
                 # Create lesson with only the columns that exist in the schema
-                lesson = Lesson(
+                new_lesson = Lesson(
                     id=uuid.uuid4(),
                     course_id=course.id,
-                    title=lesson_data["title"],
-                    content=lesson_data["content"],
-                    lesson_type=lesson_data["lesson_type"],
-                    difficulty_level=difficulty_level,  # Set difficulty level
-                    lesson_order=lesson_data["lesson_order"],
+                    title=lesson_template["title"],
+                    content=lesson_template["content"],
+                    lesson_type=lesson_template["lesson_type"],
+                    difficulty_level=lesson_template["difficulty_level"],
+                    lesson_order=lesson_template["lesson_order"],
                     estimated_time=30,  # Default 30 minutes
                     points_reward=10,  # Default 10 points
                     prerequisites={},  # Empty prerequisites
-                    adaptive_rules={},  # Empty adaptive rules
-                    learning_objectives=[],  # Empty learning objectives
-                    created_at=datetime.now(timezone.utc)
+                    learning_objectives=[]  # Empty learning objectives
                 )
-                db.add(lesson)
+                db.add(new_lesson)
                 db.commit()  # Commit each lesson individually to avoid rollback issues
-                total_lessons += 1
-                print(f"Added lesson: {lesson_data['title']}")
+                total_lessons_added += 1
+                print(f"Added lesson: {lesson_template['title']}")
             except Exception as e:
                 print(f"Error adding lesson: {str(e)}")
                 db.rollback()  # Rollback on error
     
-    print(f"Added {total_lessons} new lessons to {len(courses)} courses.")
+    print(f"Added {total_lessons_added} new lessons to {len(courses)} courses.")
 
 
-def create_lessons_for_course(course):
-    """Create sample lessons for a specific course."""
+def generate_lesson_templates_for_course(course):
+    """
+    Generate sample lesson templates for a specific course.
+    
+    Args:
+        course: Course object to generate lessons for
+        
+    Returns:
+        List of lesson template dictionaries
+    """
+    # Get difficulty level from course metadata or use default
+    course_difficulty = "Beginner"
+    if hasattr(course, 'course_metadata') and course.course_metadata:
+        if isinstance(course.course_metadata, dict) and 'difficulty_level' in course.course_metadata:
+            course_difficulty = course.course_metadata['difficulty_level']
+    
     if course.topic == "Informatics" and "машинного навчання" in course.name:
         return [
             {
@@ -238,6 +257,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Theory",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 1
             },
             {
@@ -253,6 +273,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Theory",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 2
             },
             {
@@ -268,6 +289,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Theory",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 3
             }
         ]
@@ -286,6 +308,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Theory",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 1
             },
             {
@@ -301,6 +324,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Theory",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 2
             },
             {
@@ -316,6 +340,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Theory",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 3
             }
         ]
@@ -335,6 +360,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Theory",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 1
             },
             {
@@ -350,6 +376,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Theory",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 2
             },
             {
@@ -376,6 +403,7 @@ def create_lessons_for_course(course):
                     }
                 },
                 "lesson_type": "Practice",
+                "difficulty_level": course_difficulty,
                 "lesson_order": 3
             }
         ]

@@ -116,10 +116,10 @@ class CourseCard(QFrame):
             QFrame {
                 background-color: white;
                 border-radius: 8px;
-                border: 1px solid #E0E0E0;
+                border: none;
             }
             QFrame:hover {
-                border: 1px solid #DDE2F6;
+                background-color: #FAFAFA;
             }
         """)
         

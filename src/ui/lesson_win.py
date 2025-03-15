@@ -20,7 +20,7 @@ class CourseTab(QPushButton):
     def __init__(self, course, parent=None):
         super().__init__(parent)
         self.course = course
-        self.setText(course.name)  # Use name instead of title to match Course model
+        self.setText(course.name)
         self.setCheckable(True)
         self.setFont(QFont("Inter", 12))
         self.setCursor(Qt.PointingHandCursor)
