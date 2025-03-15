@@ -14,6 +14,7 @@ from src.ui.widgets.lessons_grid import LessonsGrid
 from src.ui.services.course_service import CourseService
 from src.ui.services.lesson_service import LessonService
 from src.ui.styles.constants import COLORS, FONTS
+from src.ui.theme import ThemeManager
 
 class CourseTab(QPushButton):
     """Custom tab button for course navigation"""
@@ -27,21 +28,39 @@ class CourseTab(QPushButton):
         self.setMinimumWidth(120)
         self.setFixedHeight(36)
         
-        # Apply styles
-        self.setStyleSheet("""
-            QPushButton {
+        # Apply styles using ThemeManager
+        self.setStyleSheet(f"""
+            QPushButton {{
                 border: none;
                 border-bottom: 2px solid transparent;
-                color: #666666;
+                color: {ThemeManager.get_color('secondary_text')};
                 padding: 0 16px;
-            }
-            QPushButton:checked {
-                border-bottom: 2px solid #2196F3;
-                color: #2196F3;
-            }
-            QPushButton:hover:!checked {
-                color: #333333;
-            }
+            }}
+            QPushButton:checked {{
+                border-bottom: 2px solid {ThemeManager.get_color('accent_primary')};
+                color: {ThemeManager.get_color('accent_primary')};
+            }}
+            QPushButton:hover:!checked {{
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+    
+    def update_theme_styles(self):
+        """Update styles when theme changes"""
+        self.setStyleSheet(f"""
+            QPushButton {{
+                border: none;
+                border-bottom: 2px solid transparent;
+                color: {ThemeManager.get_color('secondary_text')};
+                padding: 0 16px;
+            }}
+            QPushButton:checked {{
+                border-bottom: 2px solid {ThemeManager.get_color('accent_primary')};
+                color: {ThemeManager.get_color('accent_primary')};
+            }}
+            QPushButton:hover:!checked {{
+                color: {ThemeManager.get_color('primary_text')};
+            }}
         """)
 
 class LessonDetailPage(QWidget):
@@ -96,22 +115,28 @@ class LessonDetailPage(QWidget):
         self.course_title = QLabel("Виберіть курс")
         self.course_title.setFont(FONTS.H1)
         
+        # Use ThemeManager for title text color
+        self.course_title.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
+        
         # Course details button
         self.details_btn = QPushButton("Деталі курсу")
         self.details_btn.setFont(QFont("Inter", 13))
         self.details_btn.setCursor(Qt.PointingHandCursor)
+        
+        # Use ThemeManager for button styling
         self.details_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
-                border: 1px solid {COLORS.PRIMARY};
-                color: {COLORS.PRIMARY};
-                border-radius: 18px;
+                border: 1px solid {ThemeManager.get_color('accent_primary')};
+                color: {ThemeManager.get_color('accent_primary')};
+                border-radius: 25px;
                 padding: 0 24px;
             }}
             QPushButton:hover {{
-                background-color: {COLORS.PRIMARY_LIGHT};
+                background-color: {ThemeManager.get_color('accent_secondary')};
             }}
         """)
+        
         self.details_btn.setFixedHeight(36)
         
         header_layout.addWidget(self.course_title)
@@ -208,4 +233,38 @@ class LessonDetailPage(QWidget):
             for i in range(self.tabs_layout.count()):
                 widget = self.tabs_layout.itemAt(i).widget()
                 if isinstance(widget, CourseTab) and widget.course.id == self.current_course.id:
-                    widget.setChecked(True) 
+                    widget.setChecked(True)
+    
+    def update_theme_styles(self):
+        """Update all component styles when theme changes"""
+        # Update course title
+        self.course_title.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
+        
+        # Update details button
+        self.details_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                border: 1px solid {ThemeManager.get_color('accent_primary')};
+                color: {ThemeManager.get_color('accent_primary')};
+                border-radius: 25px;
+                padding: 0 24px;
+            }}
+            QPushButton:hover {{
+                background-color: {ThemeManager.get_color('accent_secondary')};
+            }}
+        """)
+        
+        # Update course tabs
+        for i in range(self.tabs_layout.count()):
+            widget = self.tabs_layout.itemAt(i).widget()
+            if isinstance(widget, CourseTab):
+                widget.update_theme_styles()
+        
+        # Update lessons grid
+        if hasattr(self.lessons_grid, 'update_theme_styles'):
+            self.lessons_grid.update_theme_styles()
+        
+        # Update all lesson cards directly
+        for card in self.lessons_grid.findChildren(QFrame):
+            if hasattr(card, 'update_theme_styles'):
+                card.update_theme_styles() 

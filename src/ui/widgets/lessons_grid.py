@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QTimer
 
 from src.ui.widgets.lesson_card import LessonCard
+from src.ui.theme import ThemeManager
 
 class LessonsGrid(QScrollArea):
     """
@@ -34,30 +35,32 @@ class LessonsGrid(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.setFrameShape(QFrame.NoFrame)
-        self.setStyleSheet("""
-            QScrollArea {
+        
+        # Use ThemeManager for scroll area styling
+        self.setStyleSheet(f"""
+            QScrollArea {{
                 background-color: transparent;
                 border: none;
-            }
-            QScrollBar:vertical {
-                background: #F0F0F0;
+            }}
+            QScrollBar:vertical {{
+                background: {ThemeManager.get_color('input_background')};
                 width: 8px;
                 margin: 0px;
-            }
-            QScrollBar::handle:vertical {
-                background: #CCCCCC;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {ThemeManager.get_color('button_background')};
                 min-height: 20px;
                 border-radius: 4px;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
                 height: 0px;
-            }
+            }}
         """)
         
         # Create container widget
         self.container = QWidget()
         self.container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.container.setStyleSheet("background-color: transparent;")
+        self.container.setStyleSheet(f"background-color: {ThemeManager.get_color('app_background')};")
         
         # Create grid layout
         self.grid = QGridLayout(self.container)
@@ -124,4 +127,36 @@ class LessonsGrid(QScrollArea):
         
         # Cancel any pending timer and start a new one
         self._resize_timer.stop()
-        self._resize_timer.start(150)  # 150ms delay before refresh 
+        self._resize_timer.start(150)  # 150ms delay before refresh
+        
+    def update_theme_styles(self):
+        """Update all component styles when theme changes"""
+        # Update scroll area styling
+        self.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: {ThemeManager.get_color('input_background')};
+                width: 8px;
+                margin: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {ThemeManager.get_color('button_background')};
+                min-height: 20px;
+                border-radius: 4px;
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+        """)
+        
+        # Update container background
+        self.container.setStyleSheet(f"background-color: {ThemeManager.get_color('app_background')};")
+        
+        # Update all lesson cards
+        for i in range(self.grid.count()):
+            item = self.grid.itemAt(i)
+            if item and item.widget() and hasattr(item.widget(), 'update_theme_styles'):
+                item.widget().update_theme_styles() 

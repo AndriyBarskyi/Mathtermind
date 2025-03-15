@@ -23,6 +23,7 @@ from src.ui.widgets.filter_sidebar import FilterSidebar
 from src.ui.services.course_service import CourseService
 from src.ui.services.lesson_service import LessonService
 from src.ui.lesson_win import LessonDetailPage
+from src.ui.theme import ThemeManager
 
 class CoursesPage(QWidget):
     """
@@ -248,68 +249,55 @@ class CoursesPage(QWidget):
             filtered_courses = []
             for course in base_courses:
                 # Check if any search word is in the course name or description
-                course_name = course.name.lower() if course.name else ""
-                course_desc = course.description.lower() if course.description else ""
-                
-                # Check if any search word matches
-                match_found = False
-                
-                # Check in name and description
-                for word in search_words:
-                    if word in course_name or word in course_desc:
-                        match_found = True
-                        break
-                
-                # If no match found in name or description, check in tags
-                if not match_found:
-                    tags = course.metadata.get("tags", [])
-                    for word in search_words:
-                        if any(word in tag.lower() for tag in tags):
-                            match_found = True
-                            break
-                
-                if match_found:
+                course_text = (course.name + " " + course.description).lower()
+                if any(word in course_text for word in search_words):
                     filtered_courses.append(course)
             
-            courses = filtered_courses
-            print(f"After search filter: {len(courses)} courses")
-        else:
-            courses = base_courses
+            base_courses = filtered_courses
+            print(f"Courses after search filter: {len(base_courses)}")
         
-        # Apply attribute filters separately
         # Apply subject filter
-        if self.filter_state["subjects"] != ["info", "math"]:  # If not all subjects
-            print(f"Applying subject filter: {self.filter_state['subjects']}")
-            courses = [
-                course for course in courses
-                if course.topic.lower() in [s.lower() for s in self.filter_state["subjects"]]
-            ]
-            print(f"After subject filter: {len(courses)} courses")
+        if self.filter_state["subjects"]:
+            filtered_courses = []
+            for course in base_courses:
+                if course.topic.lower() in self.filter_state["subjects"]:
+                    filtered_courses.append(course)
+            
+            base_courses = filtered_courses
+            print(f"Courses after subject filter: {len(base_courses)}")
         
         # Apply level filter
-        if self.filter_state["levels"] != ["basic", "intermediate", "advanced"]:  # If not all levels
-            print(f"Applying level filter: {self.filter_state['levels']}")
-            courses = [
-                course for course in courses
-                if course.metadata.get("difficulty_level", "").lower() in [l.lower() for l in self.filter_state["levels"]]
-            ]
-            print(f"After level filter: {len(courses)} courses")
+        if self.filter_state["levels"]:
+            filtered_courses = []
+            for course in base_courses:
+                if course.difficulty_level.lower() in self.filter_state["levels"]:
+                    filtered_courses.append(course)
+            
+            base_courses = filtered_courses
+            print(f"Courses after level filter: {len(base_courses)}")
         
         # Apply year range filter
-        if self.filter_state["year_range"] != (2010, 2030):  # If not default year range
+        if self.filter_state["year_range"]:
             min_year, max_year = self.filter_state["year_range"]
-            print(f"Applying year range filter: {min_year}-{max_year}")
-            courses = [
-                course for course in courses
-                if course.created_at and min_year <= course.created_at.year <= max_year
-            ]
-            print(f"After year range filter: {len(courses)} courses")
+            filtered_courses = []
+            for course in base_courses:
+                # Extract year from course.created_at (format: "2023-01-15")
+                try:
+                    year = int(course.created_at.split("-")[0])
+                    if min_year <= year <= max_year:
+                        filtered_courses.append(course)
+                except (ValueError, AttributeError, IndexError):
+                    # If we can't parse the year, include the course anyway
+                    filtered_courses.append(course)
+            
+            base_courses = filtered_courses
+            print(f"Courses after year filter: {len(base_courses)}")
         
-        # Set courses in the grid
-        self.courses_grid.set_courses(courses)
+        # Update the courses grid with filtered courses
+        self.courses_grid.set_courses(base_courses)
         
         # Show appropriate message if no courses found
-        if not courses:
+        if not base_courses:
             if self.search_text.strip():
                 self.courses_grid.show_no_results_message(f"Немає курсів, що відповідають пошуку: '{self.search_text}'")
             elif self.current_tab != "all" or self.filter_state != {
@@ -321,4 +309,31 @@ class CoursesPage(QWidget):
             else:
                 self.courses_grid.show_no_results_message("Немає доступних курсів")
         else:
-            self.courses_grid.hide_no_results_message() 
+            self.courses_grid.hide_no_results_message()
+    
+    def update_theme_styles(self):
+        """Update all component styles when theme changes"""
+        # Update filter tabs
+        if hasattr(self.filter_tabs, 'update_theme_styles'):
+            self.filter_tabs.update_theme_styles()
+        
+        # Update search bar
+        if hasattr(self.search_bar, 'update_theme_styles'):
+            self.search_bar.update_theme_styles()
+        
+        # Update filter button
+        if hasattr(self.filter_button, 'update_theme_styles'):
+            self.filter_button.update_theme_styles()
+        
+        # Update filter sidebar
+        if hasattr(self.filter_sidebar, 'update_theme_styles'):
+            self.filter_sidebar.update_theme_styles()
+        
+        # Update courses grid - this is the most important part
+        if hasattr(self.courses_grid, 'update_theme_styles'):
+            self.courses_grid.update_theme_styles()
+        
+        # Update all course cards directly
+        for card in self.courses_grid.findChildren(QFrame):
+            if hasattr(card, 'update_theme_styles'):
+                card.update_theme_styles() 

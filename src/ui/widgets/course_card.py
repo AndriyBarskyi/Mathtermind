@@ -8,6 +8,7 @@ from PyQt5.QtGui import QFont, QFontMetrics, QIcon
 
 from src.ui.models.course import Course
 from src.ui.styles.constants import COLORS, FONTS
+from src.ui.theme import ThemeManager
 
 # Create a FlowLayout class for better tag display
 class FlowLayout(QLayout):
@@ -112,15 +113,17 @@ class CourseCard(QFrame):
         self.setMinimumSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT)
         self.setMaximumSize(int(self.MIN_CARD_WIDTH * 1.5), int(self.MIN_CARD_HEIGHT * 1.5))
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.setStyleSheet("""
-            QFrame {
-                background-color: white;
-                border-radius: 8px;
-                border: none;
-            }
-            QFrame:hover {
-                background-color: #FAFAFA;
-            }
+        
+        # Use ThemeManager for card styling
+        self.setStyleSheet(f"""
+            QFrame {{
+                background-color: {ThemeManager.get_color('card_background')};
+                border-radius: 25px;
+                border: 1px solid {ThemeManager.get_color('border_color')};
+            }}
+            QFrame:hover {{
+                border: 1px solid {ThemeManager.get_color('border_hover_color')};
+            }}
         """)
         
         # Create card layout
@@ -135,6 +138,9 @@ class CourseCard(QFrame):
         title.setFixedHeight(60)  # Fixed height for title
         title.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         
+        # Use ThemeManager for title text color
+        title.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
+        
         # 2. Course tags (using flow layout)
         tags_container = QWidget()
         tags_layout = self._create_tags_layout(tags_container)
@@ -146,6 +152,10 @@ class CourseCard(QFrame):
         description.setFont(FONTS.BODY)
         description.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         description.setFixedHeight(120)  # Fixed height for description
+        
+        # Use ThemeManager for description text color
+        description.setStyleSheet(f"color: {ThemeManager.get_color('secondary_text')};")
+        description.setProperty("class", "description")
         
         # 4. Course metadata
         metadata_layout = self._create_metadata_layout()
@@ -173,14 +183,14 @@ class CourseCard(QFrame):
         level_tag = QLabel(self.course.difficulty_level)
         level_tag.setProperty("class", "tag level")
         
-        # Style tags
+        # Style tags with ThemeManager
         for tag in [subject_tag, level_tag]:
             tag.setFont(QFont("Inter", 10))
             tag.setAlignment(Qt.AlignCenter)
             tag.setStyleSheet(f"""
                 padding: 4px 8px;
-                background-color: {COLORS.TAG_BG};
-                color: {COLORS.TAG_TEXT};
+                background-color: {ThemeManager.get_color('accent_tertiary')};
+                color: {ThemeManager.get_color('secondary_text')};
                 border-radius: 4px;
             """)
         
@@ -195,8 +205,8 @@ class CourseCard(QFrame):
             tag.setAlignment(Qt.AlignCenter)
             tag.setStyleSheet(f"""
                 padding: 4px 8px;
-                background-color: {COLORS.TAG_BG};
-                color: {COLORS.TAG_TEXT};
+                background-color: {ThemeManager.get_color('accent_tertiary')};
+                color: {ThemeManager.get_color('secondary_text')};
                 border-radius: 4px;
             """)
             tags_layout.addWidget(tag)
@@ -217,7 +227,8 @@ class CourseCard(QFrame):
         for label in [duration, updated]:
             label.setFont(QFont("Inter", 10))
             label.setProperty("class", "metadata")
-            label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
+            # Use ThemeManager for metadata text color
+            label.setStyleSheet(f"color: {ThemeManager.get_color('secondary_text')};")
         
         metadata_layout.addWidget(duration)
         metadata_layout.addStretch()
@@ -231,17 +242,9 @@ class CourseCard(QFrame):
         start_btn.setFont(QFont("Inter", 13, QFont.DemiBold))
         start_btn.setFixedHeight(36)
         start_btn.setCursor(Qt.PointingHandCursor)
-        start_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLORS.PRIMARY};
-                color: white;
-                border-radius: 18px;
-                padding: 0 16px;
-            }}
-            QPushButton:hover {{
-                background-color: {COLORS.PRIMARY_DARK};
-            }}
-        """)
+        
+        # Use ThemeManager for button styling
+        start_btn.setStyleSheet(ThemeManager.get_start_button_style())
         
         # Connect the button click to emit the signal
         start_btn.clicked.connect(lambda: self.course_started.emit(self.course.id))
@@ -256,4 +259,35 @@ class CourseCard(QFrame):
 
     def sizeHint(self):
         """Return the preferred size of the card"""
-        return QSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT) 
+        return QSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT)
+        
+    def update_theme_styles(self):
+        """Update all component styles when theme changes"""
+        # Update card background
+        self.setStyleSheet(f"""
+            QFrame {{
+                background-color: {ThemeManager.get_color('card_background')};
+                border-radius: 25px;
+                border: 1px solid {ThemeManager.get_color('border_color')};
+            }}
+            QFrame:hover {{
+                border: 1px solid {ThemeManager.get_color('border_hover_color')};
+            }}
+        """)
+        
+        # Update all child widgets
+        for child in self.findChildren(QWidget):
+            if isinstance(child, QLabel):
+                if child.property("class") == "metadata" or child.property("class") == "description":
+                    child.setStyleSheet(f"color: {ThemeManager.get_color('secondary_text')};")
+                elif child.property("class") and "tag" in child.property("class"):
+                    child.setStyleSheet(f"""
+                        padding: 4px 8px;
+                        background-color: {ThemeManager.get_color('accent_tertiary')};
+                        color: {ThemeManager.get_color('secondary_text')};
+                        border-radius: 4px;
+                    """)
+                else:
+                    child.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
+            elif isinstance(child, QPushButton):
+                child.setStyleSheet(ThemeManager.get_start_button_style()) 

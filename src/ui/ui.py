@@ -4,6 +4,7 @@ from src.ui.course_win import CoursesPage
 from src.ui.progress_win import ProgressPage
 from src.ui.settings_win import SettingsPage
 from src.ui.lesson_win import LessonDetailPage
+from src.ui.theme import ThemeManager
 
 class MainWindowUI(object):
     def setupUi(self, MainWindow):
@@ -23,7 +24,9 @@ class MainWindowUI(object):
         appIcon.addPixmap(QtGui.QPixmap("icon/logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(appIcon)
 
-        MainWindow.setStyleSheet("background-color: rgb(243, 246, 250);")
+        # Use theme manager for background color
+        MainWindow.setStyleSheet(f"background-color: {ThemeManager.get_color('app_background')};")
+        
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -47,9 +50,12 @@ class MainWindowUI(object):
         
         self.sidebarContainer.setMinimumSize(QtCore.QSize(sidebar_min_width, 50))
         self.sidebarContainer.setMaximumSize(QtCore.QSize(sidebar_max_width, 2000))
-        self.sidebarContainer.setStyleSheet("background-color: rgb(255, 255, 255);\n"
+        
+        # Use theme manager for sidebar styling
+        self.sidebarContainer.setStyleSheet(f"background-color: {ThemeManager.get_color('sidebar_background')};\n"
 "    min-height: 50px; /* Мінімальна висота */\n"
 "    max-height: 2000px; /* Максимальна висота */")
+        
         self.sidebarContainer.setObjectName("sidebarContainer")
         self.sidebarHorizontalLayout = QtWidgets.QHBoxLayout(self.sidebarContainer)
         self.sidebarHorizontalLayout.setContentsMargins(0, 0, 0, 0)
@@ -90,23 +96,28 @@ class MainWindowUI(object):
                 button = QtWidgets.QPushButton(self.sidebarContainer)
                 
                 button.setLayoutDirection(QtCore.Qt.LeftToRight)
-                button.setStyleSheet("""
-                        QPushButton {
-                        background-color: rgb(255, 255, 255);
+                
+                # Use theme manager for button styling
+                button.setStyleSheet(f"""
+                        QPushButton {{
+                        background-color: {ThemeManager.get_color('sidebar_background')};
                         border-radius: 25px;
                         font-size: 18px;
                         min-height: 50px;
                         max-height: 100px;
                         min-width: 50px;
-                        }
-                        QPushButton:hover {
-                        background-color: rgb(230, 230, 230);
-                        }
-                        QPushButton:checked {
+                        color: {ThemeManager.get_color('primary_text')};
+                        }}
+                        QPushButton:hover {{
+                        background-color: {ThemeManager.get_color('button_hover_background')};
+                        }}
+                        QPushButton:checked {{
                         font-weight: bold;
-                        background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0.034 rgba(0, 85, 255, 255), stop:0.039 rgba(255, 255, 255, 255));
-                        color: rgb(81, 110, 217);
-                        }
+                        background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                                        stop:0.034 {ThemeManager.get_color('accent_primary')}, 
+                                                        stop:0.039 {ThemeManager.get_color('sidebar_background')});
+                        color: {ThemeManager.get_color('accent_primary')};
+                        }}
                 """)
 
                 icon = QtGui.QIcon()
@@ -194,27 +205,31 @@ class MainWindowUI(object):
         self.searchInput.setMinimumSize(QtCore.QSize(search_input_width, 50))
         
         self.searchInput.setMaximumSize(QtCore.QSize(16777215, 100))
-        self.searchInput.setStyleSheet("QLineEdit {background-color:rgb(230, 230, 230);}")
+        
+        # Use theme manager for search input styling
+        self.searchInput.setStyleSheet(f"QLineEdit {{background-color:{ThemeManager.get_color('input_background')};color:{ThemeManager.get_color('primary_text')}}}")
+        
         self.searchInput.setProperty("class", "search")
         
         self.searchInput.setObjectName("searchInput")
         self.searchLayout.addWidget(self.searchInput)
         self.searchButton = QtWidgets.QPushButton(self.headerContainer)
         self.searchButton.setMaximumSize(QtCore.QSize(200, 100))
-        self.searchButton.setStyleSheet("QPushButton {\n"
-"\n"
-"    font-size: 16px;\n"
-"\n"
-"    border-radius: 15px;\n"
-"min-width: 100px; /* Мінімальна ширина */\n"
-"    min-height: 50px; /* Мінімальна висота */\n"
-"    max-width: 200px; /* Максимальна ширина */\n"
-"    max-height: 100px; /* Максимальна висота */\n"
-"background-color: rgb(230, 230, 230);\n"
-"}\n"
-"\n"
-"\n"
-"")
+        
+        # Use theme manager for search button styling
+        self.searchButton.setStyleSheet(f"""
+            QPushButton {{
+                font-size: 16px;
+                border-radius: 15px;
+                min-width: 100px;
+                min-height: 50px;
+                max-width: 200px;
+                max-height: 100px;
+                background-color: {ThemeManager.get_color('button_background')};
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+        
         self.searchButton.setText("")
         searchIcon = QtGui.QIcon()
         searchIcon.addPixmap(QtGui.QPixmap("icon/icon_search.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -232,18 +247,19 @@ class MainWindowUI(object):
         sizePolicy.setHeightForWidth(self.pointsButton.sizePolicy().hasHeightForWidth())
         self.pointsButton.setSizePolicy(sizePolicy)
         self.pointsButton.setMaximumSize(QtCore.QSize(50, 100))
-        self.pointsButton.setStyleSheet("QPushButton {\n"
-"background-color: rgb(243, 246, 250);\n"
-"    border-radius: 15px;\n"
-"\n"
-"    min-height: 50px; /* Мінімальна висота */\n"
-"\n"
-"    max-height: 100px; /* Максимальна висота */\n"
-"min-width: 50px; /* Мінімальна ширина */\n"
-"}\n"
-"\n"
-"\n"
-"")
+        
+        # Use theme manager for points button styling
+        self.pointsButton.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {ThemeManager.get_color('app_background')};
+                border-radius: 15px;
+                min-height: 50px;
+                max-height: 100px;
+                min-width: 50px;
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+        
         self.pointsButton.setText("")
         pointsIcon = QtGui.QIcon()
         pointsIcon.addPixmap(QtGui.QPixmap("icon/point.PNG"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -258,16 +274,17 @@ class MainWindowUI(object):
         self.userButton = QtWidgets.QPushButton(self.headerContainer)
         self.userButton.setMinimumSize(QtCore.QSize(50, 50))
         self.userButton.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
-        self.userButton.setStyleSheet("QPushButton {\n"
-"    \n"
-"    font-size: 16px;\n"
-"\n"
-"    border-radius: 15px;\n"
-"\n"
-"   \n"
-"    background-color: rgb(230, 230, 230);\n"
-"}\n"
-"")
+        
+        # Use theme manager for user button styling
+        self.userButton.setStyleSheet(f"""
+            QPushButton {{
+                font-size: 16px;
+                border-radius: 15px;
+                background-color: {ThemeManager.get_color('button_background')};
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+        
         self.userButton.setText("")
         userIcon = QtGui.QIcon()
         userIcon.addPixmap(QtGui.QPixmap("icon/icon_users.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -329,6 +346,137 @@ class MainWindowUI(object):
         self.stackedWidget.setCurrentIndex(5)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-
+    def update_theme_styles(self):
+        """Update all UI component styles when theme changes"""
+        # Update main window background
+        self.centralwidget.setStyleSheet(f"background-color: {ThemeManager.get_color('app_background')};")
+        
+        # Update sidebar
+        self.sidebarContainer.setStyleSheet(f"""
+            background-color: {ThemeManager.get_color('sidebar_background')};
+            min-height: 50px;
+            max-height: 2000px;
+        """)
+        
+        # Update all menu buttons
+        for name, button in self.menuButtons.items():
+            button.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {ThemeManager.get_color('sidebar_background')};
+                    border-radius: 25px;
+                    font-size: 18px;
+                    min-height: 50px;
+                    max-height: 100px;
+                    min-width: 50px;
+                    color: {ThemeManager.get_color('primary_text')};
+                }}
+                QPushButton:hover {{
+                    background-color: {ThemeManager.get_color('button_hover_background')};
+                }}
+                QPushButton:checked {{
+                    font-weight: bold;
+                    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                                    stop:0.034 {ThemeManager.get_color('accent_primary')}, 
+                                                    stop:0.039 {ThemeManager.get_color('sidebar_background')});
+                    color: {ThemeManager.get_color('accent_primary')};
+                }}
+            """)
+        
+        # Update exit button
+        self.exitButton.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {ThemeManager.get_color('sidebar_background')};
+                border-radius: 25px;
+                font-size: 18px;
+                min-height: 50px;
+                max-height: 100px;
+                min-width: 50px;
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+            QPushButton:hover {{
+                background-color: {ThemeManager.get_color('button_hover_background')};
+            }}
+        """)
+        
+        # Update search input
+        self.searchInput.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {ThemeManager.get_color('input_background')};
+                color: {ThemeManager.get_color('primary_text')};
+                border-radius: 15px;
+            }}
+        """)
+        
+        # Update search button
+        self.searchButton.setStyleSheet(f"""
+            QPushButton {{
+                font-size: 16px;
+                border-radius: 15px;
+                min-width: 100px;
+                min-height: 50px;
+                max-width: 200px;
+                max-height: 100px;
+                background-color: {ThemeManager.get_color('button_background')};
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+        
+        # Update points button
+        self.pointsButton.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {ThemeManager.get_color('app_background')};
+                border-radius: 15px;
+                min-height: 50px;
+                max-height: 100px;
+                min-width: 50px;
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+        
+        # Update points label
+        self.pointsLabel.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
+        
+        # Update user button
+        self.userButton.setStyleSheet(f"""
+            QPushButton {{
+                font-size: 16px;
+                border-radius: 15px;
+                background-color: {ThemeManager.get_color('button_background')};
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+        
+        # Update content scroll area
+        self.contentScrollArea.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: {ThemeManager.get_color('app_background')};
+                border: none;
+            }}
+        """)
+        
+        # Update scroll area content
+        self.scrollAreaContent.setStyleSheet(f"""
+            QWidget {{
+                background-color: {ThemeManager.get_color('app_background')};
+            }}
+        """)
+        
+        # Update stacked widget
+        self.stackedWidget.setStyleSheet(f"""
+            QStackedWidget {{
+                background-color: {ThemeManager.get_color('app_background')};
+            }}
+        """)
+        
+        # Update all pages
+        for page_name in ['pg_main', 'pg_courses', 'pg_lessons', 'pg_progress', 'pg_settings']:
+            if hasattr(self, page_name):
+                page = getattr(self, page_name)
+                page.setStyleSheet(f"""
+                    QWidget {{
+                        background-color: {ThemeManager.get_color('app_background')};
+                        color: {ThemeManager.get_color('primary_text')};
+                    }}
+                """)
         
     

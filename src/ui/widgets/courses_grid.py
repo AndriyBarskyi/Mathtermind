@@ -8,6 +8,7 @@ from typing import List
 from src.ui.models.course import Course
 from src.ui.widgets.course_card import CourseCard
 from src.ui.widgets.flow_layout import FlowLayout
+from src.ui.theme import ThemeManager
 
 class CoursesGrid(QScrollArea):
     """
@@ -53,11 +54,14 @@ class CoursesGrid(QScrollArea):
         # Create a label for no results message
         self.no_results_label = QLabel("Немає результатів")
         self.no_results_label.setAlignment(Qt.AlignCenter)
-        self.no_results_label.setStyleSheet("""
+        
+        # Use ThemeManager for no results label styling
+        self.no_results_label.setStyleSheet(f"""
             font-size: 18px;
-            color: #858A94;
+            color: {ThemeManager.get_color('secondary_text')};
             margin: 40px 0;
         """)
+        
         self.no_results_label.hide()
         
         # Add layouts to main layout
@@ -65,8 +69,8 @@ class CoursesGrid(QScrollArea):
         self.main_layout.addWidget(self.no_results_label)
         self.main_layout.addStretch()
         
-        # Set background color
-        self.setStyleSheet("background-color: #F7F8FA;")
+        # Set background color using ThemeManager
+        self.setStyleSheet(f"background-color: {ThemeManager.get_color('app_background')};")
     
     def set_courses(self, courses: List[Course]):
         """Set the courses to display in the grid"""
@@ -137,4 +141,22 @@ class CoursesGrid(QScrollArea):
     
     def hide_no_results_message(self):
         """Hide the no results message"""
-        self.no_results_label.hide() 
+        self.no_results_label.hide()
+        
+    def update_theme_styles(self):
+        """Update all component styles when theme changes"""
+        # Update background color
+        self.setStyleSheet(f"background-color: {ThemeManager.get_color('app_background')};")
+        
+        # Update no results label
+        self.no_results_label.setStyleSheet(f"""
+            font-size: 18px;
+            color: {ThemeManager.get_color('secondary_text')};
+            margin: 40px 0;
+        """)
+        
+        # Update all course cards
+        for i in range(self.flow_layout.count()):
+            widget = self.flow_layout.itemAt(i).widget()
+            if hasattr(widget, 'update_theme_styles'):
+                widget.update_theme_styles() 

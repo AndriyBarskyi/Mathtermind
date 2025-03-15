@@ -7,6 +7,7 @@ from PyQt5.QtGui import QFont, QIcon
 
 from src.ui.models.course import Course
 from src.ui.styles.constants import COLORS, FONTS
+from src.ui.theme import ThemeManager
 
 class LessonCard(QFrame):
     """
@@ -33,14 +34,16 @@ class LessonCard(QFrame):
         self.setMinimumSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT)
         self.setMaximumSize(int(self.MIN_CARD_WIDTH * 1.5), int(self.MIN_CARD_HEIGHT * 1.5))
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        
+        # Use ThemeManager for card styling
         self.setStyleSheet(f"""
             QFrame {{
-                background-color: white;
-                border-radius: 8px;
-                border: 1px solid #E0E0E0;
+                background-color: {ThemeManager.get_color('card_background')};
+                border-radius: 25px;
+                border: 1px solid {ThemeManager.get_color('border_color')};
             }}
             QFrame:hover {{
-                border: 1px solid {COLORS.PRIMARY_LIGHT};
+                border: 1px solid {ThemeManager.get_color('border_hover_color')};
             }}
         """)
         
@@ -56,10 +59,16 @@ class LessonCard(QFrame):
         lesson_number = QLabel(f"Урок {self.lesson.lesson_order}")
         lesson_number.setFont(FONTS.SUBTITLE)
         
+        # Use ThemeManager for lesson number text color
+        lesson_number.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
+        
         # Lesson type (Theory, Practice, Quiz, etc.)
         lesson_type = QLabel(self._get_lesson_type_ukr())
         lesson_type.setFont(FONTS.BODY)
-        lesson_type.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
+        
+        # Use ThemeManager for lesson type text color
+        lesson_type.setStyleSheet(f"color: {ThemeManager.get_color('secondary_text')};")
+        lesson_type.setProperty("class", "metadata")
         
         header_layout.addWidget(lesson_number)
         header_layout.addStretch()
@@ -71,6 +80,9 @@ class LessonCard(QFrame):
         title.setWordWrap(True)
         title.setFixedHeight(60)
         title.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        
+        # Use ThemeManager for title text color
+        title.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
         
         # 3. Metadata layout (difficulty, time, tasks)
         metadata_layout = self._create_metadata_layout()
@@ -99,7 +111,10 @@ class LessonCard(QFrame):
         # Video duration
         video_label = QLabel(f"Відео {self.lesson.estimated_time} хв")
         video_label.setFont(QFont("Inter", 11))
-        video_label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
+        
+        # Use ThemeManager for metadata text color
+        video_label.setStyleSheet(f"color: {ThemeManager.get_color('secondary_text')};")
+        video_label.setProperty("class", "metadata")
         
         # Number of tasks if available
         tasks_count = getattr(self.lesson, 'tasks_count', 0)
@@ -107,13 +122,20 @@ class LessonCard(QFrame):
             tasks_text = f"{tasks_count} {'Завдань' if tasks_count != 1 else 'Завдання'}"
             tasks_label = QLabel(tasks_text)
             tasks_label.setFont(QFont("Inter", 11))
-            tasks_label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
+            
+            # Use ThemeManager for tasks label text color
+            tasks_label.setStyleSheet(f"color: {ThemeManager.get_color('secondary_text')};")
+            tasks_label.setProperty("class", "metadata")
+            
             metadata_layout.addWidget(tasks_label)
         
         # Difficulty level
         difficulty_label = QLabel(self._get_difficulty_ukr())
         difficulty_label.setFont(QFont("Inter", 11))
-        difficulty_label.setStyleSheet(f"color: {COLORS.METADATA_TEXT};")
+        
+        # Use ThemeManager for difficulty label text color
+        difficulty_label.setStyleSheet(f"color: {ThemeManager.get_color('secondary_text')};")
+        difficulty_label.setProperty("class", "metadata")
         
         metadata_layout.addWidget(video_label)
         metadata_layout.addWidget(difficulty_label)
@@ -134,28 +156,19 @@ class LessonCard(QFrame):
             start_btn.setText("Пройдено")
             start_btn.setStyleSheet(f"""
                 QPushButton {{
-                    background-color: {COLORS.SUCCESS_LIGHT};
-                    color: {COLORS.SUCCESS};
-                    border: 1px solid {COLORS.SUCCESS};
-                    border-radius: 18px;
+                    background-color: {ThemeManager.get_color('success')};
+                    color: white;
+                    border-radius: 25px;
                     padding: 0 16px;
                 }}
                 QPushButton:hover {{
-                    background-color: {COLORS.SUCCESS_LIGHT};
+                    background-color: {ThemeManager.get_color('success')};
+                    opacity: 0.9;
                 }}
             """)
         else:
-            start_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {COLORS.PRIMARY};
-                    color: white;
-                    border-radius: 18px;
-                    padding: 0 16px;
-                }}
-                QPushButton:hover {{
-                    background-color: {COLORS.PRIMARY_DARK};
-                }}
-            """)
+            # Use ThemeManager for button styling
+            start_btn.setStyleSheet(ThemeManager.get_start_button_style())
         
         # Connect the button click to emit the signal
         start_btn.clicked.connect(lambda: self.lesson_started.emit(str(self.lesson.id)))
@@ -201,4 +214,42 @@ class LessonCard(QFrame):
     
     def sizeHint(self):
         """Return the preferred size of the card"""
-        return QSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT) 
+        return QSize(self.MIN_CARD_WIDTH, self.MIN_CARD_HEIGHT)
+        
+    def update_theme_styles(self):
+        """Update all component styles when theme changes"""
+        # Update card background
+        self.setStyleSheet(f"""
+            QFrame {{
+                background-color: {ThemeManager.get_color('card_background')};
+                border-radius: 25px;
+                border: 1px solid {ThemeManager.get_color('border_color')};
+            }}
+            QFrame:hover {{
+                border: 1px solid {ThemeManager.get_color('border_hover_color')};
+            }}
+        """)
+        
+        # Update all child widgets
+        for child in self.findChildren(QWidget):
+            if isinstance(child, QLabel):
+                if child.property("class") == "metadata":
+                    child.setStyleSheet(f"color: {ThemeManager.get_color('secondary_text')};")
+                else:
+                    child.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
+            elif isinstance(child, QPushButton):
+                if self._is_completed():
+                    child.setStyleSheet(f"""
+                        QPushButton {{
+                            background-color: {ThemeManager.get_color('success')};
+                            color: white;
+                            border-radius: 25px;
+                            padding: 0 16px;
+                        }}
+                        QPushButton:hover {{
+                            background-color: {ThemeManager.get_color('success')};
+                            opacity: 0.9;
+                        }}
+                    """)
+                else:
+                    child.setStyleSheet(ThemeManager.get_start_button_style()) 

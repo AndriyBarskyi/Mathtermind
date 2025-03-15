@@ -1,5 +1,7 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
+from PyQt5.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QLabel, QSizePolicy, QCheckBox, QHBoxLayout
 from PyQt5 import QtWidgets, QtCore, QtGui
+from src.ui.theme import ThemeManager
+
 class SettingsPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -16,10 +18,16 @@ class SettingsPage(QWidget):
         self.widget_19.setMinimumSize(QtCore.QSize(1390, 0))
         self.widget_19.setMaximumSize(QtCore.QSize(2000, 16777215))
         self.widget_19.setProperty("class", "with_border")
-        self.widget_19.setStyleSheet("QWidget {\n"
-"    border-radius: 25px;\n"
-"background-color: rgb(255, 255, 255);\n"
-"}")
+        
+        # Use theme manager for widget background
+        self.widget_19.setStyleSheet(f"""
+            QWidget {{
+                border-radius: 25px;
+                background-color: {ThemeManager.get_color('card_background')};
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+        
         self.widget_19.setObjectName("widget_19")
         self.formLayout_2 = QtWidgets.QFormLayout(self.widget_19)
         self.formLayout_2.setLabelAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
@@ -84,6 +92,17 @@ class SettingsPage(QWidget):
         self.le_email.setFont(font)
         self.le_email.setInputMask("")
         self.le_email.setText("")
+        
+        # Use theme manager for input styling
+        self.le_email.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {ThemeManager.get_color('input_background')};
+                color: {ThemeManager.get_color('primary_text')};
+                border-radius: 15px;
+                padding: 5px 10px;
+            }}
+        """)
+        
         self.le_email.setObjectName("le_email")
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.SpanningRole, self.le_email)
         self.btn_email = QtWidgets.QPushButton(self.widget_19)
@@ -102,13 +121,23 @@ class SettingsPage(QWidget):
         font.setItalic(False)
         font.setWeight(9)
         self.btn_email.setFont(font)
-        self.btn_email.setStyleSheet("border: 1px solid #C0C0C0; /* Рамка прогрес-бара */\n"
-"border-radius:25px;       /* Згладжені кути */\n"
-"background: #516ed9; /* Фон прогрес-бара */\n"
-"text-align: center;        /* Текст посередині */\n"
-"font: 75 15pt \"Bahnschrift\";\n"
-"color: rgb(255, 255, 255);\n"
-"")
+        
+        # Use theme manager for button styling
+        self.btn_email.setStyleSheet(f"""
+            QPushButton {{
+                border: 1px solid {ThemeManager.get_color('border_color')};
+                border-radius: 25px;
+                background: {ThemeManager.get_color('accent_primary')};
+                text-align: center;
+                font: 75 15pt "Bahnschrift";
+                color: white;
+            }}
+            QPushButton:hover {{
+                background: {ThemeManager.get_color('accent_secondary')};
+                color: {ThemeManager.get_color('accent_primary')};
+            }}
+        """)
+        
         self.btn_email.setObjectName("btn_email")
         self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.btn_email)
         self.lb_password = QtWidgets.QLabel(self.widget_19)
@@ -125,6 +154,17 @@ class SettingsPage(QWidget):
         font = QtGui.QFont()
         font.setPointSize(12)
         self.le_password.setFont(font)
+        
+        # Use theme manager for password input styling
+        self.le_password.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {ThemeManager.get_color('input_background')};
+                color: {ThemeManager.get_color('primary_text')};
+                border-radius: 15px;
+                padding: 5px 10px;
+            }}
+        """)
+        
         self.le_password.setObjectName("le_password")
         self.formLayout_2.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.le_password)
         self.btn_password = QtWidgets.QPushButton(self.widget_19)
@@ -143,15 +183,97 @@ class SettingsPage(QWidget):
         font.setItalic(False)
         font.setWeight(9)
         self.btn_password.setFont(font)
-        self.btn_password.setStyleSheet("border: 1px solid #C0C0C0; /* Рамка прогрес-бара */\n"
-"border-radius:25px;       /* Згладжені кути */\n"
-"background: #516ed9; /* Фон прогрес-бара */\n"
-"text-align: center;        /* Текст посередині */\n"
-"font: 75 15pt \"Bahnschrift\";\n"
-"color: rgb(255, 255, 255);\n"
-"")
+        
+        # Use theme manager for password button styling
+        self.btn_password.setStyleSheet(f"""
+            QPushButton {{
+                border: 1px solid {ThemeManager.get_color('border_color')};
+                border-radius: 25px;
+                background: {ThemeManager.get_color('accent_primary')};
+                text-align: center;
+                font: 75 15pt "Bahnschrift";
+                color: white;
+            }}
+            QPushButton:hover {{
+                background: {ThemeManager.get_color('accent_secondary')};
+                color: {ThemeManager.get_color('accent_primary')};
+            }}
+        """)
+        
         self.btn_password.setObjectName("btn_password")
         self.formLayout_2.setWidget(6, QtWidgets.QFormLayout.LabelRole, self.btn_password)
+        
+        # Add theme settings section
+        self.lb_theme = QtWidgets.QLabel(self.widget_19)
+        self.lb_theme.setText("Налаштування теми")
+        self.lb_theme.setMaximumSize(QtCore.QSize(16777215, 50))
+        font = QtGui.QFont()
+        font.setPointSize(18)
+        self.lb_theme.setFont(font)
+        self.lb_theme.setObjectName("lb_theme")
+        self.formLayout_2.setWidget(7, QtWidgets.QFormLayout.LabelRole, self.lb_theme)
+        
+        # Theme toggle container
+        self.themeContainer = QtWidgets.QWidget(self.widget_19)
+        self.themeContainer.setMinimumSize(QtCore.QSize(500, 50))
+        self.themeContainer.setMaximumSize(QtCore.QSize(500, 50))
+        self.themeContainer.setObjectName("themeContainer")
+        
+        # Horizontal layout for theme toggle
+        self.themeLayout = QtWidgets.QHBoxLayout(self.themeContainer)
+        self.themeLayout.setContentsMargins(0, 0, 0, 0)
+        self.themeLayout.setObjectName("themeLayout")
+        
+        # Light theme label
+        self.lb_light_theme = QtWidgets.QLabel(self.themeContainer)
+        self.lb_light_theme.setText("Світла тема")
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.lb_light_theme.setFont(font)
+        self.lb_light_theme.setObjectName("lb_light_theme")
+        self.themeLayout.addWidget(self.lb_light_theme)
+        
+        # Theme toggle switch - use theme manager colors
+        self.themeToggle = QtWidgets.QCheckBox(self.themeContainer)
+        self.themeToggle.setText("")
+        self.themeToggle.setObjectName("themeToggle")
+        
+        # Use theme manager for toggle styling
+        self.themeToggle.setStyleSheet(f"""
+            QCheckBox {{
+                spacing: 5px;
+            }}
+            QCheckBox::indicator {{
+                width: 60px;
+                height: 30px;
+                border-radius: 15px;
+                background-color: {ThemeManager.get_color('card_background')};
+                border: 2px solid {ThemeManager.get_color('border_color')};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {ThemeManager.get_color('accent_primary')};
+                border: 2px solid {ThemeManager.get_color('accent_primary')};
+            }}
+        """)
+        
+        self.themeLayout.addWidget(self.themeToggle)
+        
+        # Dark theme label
+        self.lb_dark_theme = QtWidgets.QLabel(self.themeContainer)
+        self.lb_dark_theme.setText("Темна тема")
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.lb_dark_theme.setFont(font)
+        self.lb_dark_theme.setObjectName("lb_dark_theme")
+        self.themeLayout.addWidget(self.lb_dark_theme)
+        
+        # Add spacer to push everything to the left
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.themeLayout.addItem(spacerItem)
+        
+        # Add theme container to form layout
+        self.formLayout_2.setWidget(8, QtWidgets.QFormLayout.SpanningRole, self.themeContainer)
+        
         self.gridLayout_7.addWidget(self.widget_19, 1, 0, 1, 1)
         self.lb_settings = QtWidgets.QLabel(self.pg_settings)
         self.lb_settings.setText("Налаштування")
@@ -161,5 +283,74 @@ class SettingsPage(QWidget):
         font.setWeight(75)
         self.lb_settings.setFont(font)
         self.lb_settings.setObjectName("lb_settings")
+        
+        # Use theme manager for settings label
+        self.lb_settings.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
+        
         self.gridLayout_7.addWidget(self.lb_settings, 0, 0, 1, 1)
         self.setLayout(self.gridLayout_7)
+        
+        # Set the initial state of the theme toggle based on the current theme
+        self.themeToggle.setChecked(ThemeManager.get_current_theme() == ThemeManager.DARK_THEME)
+        
+    def update_theme_styles(self):
+        """Update all component styles when theme changes"""
+        # Update widget background
+        self.widget_19.setStyleSheet(f"""
+            QWidget {{
+                border-radius: 25px;
+                background-color: {ThemeManager.get_color('card_background')};
+                color: {ThemeManager.get_color('primary_text')};
+            }}
+        """)
+        
+        # Update input fields
+        input_style = f"""
+            QLineEdit {{
+                background-color: {ThemeManager.get_color('input_background')};
+                color: {ThemeManager.get_color('primary_text')};
+                border-radius: 15px;
+                padding: 5px 10px;
+            }}
+        """
+        self.le_email.setStyleSheet(input_style)
+        self.le_password.setStyleSheet(input_style)
+        
+        # Update buttons
+        button_style = f"""
+            QPushButton {{
+                border: 1px solid {ThemeManager.get_color('border_color')};
+                border-radius: 25px;
+                background: {ThemeManager.get_color('accent_primary')};
+                text-align: center;
+                font: 75 15pt "Bahnschrift";
+                color: white;
+            }}
+            QPushButton:hover {{
+                background: {ThemeManager.get_color('accent_secondary')};
+                color: {ThemeManager.get_color('accent_primary')};
+            }}
+        """
+        self.btn_email.setStyleSheet(button_style)
+        self.btn_password.setStyleSheet(button_style)
+        
+        # Update toggle
+        self.themeToggle.setStyleSheet(f"""
+            QCheckBox {{
+                spacing: 5px;
+            }}
+            QCheckBox::indicator {{
+                width: 60px;
+                height: 30px;
+                border-radius: 15px;
+                background-color: {ThemeManager.get_color('card_background')};
+                border: 2px solid {ThemeManager.get_color('border_color')};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {ThemeManager.get_color('accent_primary')};
+                border: 2px solid {ThemeManager.get_color('accent_primary')};
+            }}
+        """)
+        
+        # Update settings label
+        self.lb_settings.setStyleSheet(f"color: {ThemeManager.get_color('primary_text')};")
