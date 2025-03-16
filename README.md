@@ -1,174 +1,170 @@
-Here's a basic version of your `README.md`:
-
----
-
 # Mathtermind
 
-**Mathtermind** is a self-paced, independent learning platform for studying mathematics and informatics, integrating gamification and adaptive learning to enhance the user experience.
+**Mathtermind** — це платформа для самостійного вивчення математики та інформатики, що інтегрує елементи гейміфікації та адаптивного навчання для покращення користувацького досвіду.
 
 ---
 
-## Table of Contents
+## Зміст
 
-- [Overview](#overview)
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [Database](#database)
-- [Database Models](#database-models)
-- [Dependencies](#dependencies)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
-## Overview
-
-Mathtermind combines educational modules with elements of gamification and adaptive learning to provide an engaging experience for students learning mathematics and informatics. The platform is designed as a desktop application using Python and PyQt for the user interface, ensuring a smooth and responsive experience. The application focuses on self-directed learning, allowing students to progress at their own pace without requiring teacher intervention.
+- [Огляд](#огляд)
+- [Функції](#функції)
+- [Початок роботи](#початок-роботи)
+- [Структура проєкту](#структура-проєкту)
+- [База даних](#база-даних)
+- [Моделі бази даних](#моделі-бази-даних)
+- [Залежності](#залежності)
+- [Використання](#використання)
+- [Участь у розробці](#участь-у-розробці)
+- [Ліцензія](#ліцензія)
 
 ---
 
-## Features
+## Огляд
 
-- **Self-Paced Learning**: Study independently at your own pace with no need for teacher supervision.
-- **Interactive Learning Modules**: Custom lessons and quizzes for various math and informatics topics.
-- **Adaptive Learning System**: Content automatically adjusts based on your performance to reinforce strengths and target weaknesses.
-  - **Performance Analytics**: Track your skill progression and performance metrics over time.
-  - **Personalized Learning Path**: Receive suggested lessons and automatic difficulty adjustments based on your learning patterns.
-- **Comprehensive Progress Tracking**: Monitor your learning journey with detailed progress analytics.
-- **Achievement System**: Unlock badges and rewards as you master new concepts and complete challenges.
-- **Gamification Features**:
-  - **Challenges and Quizzes**: Engage with timed challenges to test your knowledge under pressure.
-  - **Reward System**: Earn points, level up, and unlock badges as you progress.
-- **Study Streak Tracking**: Build consistency with daily study streak monitoring.
-- **Resource Library**: Access a variety of learning materials including videos, documents, and interactive content.
-- **Learning Tools**:
-  - **Mathematical Tools**: Built-in calculators, graphing tools, geometry visualizers, and equation solvers.
-  - **Informatics Tools**: Code editors, algorithm visualizers, data structure visualizers, and logic circuit simulators.
-  - **Interactive Visualizations**: Dynamic visual representations of complex concepts.
-- **Personal Goal Setting**: Set and track daily, weekly, and course-specific learning goals.
-- **User-Friendly Interface**: Intuitive UI built with PyQt for easy navigation and accessibility.
+Mathtermind поєднує навчальні модулі з елементами гейміфікації та адаптивного навчання, щоб забезпечити захоплюючий досвід для студентів, які вивчають математику та інформатику. Платформа розроблена як настільний додаток з використанням Python та PyQt для користувацького інтерфейсу, забезпечуючи плавний та чуйний досвід. Додаток зосереджений на самостійному навчанні, дозволяючи студентам прогресувати у власному темпі без необхідності втручання викладача.
 
 ---
 
-## Getting Started
+## Функції
 
-### Prerequisites
+- **Навчання у власному темпі**: Навчайтеся самостійно у зручному для вас темпі без необхідності нагляду викладача.
+- **Інтерактивні навчальні модулі**: Індивідуальні уроки та вікторини з різних тем математики та інформатики.
+- **Система адаптивного навчання**: Контент автоматично налаштовується на основі вашої успішності, щоб закріпити сильні сторони та усунути слабкі місця.
+  - **Аналітика продуктивності**: Відстежуйте прогрес своїх навичок та показники продуктивності з часом.
+  - **Персоналізований шлях навчання**: Отримуйте рекомендовані уроки та автоматичне налаштування складності на основі ваших навчальних патернів.
+- **Комплексне відстеження прогресу**: Моніторинг вашого навчального шляху з детальною аналітикою прогресу.
+- **Система досягнень**: Розблоковуйте значки та нагороди, опановуючи нові концепції та виконуючи завдання.
+- **Функції гейміфікації**:
+  - **Виклики та вікторини**: Беріть участь у завданнях з обмеженим часом, щоб перевірити свої знання під тиском.
+  - **Система винагород**: Заробляйте бали, підвищуйте рівень та розблоковуйте значки в міру прогресу.
+- **Відстеження навчальних серій**: Розвивайте послідовність за допомогою щоденного моніторингу навчальних серій.
+- **Бібліотека ресурсів**: Доступ до різноманітних навчальних матеріалів, включаючи відео, документи та інтерактивний контент.
+- **Навчальні інструменти**:
+  - **Математичні інструменти**: Вбудовані калькулятори, інструменти для побудови графіків, візуалізатори геометрії та розв'язувачі рівнянь.
+  - **Інструменти інформатики**: Редактори коду, візуалізатори алгоритмів, візуалізатори структур даних та симулятори логічних схем.
+  - **Інтерактивні візуалізації**: Динамічні візуальні представлення складних концепцій.
+- **Встановлення особистих цілей**: Встановлюйте та відстежуйте щоденні, щотижневі та специфічні для курсу навчальні цілі.
+- **Зручний інтерфейс користувача**: Інтуїтивно зрозумілий інтерфейс, створений за допомогою PyQt для легкої навігації та доступності.
 
-- Python 3.9 or higher
+---
+
+## Початок роботи
+
+### Передумови
+
+- Python 3.9 або вище
 - Git
-- Make (optional, for using Makefile commands)
+- Make (опціонально, для використання команд Makefile)
 
-### Installation
+### Встановлення
 
-#### Automatic Setup (Recommended)
+#### Автоматичне налаштування (Рекомендовано)
 
-1. **Clone the repository**:
+1. **Клонуйте репозиторій**:
    ```bash
    git clone https://github.com/yourusername/Mathtermind.git
    cd Mathtermind
    ```
 
-2. **Using Make** (if available):
+2. **Використання Make** (якщо доступно):
    ```bash
    make setup
    ```
    
-   Or using the setup script directly:
+   Або використання скрипту налаштування напряму:
    ```bash
    python setup.py
    ```
    
-   This will:
-   - Create a virtual environment
-   - Install dependencies
-   - Set up the database
-   - Create a `.env` file
+   Це:
+   - Створить віртуальне середовище
+   - Встановить залежності
+   - Налаштує базу даних
+   - Створить файл `.env`
 
-3. **Activate the virtual environment**:
-   - On Windows:
+3. **Активуйте віртуальне середовище**:
+   - На Windows:
      ```bash
      venv\Scripts\activate
      ```
-   - On macOS/Linux:
+   - На macOS/Linux:
      ```bash
      source venv/bin/activate
      ```
 
-4. **Run the application**:
+4. **Запустіть додаток**:
    ```bash
    make run
    ```
    
-   Or:
+   Або:
    ```bash
    python main.py
    ```
 
-#### Manual Setup
+#### Ручне налаштування
 
-1. **Clone the repository**:
+1. **Клонуйте репозиторій**:
    ```bash
    git clone https://github.com/yourusername/Mathtermind.git
    cd Mathtermind
    ```
 
-2. **Set up the virtual environment**:
+2. **Налаштуйте віртуальне середовище**:
    ```bash
    python -m venv venv
    ```
 
-3. **Activate the virtual environment**:
-   - On Windows:
+3. **Активуйте віртуальне середовище**:
+   - На Windows:
      ```bash
      venv\Scripts\activate
      ```
-   - On macOS/Linux:
+   - На macOS/Linux:
      ```bash
      source venv/bin/activate
      ```
 
-4. **Install dependencies**:
+4. **Встановіть залежності**:
    ```bash
    pip install -r requirements.txt
    ```
 
-5. **Create a .env file**:
+5. **Створіть файл .env**:
    ```bash
    cp .env.example .env
    ```
 
-6. **Set up the database**:
+6. **Налаштуйте базу даних**:
    ```bash
    python db_manage.py init
    python db_manage.py seed
    ```
 
-7. **Run the application**:
+7. **Запустіть додаток**:
    ```bash
    python main.py
    ```
 
 ---
 
-## Project Structure
+## Структура проєкту
 
 ```
 Mathtermind/
 │
 ├── src/
-│   ├── ui/            # User interface components
-│   ├── db/            # Database models and operations
-│   ├── services/         # Application logic and algorithms
-│   └── tests/         # Test suite
+│   ├── ui/            # Компоненти користувацького інтерфейсу
+│   ├── db/            # Моделі та операції бази даних
+│   ├── services/      # Логіка додатку та алгоритми
+│   └── tests/         # Тестовий набір
 │
-├── docs/              # Documentation
+├── docs/              # Документація
 │   ├── requirements.md
 │   ├── architecture.md
 │   └── design_docs/
 │
-├── assets/            # Static resources
+├── assets/            # Статичні ресурси
 │   ├── images/
 │   ├── fonts/
 │   ├── audio/
@@ -180,149 +176,147 @@ Mathtermind/
 
 ---
 
-## Database
+## База даних
 
-Mathtermind uses SQLite for data storage, with SQLAlchemy as the ORM and Alembic for database migrations. The database file is stored in the `data` directory.
+Mathtermind використовує SQLite для зберігання даних, з SQLAlchemy як ORM та Alembic для міграцій бази даних. Файл бази даних зберігається в директорії `data`.
 
-For detailed information about database management, see [DATABASE.md](DATABASE.md).
+Для детальної інформації про управління базою даних, див. [DATABASE.md](DATABASE.md).
 
-### Database Management
+### Управління базою даних
 
-The project includes a database management tool (`db_manage.py`) that provides a command-line interface for common database operations:
+Проєкт включає інструмент управління базою даних (`db_manage.py`), який надає інтерфейс командного рядка для поширених операцій з базою даних:
 
 ```bash
-# Initialize the database with the latest schema
+# Ініціалізувати базу даних з останньою схемою
 python db_manage.py init
 
-# Run all pending migrations
+# Запустити всі очікуючі міграції
 python db_manage.py migrate
 
-# Seed the database with sample data
+# Заповнити базу даних тестовими даними
 python db_manage.py seed
 
-# Reset the database (drop all tables and recreate)
+# Скинути базу даних (видалити всі таблиці та створити заново)
 python db_manage.py reset
 
-# Show the current migration status
+# Показати поточний статус міграції
 python db_manage.py status
 
-# Create a new migration
-python db_manage.py create_migration "Description of changes"
+# Створити нову міграцію
+python db_manage.py create_migration "Опис змін"
 ```
 
 ---
 
-## Database Models
+## Моделі бази даних
 
-Mathtermind uses a PostgreSQL database with the following core models:
+Mathtermind використовує базу даних PostgreSQL з наступними основними моделями:
 
-- **User**: Stores student information, progress metrics, and authentication details.
-- **Course**: Contains educational modules for math and informatics topics.
-- **Lesson**: Individual learning units within courses.
-- **Content**: Unified content model with specialized subtypes:
-  - **TheoryContent**: Explanatory text and media for concepts.
-  - **ExerciseContent**: Practice exercises for reinforcement.
-  - **AssessmentContent**: Formal assessments and quizzes.
-  - **InteractiveContent**: Interactive elements like simulations.
-- **UserContentProgress**: Tracks user progress through individual content items.
-- **LearningTool**: Base model for educational tools with specialized subtypes:
-  - **MathTool**: Mathematical tools like calculators and graphing utilities.
-  - **InformaticsTool**: Programming and algorithm visualization tools.
-- **UserToolUsage**: Records how users interact with learning tools.
-- **Achievement**: Gamification elements to reward learning milestones.
-- **PersonalBest**: Tracks personal best performances for self-improvement.
-- **LearningGoal**: User-defined learning goals and targets.
-- **LearningRecommendation**: Personalized recommendations for learning paths.
-- **LearningSession**: Records of individual study sessions.
-- **StudyStreak**: Tracks consistency in learning habits.
-- **Resource**: Educational materials like videos, documents, and links.
-- **Tag**: Categorization system for courses and lessons.
+- **User**: Зберігає інформацію про студента, метрики прогресу та дані аутентифікації.
+- **Course**: Містить навчальні модулі з тем математики та інформатики.
+- **Lesson**: Окремі навчальні одиниці в рамках курсів.
+- **Content**: Уніфікована модель контенту з спеціалізованими підтипами:
+  - **TheoryContent**: Пояснювальний текст та медіа для концепцій.
+  - **ExerciseContent**: Практичні вправи для закріплення.
+  - **AssessmentContent**: Формальні оцінювання та вікторини.
+  - **InteractiveContent**: Інтерактивні елементи, такі як симуляції.
+- **UserContentProgress**: Відстежує прогрес користувача через окремі елементи контенту.
+- **LearningTool**: Базова модель для навчальних інструментів з спеціалізованими підтипами:
+  - **MathTool**: Математичні інструменти, такі як калькулятори та утиліти для побудови графіків.
+  - **InformaticsTool**: Інструменти програмування та візуалізації алгоритмів.
+- **UserToolUsage**: Записує, як користувачі взаємодіють з навчальними інструментами.
+- **Achievement**: Елементи гейміфікації для винагороди за навчальні досягнення.
+- **PersonalBest**: Відстежує особисті найкращі результати для самовдосконалення.
+- **LearningGoal**: Визначені користувачем навчальні цілі та завдання.
+- **LearningRecommendation**: Персоналізовані рекомендації для навчальних шляхів.
+- **LearningSession**: Записи окремих навчальних сесій.
+- **StudyStreak**: Відстежує послідовність у навчальних звичках.
+- **Resource**: Навчальні матеріали, такі як відео, документи та посилання.
+- **Tag**: Система категоризації для курсів та уроків.
 
-The database is designed to support adaptive learning by tracking user performance, strengths, and weaknesses to personalize the learning experience.
+База даних розроблена для підтримки адаптивного навчання шляхом відстеження продуктивності користувача, сильних та слабких сторін для персоналізації навчального досвіду.
 
 ---
 
-## Dependencies
+## Залежності
 
-- **SQLAlchemy**: ORM for database operations.
-- **PyQt5**: For building the graphical user interface.
-- **SQLite**: Database for storing user data and learning content.
-- **scikit-learn**: For machine learning features in adaptive learning.
-- **sympy**: For symbolic mathematics and computations.
-- **matplotlib**: For visualizations and graphs in learning modules.
+- **SQLAlchemy**: ORM для операцій з базою даних.
+- **PyQt5**: Для побудови графічного інтерфейсу користувача.
+- **SQLite**: База даних для зберігання даних користувача та навчального контенту.
+- **scikit-learn**: Для функцій машинного навчання в адаптивному навчанні.
+- **sympy**: Для символьної математики та обчислень.
+- **matplotlib**: Для візуалізацій та графіків у навчальних модулях.
 
-Install all dependencies via:
+Встановіть всі залежності через:
 ```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## Usage
+## Використання
 
-### Using Make
+### Використання Make
 
-The project includes a Makefile with shortcuts for common operations:
+Проєкт включає Makefile з ярликами для поширених операцій:
 
 ```bash
-# Set up the project
+# Налаштувати проєкт
 make setup
 
-# Run the application
+# Запустити додаток
 make run
 
-# Clean up temporary files and caches
+# Очистити тимчасові файли та кеші
 make clean
 
-# Run tests
+# Запустити тести
 make test
 
-# Run linting tools
+# Запустити інструменти лінтингу
 make lint
 
-# Database operations
-make db-init    # Initialize the database
-make db-seed    # Seed the database with sample data
-make db-reset   # Reset the database
-make db-migrate # Run database migrations
-make db-status  # Show database migration status
+# Операції з базою даних
+make db-init    # Ініціалізувати базу даних
+make db-seed    # Заповнити базу даних тестовими даними
+make db-reset   # Скинути базу даних
+make db-migrate # Запустити міграції бази даних
+make db-status  # Показати статус міграції бази даних
 
-# Show all available commands
+# Показати всі доступні команди
 make help
 ```
 
-### Manual Usage
+### Ручне використання
 
-1. Activate the virtual environment:
+1. Активуйте віртуальне середовище:
    ```bash
-   source venv/bin/activate  # Or use venv\Scripts\activate on Windows
+   source venv/bin/activate  # Або використовуйте venv\Scripts\activate на Windows
    ```
 
-2. Run the application:
+2. Запустіть додаток:
    ```bash
    python main.py
    ```
 
-3. Create a user account and start learning!
+3. Створіть обліковий запис користувача та почніть навчання!
 
 ---
 
-## Contributing
+## Участь у розробці
 
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature/YourFeature`).
-3. Commit your changes (`git commit -m 'Add your feature'`).
-4. Push to the branch (`git push origin feature/YourFeature`).
-5. Open a Pull Request.
+1. Зробіть форк репозиторію.
+2. Створіть нову гілку (`git checkout -b feature/YourFeature`).
+3. Зробіть коміт ваших змін (`git commit -m 'Add your feature'`).
+4. Відправте у гілку (`git push origin feature/YourFeature`).
+5. Відкрийте Pull Request.
 
-For more details, refer to the `CONTRIBUTING.md` in the `/docs` folder.
-
----
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+Для більш детальної інформації, зверніться до `CONTRIBUTING.md` у папці `/docs`.
 
 ---
 
-This `README.md` provides a basic introduction to the project, with setup and usage instructions for contributors and users. Let me know if you'd like to expand on any section.
+## Ліцензія
+
+Цей проєкт ліцензований за ліцензією MIT. Дивіться файл [LICENSE](LICENSE) для деталей.
+
+---
