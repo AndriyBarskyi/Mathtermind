@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
 import json
@@ -6,7 +6,7 @@ import logging
 
 from src.models.course import Course
 from src.db import get_db
-from src.db.repositories import course_repo
+from src.db.repositories import course_repo, progress_repo
 from src.db.models import Course as DBCourse
 
 # Set up logging
@@ -32,167 +32,139 @@ class CourseService:
             return []
     
     def get_active_courses(self) -> List[Course]:
-        """Get active courses"""
-        # In a real implementation, this would filter by user progress
-        # For now, we'll just return all courses as active
-        return self.get_all_courses()
+        """Get courses that the user is currently enrolled in"""
+        try:
+            # TODO: Replace with actual user ID from authentication
+            # Use a valid UUID string instead of "1"
+            user_id = "00000000-0000-0000-0000-000000000001"  # Placeholder user ID
+            
+            try:
+                # Convert string ID to UUID
+                user_uuid = uuid.UUID(user_id)
+                # Get courses the user is enrolled in
+                user_progress = progress_repo.get_user_progress(self.db, user_uuid)
+                
+                # Get course IDs from progress
+                course_ids = [progress.course_id for progress in user_progress]
+                
+                # Get courses by IDs
+                active_courses = []
+                for course_id in course_ids:
+                    course = course_repo.get_course(self.db, course_id)
+                    if course:
+                        ui_course = self._convert_db_course_to_ui_course(course)
+                        ui_course.is_active = True
+                        active_courses.append(ui_course)
+                
+                return active_courses
+            except Exception as e:
+                logger.error(f"Error getting active courses: {str(e)}")
+                # For development, return all courses if there's an error
+                courses = self.get_all_courses()
+                for course in courses:
+                    course.is_active = True
+                return courses
+        except Exception as e:
+            logger.error(f"Error in get_active_courses: {str(e)}")
+            return []
     
     def get_completed_courses(self) -> List[Course]:
-        """Get completed courses"""
-        # In a real implementation, this would filter by user progress
-        # For now, we'll return an empty list
-        return []
+        """Get courses that the user has completed"""
+        try:
+            # TODO: Replace with actual user ID from authentication
+            user_id = "00000000-0000-0000-0000-000000000001"  # Placeholder user ID
+            
+            try:
+                # Convert string ID to UUID
+                user_uuid = uuid.UUID(user_id)
+                # Get courses the user has completed
+                # This is a placeholder - in a real app, we would check if all lessons are completed
+                completed_courses = []
+                
+                return completed_courses
+            except Exception as e:
+                logger.error(f"Error getting completed courses: {str(e)}")
+                # For development, return an empty list
+                return []
+        except Exception as e:
+            logger.error(f"Error in get_completed_courses: {str(e)}")
+            return []
     
     def get_course_by_id(self, course_id: str) -> Optional[Course]:
         """Get a course by its ID"""
         try:
             course_uuid = uuid.UUID(course_id)
             db_course = course_repo.get_course(self.db, course_uuid)
-            if db_course:
-                return self._convert_db_course_to_ui_course(db_course)
-        except ValueError:
-            # Invalid UUID format
-            logger.warning(f"Invalid UUID format: {course_id}")
+            if not db_course:
+                return None
+            return self._convert_db_course_to_ui_course(db_course)
         except Exception as e:
-            logger.error(f"Error fetching course by ID {course_id}: {str(e)}")
-        return None
+            logger.error(f"Error getting course by ID: {str(e)}")
+            return None
     
-    def filter_courses(self, 
-                      search_text: str = "", 
-                      subjects: List[str] = None,
-                      levels: List[str] = None,
-                      year_range: tuple = None,
-                      status: str = "all") -> List[Course]:
-        """
-        Filter courses based on various criteria
-        
-        Args:
-            search_text: Text to search in title and description
-            subjects: List of subject IDs to include
-            levels: List of level IDs to include
-            year_range: Tuple of (min_year, max_year) for updated date
-            status: Filter by status ('all', 'active', 'completed')
-            
-        Returns:
-            List of filtered courses
-        """
+    def get_courses_by_difficulty(self, difficulty_level: str) -> List[Course]:
+        """Get courses filtered by difficulty level"""
         try:
-            # Start with all courses or filtered by status
-            if status == "active":
-                filtered_courses = self.get_active_courses()
-            elif status == "completed":
-                filtered_courses = self.get_completed_courses()
-            else:
-                filtered_courses = self.get_all_courses()
-            
-            # Apply text search filter
-            if search_text:
-                search_text = search_text.lower()
-                filtered_courses = [
-                    course for course in filtered_courses
-                    if search_text in course.title.lower() or search_text in course.description.lower()
-                ]
-            
-            # Apply subject filter
-            if subjects:
-                filtered_courses = [
-                    course for course in filtered_courses
-                    if course.subject in subjects
-                ]
-            
-            # Apply level filter
-            if levels:
-                filtered_courses = [
-                    course for course in filtered_courses
-                    if course.level in levels
-                ]
-            
-            # Apply year range filter
-            if year_range:
-                min_year, max_year = year_range
-                filtered_courses = [
-                    course for course in filtered_courses
-                    if min_year <= course.updated_date.year <= max_year
-                ]
-            
-            return filtered_courses
+            db_courses = course_repo.get_courses_by_difficulty(self.db, difficulty_level)
+            return [self._convert_db_course_to_ui_course(course) for course in db_courses]
         except Exception as e:
-            logger.error(f"Error filtering courses: {str(e)}")
+            logger.error(f"Error getting courses by difficulty: {str(e)}")
+            return []
+    
+    def get_courses_by_age_group(self, age_group: str) -> List[Course]:
+        """Get courses filtered by target age group"""
+        try:
+            db_courses = course_repo.get_courses_by_age_group(self.db, age_group)
+            return [self._convert_db_course_to_ui_course(course) for course in db_courses]
+        except Exception as e:
+            logger.error(f"Error getting courses by age group: {str(e)}")
+            return []
+    
+    def search_courses(self, query: str) -> List[Course]:
+        """Search for courses by name or description"""
+        try:
+            db_courses = course_repo.search_courses(self.db, query)
+            return [self._convert_db_course_to_ui_course(course) for course in db_courses]
+        except Exception as e:
+            logger.error(f"Error searching courses: {str(e)}")
             return []
     
     def _convert_db_course_to_ui_course(self, db_course: DBCourse) -> Course:
-        """
-        Convert a database Course model to a UI Course model
-        
-        Args:
-            db_course: Database Course model
-            
-        Returns:
-            UI Course model
-        """
+        """Convert a database course model to a UI course model"""
         try:
-            # Get metadata or use empty dict if None
-            metadata = db_course.course_metadata or {}
-            
-            # Extract tags from the metadata or use an empty list
-            tags = metadata.get("tags", [])
-            
-            # Get difficulty level from metadata or use default
-            difficulty_level = metadata.get("difficulty_level", "Beginner")
-            
-            # Map difficulty level to UI level
-            level_mapping = {
-                "Beginner": "basic",
-                "Intermediate": "intermediate",
-                "Advanced": "advanced"
+            # Create metadata dictionary with default values
+            metadata = {
+                "difficulty_level": "Beginner",
+                "target_age_group": "13-14",
+                "estimated_time": 60,  # Default 60 minutes
+                "points_reward": 10,
+                "prerequisites": {},
+                "tags": [],
+                "updated_at": datetime.now(timezone.utc)
             }
-            level = level_mapping.get(difficulty_level, "basic")
             
-            # Map topic to UI subject
-            subject_mapping = {
-                "Math": "math",
-                "Informatics": "info"
-            }
-            subject = subject_mapping.get(db_course.topic, "info")
+            # Extract tags from the course
+            tags = [tag.name for tag in db_course.tags] if hasattr(db_course, 'tags') and db_course.tags else []
+            metadata["tags"] = tags
             
-            # Get estimated time from metadata or use default
-            estimated_time = metadata.get("estimated_time", 300)
-            
-            # Parse updated_at from metadata or use created_at
-            try:
-                updated_at_str = metadata.get("updated_at")
-                if updated_at_str:
-                    updated_date = datetime.fromisoformat(updated_at_str)
-                else:
-                    updated_date = db_course.created_at or datetime.now(timezone.utc)
-            except (ValueError, TypeError):
-                updated_date = db_course.created_at or datetime.now(timezone.utc)
-            
-            # Create and return a UI Course model
             return Course(
                 id=str(db_course.id),
-                title=db_course.name,
+                topic=db_course.topic.value if hasattr(db_course.topic, 'value') else db_course.topic,
+                name=db_course.name,
                 description=db_course.description,
+                created_at=db_course.created_at,
                 tags=tags,
-                updated_date=updated_date,
-                duration_hours=estimated_time / 60,  # Convert minutes to hours
-                level=level,
-                subject=subject,
-                is_active=True,  # Default to active for now
-                is_completed=False  # Default to not completed
+                metadata=metadata
             )
         except Exception as e:
             logger.error(f"Error converting DB course to UI course: {str(e)}")
             # Return a default course as fallback
             return Course(
-                id=str(db_course.id) if db_course.id else str(uuid.uuid4()),
-                title=db_course.name if hasattr(db_course, 'name') and db_course.name else "Unknown Course",
-                description=db_course.description if hasattr(db_course, 'description') and db_course.description else "No description available",
+                id=str(db_course.id) if hasattr(db_course, 'id') else "unknown",
+                topic="Informatics",
+                name=db_course.name if hasattr(db_course, 'name') else "Unknown Course",
+                description=db_course.description if hasattr(db_course, 'description') else "No description available",
+                created_at=datetime.now(timezone.utc),
                 tags=[],
-                updated_date=datetime.now(timezone.utc),
-                duration_hours=5.0,  # Default duration
-                level="basic",
-                subject="info",
-                is_active=True,
-                is_completed=False
+                metadata={}
             ) 

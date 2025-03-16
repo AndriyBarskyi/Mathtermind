@@ -26,7 +26,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 # experimental
-Mathtermind-experimental/
+ui-experimental/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -131,6 +131,12 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Mathtermind specific
+data/mathtermind.db
+archive/
+*.db
+*.db-journal
 
 # Spyder project settings
 .spyderproject

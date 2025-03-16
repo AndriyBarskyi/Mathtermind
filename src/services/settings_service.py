@@ -1,8 +1,12 @@
 from sqlalchemy.orm import Session
-from src.db import get_db
-from src.db.models import Setting, User
 import uuid
 import json
+import logging
+from src.db import get_db
+from src.db.models import Setting, User
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 class SettingsService:
     """Service for managing user settings."""
@@ -23,14 +27,22 @@ class SettingsService:
         """
         if not user_id:
             return self._get_default_settings()
-            
-        # Query the database for user settings
-        settings = self.db.query(Setting).filter(Setting.user_id == user_id).first()
         
-        if not settings:
-            return self._get_default_settings()
+        try:
+            # Convert string ID to UUID if it's a string
+            if isinstance(user_id, str):
+                user_id = uuid.UUID(user_id)
+                
+            # Query the database for user settings
+            settings = self.db.query(Setting).filter(Setting.user_id == user_id).first()
             
-        return settings.preferences
+            if not settings:
+                return self._get_default_settings()
+                
+            return settings.preferences
+        except Exception as e:
+            logger.error(f"Error getting user settings: {str(e)}")
+            return self._get_default_settings()
         
     def save_user_settings(self, settings_data, user_id=None):
         """
@@ -45,11 +57,15 @@ class SettingsService:
         """
         if not user_id:
             # In a real app, we would get the current user's ID
-            # For now, just print the settings that would be saved
-            print(f"Would save settings: {settings_data}")
+            # For now, just log the settings that would be saved
+            logger.info(f"Would save settings: {settings_data}")
             return True
             
         try:
+            # Convert string ID to UUID if it's a string
+            if isinstance(user_id, str):
+                user_id = uuid.UUID(user_id)
+                
             # Check if settings already exist for this user
             existing_settings = self.db.query(Setting).filter(Setting.user_id == user_id).first()
             
@@ -71,7 +87,7 @@ class SettingsService:
             
         except Exception as e:
             # Log the error
-            print(f"Error saving settings: {e}")
+            logger.error(f"Error saving settings: {e}")
             self.db.rollback()
             return False
             

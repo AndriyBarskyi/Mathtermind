@@ -3,9 +3,10 @@ from PyQt5.QtWidgets import (
     QPushButton, QProgressBar, QSizePolicy, QFrame
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QFont, QIcon, QPixmap, QColor
+import logging
 
-from src.ui.models.course import Course
+from src.models.course import Course
 from src.ui.styles.constants import COLORS, FONTS
 
 class LessonCard(QFrame):

@@ -1,4 +1,4 @@
-Here’s a basic version of your `README.md`:
+Here's a basic version of your `README.md`:
 
 ---
 
@@ -14,6 +14,7 @@ Here’s a basic version of your `README.md`:
 - [Features](#features)
 - [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
+- [Database](#database)
 - [Database Models](#database-models)
 - [Dependencies](#dependencies)
 - [Usage](#usage)
@@ -56,11 +57,56 @@ Mathtermind combines educational modules with elements of gamification and adapt
 ### Prerequisites
 
 - Python 3.9 or higher
-- SQLite database
 - Git
-- Virtual environment setup (recommended)
+- Make (optional, for using Makefile commands)
 
 ### Installation
+
+#### Automatic Setup (Recommended)
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/yourusername/Mathtermind.git
+   cd Mathtermind
+   ```
+
+2. **Using Make** (if available):
+   ```bash
+   make setup
+   ```
+   
+   Or using the setup script directly:
+   ```bash
+   python setup.py
+   ```
+   
+   This will:
+   - Create a virtual environment
+   - Install dependencies
+   - Set up the database
+   - Create a `.env` file
+
+3. **Activate the virtual environment**:
+   - On Windows:
+     ```bash
+     venv\Scripts\activate
+     ```
+   - On macOS/Linux:
+     ```bash
+     source venv/bin/activate
+     ```
+
+4. **Run the application**:
+   ```bash
+   make run
+   ```
+   
+   Or:
+   ```bash
+   python main.py
+   ```
+
+#### Manual Setup
 
 1. **Clone the repository**:
    ```bash
@@ -88,13 +134,20 @@ Mathtermind combines educational modules with elements of gamification and adapt
    pip install -r requirements.txt
    ```
 
-5. **Set up the database**:
+5. **Create a .env file**:
    ```bash
-   # Create a SQLite database
-   createdb mathtermind
-   
-   # Run database migrations
-   python src/db/create_tables.py
+   cp .env.example .env
+   ```
+
+6. **Set up the database**:
+   ```bash
+   python db_manage.py init
+   python db_manage.py seed
+   ```
+
+7. **Run the application**:
+   ```bash
+   python main.py
    ```
 
 ---
@@ -123,6 +176,38 @@ Mathtermind/
 │
 ├── README.md
 └── requirements.txt
+```
+
+---
+
+## Database
+
+Mathtermind uses SQLite for data storage, with SQLAlchemy as the ORM and Alembic for database migrations. The database file is stored in the `data` directory.
+
+For detailed information about database management, see [DATABASE.md](DATABASE.md).
+
+### Database Management
+
+The project includes a database management tool (`db_manage.py`) that provides a command-line interface for common database operations:
+
+```bash
+# Initialize the database with the latest schema
+python db_manage.py init
+
+# Run all pending migrations
+python db_manage.py migrate
+
+# Seed the database with sample data
+python db_manage.py seed
+
+# Reset the database (drop all tables and recreate)
+python db_manage.py reset
+
+# Show the current migration status
+python db_manage.py status
+
+# Create a new migration
+python db_manage.py create_migration "Description of changes"
 ```
 
 ---
@@ -175,6 +260,39 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Using Make
+
+The project includes a Makefile with shortcuts for common operations:
+
+```bash
+# Set up the project
+make setup
+
+# Run the application
+make run
+
+# Clean up temporary files and caches
+make clean
+
+# Run tests
+make test
+
+# Run linting tools
+make lint
+
+# Database operations
+make db-init    # Initialize the database
+make db-seed    # Seed the database with sample data
+make db-reset   # Reset the database
+make db-migrate # Run database migrations
+make db-status  # Show database migration status
+
+# Show all available commands
+make help
+```
+
+### Manual Usage
+
 1. Activate the virtual environment:
    ```bash
    source venv/bin/activate  # Or use venv\Scripts\activate on Windows
@@ -182,7 +300,7 @@ pip install -r requirements.txt
 
 2. Run the application:
    ```bash
-   python src/main.py
+   python main.py
    ```
 
 3. Create a user account and start learning!

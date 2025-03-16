@@ -4,9 +4,10 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QTimer
 from typing import List
+import logging
 
-from src.ui.models.course import Course
 from src.ui.widgets.course_card import CourseCard
+from src.models.course import Course
 from src.ui.widgets.flow_layout import FlowLayout
 
 class CoursesGrid(QScrollArea):

@@ -195,21 +195,19 @@ class Course(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    # JSON Structure for course_metadata:
-    # {
-    #     "difficulty_level": "Beginner" | "Intermediate" | "Advanced",
-    #     "target_age_group": "10-12" | "13-14" | "15-17",
-    #     "estimated_time": int,  # in minutes
-    #     "points_reward": int,
-    #     "prerequisites": {
-    #         "required_courses": [uuid],
-    #         "required_skills": [str],
-    #         "minimum_level": int
-    #     },
-    #     "tags": [str],
-    #     "updated_at": datetime (ISO format)
-    # }
-    course_metadata: Mapped[dict] = mapped_column(JSON, nullable=True)
+    difficulty_level: Mapped[str] = mapped_column(
+        Enum("BEGINNER", "INTERMEDIATE", "ADVANCED", name="difficulty_level_enum"), 
+        nullable=True, 
+        default="BEGINNER"
+    )
+    target_age_group: Mapped[str] = mapped_column(String(50), nullable=True)
+    estimated_time: Mapped[int] = mapped_column(Integer, nullable=True)
+    points_reward: Mapped[int] = mapped_column(Integer, nullable=True)
+    prerequisites: Mapped[list] = mapped_column(JSON, nullable=True)
+    tags: Mapped[list] = mapped_column(JSON, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, nullable=True, default=datetime.now(timezone.utc)
+    )
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, default=datetime.now(timezone.utc)
     )

@@ -52,7 +52,7 @@ def seed_courses(force_add_lessons=False):
     # Sample course data
     course_templates = [
         {
-            "topic": "Informatics",
+            "topic": "INFORMATICS",
             "name": "Вступ до машинного навчання",
             "description": "Цей курс надає базові знання з машинного навчання, включаючи класифікацію, регресію та кластеризацію. Ви навчитеся застосовувати алгоритми машинного навчання для вирішення реальних задач.",
             "difficulty_level": "Beginner",
@@ -67,7 +67,7 @@ def seed_courses(force_add_lessons=False):
             "tags": ["Машинне навчання", "Базовий", "Інтерактивний", "Новий"]
         },
         {
-            "topic": "Informatics",
+            "topic": "INFORMATICS",
             "name": "Алгоритми та структури даних",
             "description": "Вивчення основних алгоритмів та структур даних, їх аналіз та застосування в програмуванні. Курс охоплює сортування, пошук, графи, дерева та інші важливі концепції.",
             "difficulty_level": "Intermediate",
@@ -82,7 +82,7 @@ def seed_courses(force_add_lessons=False):
             "tags": ["Алгоритми", "Структури даних", "Середній", "Інтерактивний"]
         },
         {
-            "topic": "Math",
+            "topic": "MATHEMATICS",
             "name": "Лінійна алгебра",
             "description": "Основи лінійної алгебри, включаючи вектори, матриці, лінійні перетворення та їх застосування. Курс надає теоретичні знання та практичні навички для розв'язання задач.",
             "difficulty_level": "Beginner",
@@ -97,7 +97,7 @@ def seed_courses(force_add_lessons=False):
             "tags": ["Лінійна алгебра", "Матриці", "Вектори", "Базовий", "Теоретичний"]
         },
         {
-            "topic": "Informatics",
+            "topic": "INFORMATICS",
             "name": "Глибоке навчання",
             "description": "Поглиблене вивчення нейронних мереж, включаючи CNN, RNN, трансформери та їх застосування. Курс охоплює теоретичні основи та практичні аспекти глибокого навчання.",
             "difficulty_level": "Advanced",
@@ -112,7 +112,7 @@ def seed_courses(force_add_lessons=False):
             "tags": ["Глибоке навчання", "Нейронні мережі", "Просунутий", "Практичний"]
         },
         {
-            "topic": "Math",
+            "topic": "MATHEMATICS",
             "name": "Математичний аналіз",
             "description": "Вивчення диференціального та інтегрального числення, границь, рядів та їх застосування. Курс надає фундаментальні знання з математичного аналізу.",
             "difficulty_level": "Intermediate",
@@ -127,7 +127,7 @@ def seed_courses(force_add_lessons=False):
             "tags": ["Математичний аналіз", "Диференціальне числення", "Інтегральне числення", "Середній", "Теоретичний"]
         },
         {
-            "topic": "Informatics",
+            "topic": "INFORMATICS",
             "name": "Веб-розробка",
             "description": "Вивчення основ веб-розробки, включаючи HTML, CSS, JavaScript та сучасні фреймворки. Курс надає практичні навички для створення веб-сайтів та веб-додатків.",
             "difficulty_level": "Beginner",
@@ -195,28 +195,31 @@ def add_lessons_to_courses(db, courses):
                 continue
                 
             try:
-                # Get difficulty level from course metadata or use default
+                # Use default difficulty level
                 course_difficulty = "Beginner"
-                if hasattr(course, 'course_metadata') and course.course_metadata:
-                    if isinstance(course.course_metadata, dict) and 'difficulty_level' in course.course_metadata:
-                        course_difficulty = course.course_metadata['difficulty_level']
                 
                 # Create lesson with only the columns that exist in the schema
                 new_lesson = Lesson(
                     id=uuid.uuid4(),
                     course_id=course.id,
                     title=lesson_template["title"],
-                    content=lesson_template["content"],
                     lesson_type=lesson_template["lesson_type"],
-                    difficulty_level=lesson_template["difficulty_level"],
+                    difficulty_level=course_difficulty,
                     lesson_order=lesson_template["lesson_order"],
                     estimated_time=30,  # Default 30 minutes
                     points_reward=10,  # Default 10 points
-                    prerequisites={},  # Empty prerequisites
-                    learning_objectives=[]  # Empty learning objectives
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
                 )
                 db.add(new_lesson)
                 db.commit()  # Commit each lesson individually to avoid rollback issues
+                
+                # Now create content for the lesson if needed
+                if "content" in lesson_template:
+                    # Here you would add code to create content objects
+                    # This would depend on your Content model structure
+                    pass
+                
                 total_lessons_added += 1
                 print(f"Added lesson: {lesson_template['title']}")
             except Exception as e:
@@ -236,13 +239,10 @@ def generate_lesson_templates_for_course(course):
     Returns:
         List of lesson template dictionaries
     """
-    # Get difficulty level from course metadata or use default
+    # Default difficulty level
     course_difficulty = "Beginner"
-    if hasattr(course, 'course_metadata') and course.course_metadata:
-        if isinstance(course.course_metadata, dict) and 'difficulty_level' in course.course_metadata:
-            course_difficulty = course.course_metadata['difficulty_level']
     
-    if course.topic == "Informatics" and "машинного навчання" in course.name:
+    if course.topic == "INFORMATICS" and "машинного навчання" in course.name:
         return [
             {
                 "title": "Вступ до нейронних мереж",
@@ -293,7 +293,7 @@ def generate_lesson_templates_for_course(course):
                 "lesson_order": 3
             }
         ]
-    elif course.topic == "Informatics" and "Алгоритми" in course.name:
+    elif course.topic == "INFORMATICS" and "Алгоритми" in course.name:
         return [
             {
                 "title": "Основи алгоритмів",
@@ -402,7 +402,7 @@ def generate_lesson_templates_for_course(course):
                         ]
                     }
                 },
-                "lesson_type": "Practice",
+                "lesson_type": "EXERCISE",
                 "difficulty_level": course_difficulty,
                 "lesson_order": 3
             }

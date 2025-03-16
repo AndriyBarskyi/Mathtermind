@@ -20,8 +20,8 @@ from src.ui.widgets.search_bar import SearchBar
 from src.ui.widgets.filter_button import FilterButton
 from src.ui.widgets.courses_grid import CoursesGrid
 from src.ui.widgets.filter_sidebar import FilterSidebar
-from src.ui.services.course_service import CourseService
-from src.ui.services.lesson_service import LessonService
+from src.services.course_service import CourseService
+from src.services.lesson_service import LessonService
 from src.ui.lesson_win import LessonDetailPage
 
 class CoursesPage(QWidget):

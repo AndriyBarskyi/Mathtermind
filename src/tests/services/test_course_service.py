@@ -52,11 +52,9 @@ class TestCourseService(unittest.TestCase):
         mock_course.name = name
         mock_course.description = description
         mock_course.topic = topic
-        mock_course.course_metadata = {
-            "difficulty_level": difficulty_level,
-            "estimated_time": estimated_duration,
-            "prerequisites": prerequisites
-        }
+        mock_course.difficulty_level = difficulty_level
+        mock_course.estimated_time = estimated_duration
+        mock_course.prerequisites = prerequisites
         mock_course.created_at = datetime.now(timezone.utc)
         mock_course.updated_at = datetime.now(timezone.utc)
         return mock_course

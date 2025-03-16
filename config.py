@@ -1,8 +1,15 @@
 # config.py
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Project paths
+PROJECT_ROOT = Path(__file__).parent.absolute()
+DATA_DIR = PROJECT_ROOT / "data"
+os.makedirs(DATA_DIR, exist_ok=True)
+DATABASE_PATH = DATA_DIR / "mathtermind.db"
 
 # UI constants (fixed)
 WINDOW_WIDTH = 900
@@ -13,6 +20,6 @@ CONTENT_RATIO = 18
 STYLESHEET_PATH = "src/ui/styles.qss"
 
 # Sensitive data (loaded from .env)
-DATABASE_URL = "sqlite:///mathtermind.db"
+DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 DEBUG_MODE = os.getenv("DEBUG_MODE", "True").lower() == "true"
 SECRET_KEY = os.getenv("SECRET_KEY")

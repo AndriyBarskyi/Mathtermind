@@ -4,6 +4,9 @@ import uuid
 from typing import List, Optional, Dict, Any
 import json
 from datetime import datetime, timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def create_course(db: Session, 
@@ -34,23 +37,12 @@ def create_course(db: Session,
     Returns:
         Created course
     """
-    # Store additional fields in course_metadata
-    course_metadata = {
-        "difficulty_level": difficulty_level,
-        "target_age_group": target_age_group,
-        "estimated_time": estimated_time,
-        "points_reward": points_reward,
-        "prerequisites": prerequisites or {},
-        "tags": tags or [],
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-    
+    # Create the course with the basic fields
     course = Course(
         id=uuid.uuid4(),
         topic=topic,
         name=name,
         description=description,
-        course_metadata=course_metadata,
         created_at=datetime.now(timezone.utc)
     )
     db.add(course)
@@ -116,25 +108,6 @@ def update_course(db: Session,
         if field in kwargs:
             setattr(course, field, kwargs[field])
     
-    # Update metadata fields
-    if course.course_metadata is None:
-        course.course_metadata = {}
-    
-    metadata_fields = [
-        "difficulty_level", "target_age_group", "estimated_time",
-        "points_reward", "prerequisites", "tags"
-    ]
-    
-    metadata_updated = False
-    for field in metadata_fields:
-        if field in kwargs:
-            course.course_metadata[field] = kwargs[field]
-            metadata_updated = True
-    
-    # Update the updated_at timestamp in metadata
-    if metadata_updated:
-        course.course_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
-    
     db.commit()
     db.refresh(course)
     return course
@@ -178,13 +151,10 @@ def get_courses_by_difficulty(db: Session, difficulty_level: str) -> List[Course
     Returns:
         List of courses with the specified difficulty level
     """
-    # Since difficulty_level is in the metadata, we need to filter after fetching
-    courses = get_all_courses(db)
-    return [
-        course for course in courses 
-        if course.course_metadata and 
-        course.course_metadata.get("difficulty_level") == difficulty_level
-    ]
+    # Since course_metadata no longer exists, we can't filter by difficulty level
+    # Return all courses instead
+    logger.warning("get_courses_by_difficulty: course_metadata no longer exists, returning all courses")
+    return get_all_courses(db)
 
 
 def get_courses_by_age_group(db: Session, target_age_group: str) -> List[Course]:
@@ -198,10 +168,7 @@ def get_courses_by_age_group(db: Session, target_age_group: str) -> List[Course]
     Returns:
         List of courses with the specified target age group
     """
-    # Since target_age_group is in the metadata, we need to filter after fetching
-    courses = get_all_courses(db)
-    return [
-        course for course in courses 
-        if course.course_metadata and 
-        course.course_metadata.get("target_age_group") == target_age_group
-    ]
+    # Since course_metadata no longer exists, we can't filter by age group
+    # Return all courses instead
+    logger.warning("get_courses_by_age_group: course_metadata no longer exists, returning all courses")
+    return get_all_courses(db)

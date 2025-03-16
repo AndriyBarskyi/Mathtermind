@@ -4,9 +4,10 @@ from PyQt5.QtWidgets import (
     QScrollArea, QLayout
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QRect, QPoint
-from PyQt5.QtGui import QFont, QFontMetrics, QIcon
+from PyQt5.QtGui import QFont, QFontMetrics, QIcon, QPixmap, QColor
+import logging
 
-from src.ui.models.course import Course
+from src.models.course import Course
 from src.ui.styles.constants import COLORS, FONTS
 
 # Create a FlowLayout class for better tag display
