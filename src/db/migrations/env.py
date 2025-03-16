@@ -2,12 +2,25 @@ from logging.config import fileConfig
 from src.db.models import Base
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+import os
+import sys
+from pathlib import Path
+
+# Add the project root to the Python path
+project_root = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+# Import the database URL from the application config
+from config import DATABASE_URL
 
 from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Override the sqlalchemy.url with the one from our application config
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -25,6 +38,10 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+# Check if we're using SQLite
+def is_sqlite():
+    url = config.get_main_option("sqlalchemy.url")
+    return url.startswith('sqlite')
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -39,12 +56,20 @@ def run_migrations_offline() -> None:
 
     """
     url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-    )
+    
+    # Configure SQLite for offline mode
+    context_config = {
+        "url": url,
+        "target_metadata": target_metadata,
+        "literal_binds": True,
+        "dialect_opts": {"paramstyle": "named"},
+    }
+    
+    # Add SQLite-specific options
+    if is_sqlite():
+        context_config["render_as_batch"] = True
+    
+    context.configure(**context_config)
 
     with context.begin_transaction():
         context.run_migrations()
@@ -64,7 +89,17 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        # Configure SQLite for online mode
+        context_config = {
+            "connection": connection,
+            "target_metadata": target_metadata,
+        }
+        
+        # Add SQLite-specific options
+        if is_sqlite():
+            context_config["render_as_batch"] = True
+            
+        context.configure(**context_config)
 
         with context.begin_transaction():
             context.run_migrations()

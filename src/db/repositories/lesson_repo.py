@@ -33,3 +33,11 @@ def update_lesson(db: Session, lesson_id: uuid.UUID, name: str, description: str
     db.commit()
     db.refresh(lesson)
     return lesson
+
+
+def get_all_lessons(db: Session):
+    return db.query(Lesson).all()
+
+
+def get_lessons_by_course_id(db: Session, course_id: uuid.UUID):
+    return db.query(Lesson).filter(Lesson.course_id == course_id).all()
