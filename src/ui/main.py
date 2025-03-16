@@ -37,7 +37,13 @@ class MainApp(QtWidgets.QMainWindow):
         sys.exit(app.exec_())
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    with open("style.qss", "r") as file:
+    
+    # Use the correct path to style.qss relative to this script
+    import os
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    style_path = os.path.join(current_dir, "style.qss")
+    
+    with open(style_path, "r") as file:
         style_sheet = file.read()
         
 

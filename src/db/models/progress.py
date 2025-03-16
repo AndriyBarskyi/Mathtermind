@@ -1,19 +1,18 @@
 from datetime import datetime, timezone
 import uuid
+from typing import Optional
 
 from sqlalchemy import Index, String, Text, Integer, Enum, TIMESTAMP, ForeignKey, Float, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from src.db.models.base import Base
+from src.db.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-class Progress(Base):
+class Progress(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Tracks user progress in courses."""
     __tablename__ = "progress"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -24,7 +23,7 @@ class Progress(Base):
         ForeignKey("courses.id", ondelete="CASCADE"),
         nullable=False,
     )
-    current_lesson_id: Mapped[uuid.UUID] = mapped_column(
+    current_lesson_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("lessons.id", ondelete="CASCADE"),
         nullable=True,
@@ -39,21 +38,25 @@ class Progress(Base):
     time_spent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # in minutes
     progress_data: Mapped[dict] = mapped_column(JSON, nullable=False)
     last_accessed: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
+        TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
+    # Relationships
     user: Mapped["User"] = relationship("User", back_populates="progress")
     course: Mapped["Course"] = relationship("Course", back_populates="progress")
-    current_lesson: Mapped["Lesson"] = relationship("Lesson")
+    current_lesson: Mapped[Optional["Lesson"]] = relationship("Lesson")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_progress_user_id', 'user_id'),
+        Index('idx_progress_course_id', 'course_id'),
+    )
 
 
-class UserContentProgress(Base):
+class UserContentProgress(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Tracks user progress through individual content items."""
     __tablename__ = "user_content_progress"
     
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -65,13 +68,14 @@ class UserContentProgress(Base):
         nullable=False,
     )
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    score: Mapped[float] = mapped_column(Float, nullable=True)
+    score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     time_spent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # in seconds
     last_interaction: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
+        TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     
+    # Relationships
     user: Mapped["User"] = relationship("User", back_populates="content_progress")
     content: Mapped["Content"] = relationship("Content", back_populates="user_progress")
     
@@ -83,13 +87,10 @@ class UserContentProgress(Base):
     )
 
 
-class CompletedLesson(Base):
+class CompletedLesson(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Normalized model for completed lessons, extracted from Progress.completed_lessons."""
     __tablename__ = "completed_lessons"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -101,11 +102,12 @@ class CompletedLesson(Base):
         nullable=False,
     )
     completed_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
+        TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
-    score: Mapped[float] = mapped_column(Float, nullable=True)
+    score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     time_spent: Mapped[int] = mapped_column(Integer, nullable=False)  # in minutes
     
+    # Relationships
     user: Mapped["User"] = relationship("User")
     lesson: Mapped["Lesson"] = relationship("Lesson")
     

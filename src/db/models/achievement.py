@@ -1,19 +1,18 @@
 from datetime import datetime, timezone
 import uuid
+from typing import Optional, List
 
 from sqlalchemy import Index, String, Text, Integer, Enum, TIMESTAMP, ForeignKey, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from src.db.models.base import Base
+from src.db.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-class Achievement(Base):
+class Achievement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Achievements that users can unlock."""
     __tablename__ = "achievements"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     icon: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -39,10 +38,10 @@ class Achievement(Base):
     # }
     criteria: Mapped[dict] = mapped_column(JSON, nullable=False)
     points: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
-    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # Relationships
+    user_achievements: Mapped[List["UserAchievement"]] = relationship("UserAchievement", back_populates="achievement")
     
     # Indexes
     __table_args__ = (
@@ -51,13 +50,10 @@ class Achievement(Base):
     )
 
 
-class UserAchievement(Base):
+class UserAchievement(UUIDPrimaryKeyMixin, Base):
     """Records of achievements earned by users."""
     __tablename__ = "user_achievements"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -69,12 +65,13 @@ class UserAchievement(Base):
         nullable=False,
     )
     achieved_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
+        TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     notification_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
+    # Relationships
     user: Mapped["User"] = relationship("User", back_populates="achievements")
-    achievement: Mapped["Achievement"] = relationship("Achievement")
+    achievement: Mapped["Achievement"] = relationship("Achievement", back_populates="user_achievements")
     
     # Indexes
     __table_args__ = (

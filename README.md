@@ -140,7 +140,7 @@ Mathtermind поєднує навчальні модулі з елементам
    python db_manage.py init
    python db_manage.py seed
    ```
-
+   
 7. **Запустіть додаток**:
    ```bash
    python main.py
