@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-from src.ui.ui import Ui_MainWindow
+from ui import Ui_MainWindow
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QMenu, QAction
 import sys
 #from listw import *
@@ -11,6 +11,11 @@ class MainApp(QtWidgets.QMainWindow):
         self.setWindowTitle("Mathtermind")
         self.ui.btn_user.clicked.connect(self.show_menu)
 
+
+
+
+
+        
 
     def show_menu(self):
         menu = QMenu(self)
@@ -35,7 +40,10 @@ if __name__ == "__main__":
     with open("style.qss", "r") as file:
         style_sheet = file.read()
         
+
     app.setStyleSheet(style_sheet)
+   
+    
 
     window = MainApp()
     window.show()

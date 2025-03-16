@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QPen, QFont, QColor
+from PyQt5.QtGui import QPainter, QPen, QFont,QColor
 
 class CircularProgress(QWidget):
     def __init__(self, parent=None):
@@ -19,26 +19,18 @@ class CircularProgress(QWidget):
         rect = self.rect().adjusted(10, 10, -10, -10) 
         center = rect.center()
         radius = min(rect.width(), rect.height()) // 2
-        
-        # Background circle - light gray from new theme
-        pen = QPen(QColor("#F3F4F6"), 10)
+        pen = QPen(QColor(234, 235, 239), 10)
         painter.setPen(pen)
         painter.drawEllipse(center, radius, radius)
 
-        # Progress arc with color based on value
         if self.value <= 25:
-            # Red for low progress
-            pen.setColor(QColor("#EF4444"))
+            pen.setColor(QColor(255, 33, 34))
         elif self.value <= 50:
-            # Yellow/Orange for medium-low progress
-            pen.setColor(QColor("#F59E0B"))
+            pen.setColor(QColor(255, 214, 15))
         elif self.value <= 75:
-            # Blue from theme for medium-high progress
-            pen.setColor(QColor("#566CD2"))
+            pen.setColor(QColor(22, 210, 222))
         else:
-            # Green for high progress
-            pen.setColor(QColor("#10B981"))
-            
+            pen.setColor(QColor(4, 214, 87))
         painter.setPen(pen)
         painter.drawArc(
             rect,  
@@ -46,8 +38,8 @@ class CircularProgress(QWidget):
             -self.value * 3.6 * 16 
         )
 
-        # Text color from theme
-        painter.setPen(QColor("#0F1D35"))
-        painter.setFont(QFont("Inter", 16, QFont.Bold))
+
+        painter.setPen(Qt.black)
+        painter.setFont(QFont("Arial", 16, QFont.Bold))
         text = f"{self.value}%"
         painter.drawText(self.rect(), Qt.AlignCenter, text)

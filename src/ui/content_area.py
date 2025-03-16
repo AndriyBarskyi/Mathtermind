@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt6.QtCore import Qt
 
 
 class ContentArea(QWidget):
@@ -8,15 +8,15 @@ class ContentArea(QWidget):
     def __init__(self):
         super().__init__()
         # Use a clearer variable name to avoid conflicts
-        self.content_layout = QVBoxLayout(self)
+        self.main_layout = QVBoxLayout(self)
 
         # Main label for content display
-        self.content_label = QLabel("Welcome to the Learning Platform!")
-        self.content_label.setAlignment(Qt.AlignCenter)
+        self.label = QLabel("Welcome to the Learning Platform!")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Add label to layout
-        self.content_layout.addWidget(self.content_label)
+        self.main_layout.addWidget(self.label)
 
     def update_content(self, page_name: str):
         """Update the content label to reflect the current page."""
-        self.content_label.setText(f"Currently Viewing: {page_name}")
+        self.label.setText(f"Currently Viewing: {page_name}")
