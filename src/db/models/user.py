@@ -1,67 +1,57 @@
-from datetime import datetime, timezone
 import uuid
+from typing import Optional, List
 
-from sqlalchemy import Index, String, Text, Integer, Enum, TIMESTAMP, ForeignKey, JSON, Boolean
+from sqlalchemy import Index, String, Text, Integer, Enum, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .achievement import UserAchievement
-from .goals import LearningGoal, PersonalBest
-from .progress import Progress, UserContentProgress
-from .tools import UserToolUsage
-from .base import Base
-from .enums import AgeGroup
+from src.db.models.achievement import UserAchievement
+from src.db.models.goals import LearningGoal, PersonalBest
+from src.db.models.progress import Progress, UserContentProgress
+from src.db.models.tools import UserToolUsage
+from src.db.models.base import Base
+from src.db.models.enums import AgeGroup, ThemeType, FontSize, PreferredSubject, NotificationType
+from src.db.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-class User(Base):
+
+class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """User model representing a student in the learning platform."""
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    username: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False)
-    email: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False)
+    # Basic information
+    username: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
-    age_group: Mapped[AgeGroup] = mapped_column(
-        Enum(AgeGroup), nullable=False
-    )
+    age_group: Mapped[AgeGroup] = mapped_column(Enum(AgeGroup), nullable=False)
+    
+    # Progress tracking
     points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     experience_level: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     total_study_time: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # in minutes
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=lambda: datetime.now(timezone.utc)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
 
-    # Relationships defined in their respective models
-    settings: Mapped[list["Setting"]] = relationship(
-        "Setting", back_populates="user", cascade="all, delete-orphan"
+    # Relationships
+    settings: Mapped[List["UserSetting"]] = relationship(
+        "UserSetting", back_populates="user", cascade="all, delete-orphan"
     )
-    progress: Mapped[list["Progress"]] = relationship(
+    progress: Mapped[List["Progress"]] = relationship(
         "Progress", back_populates="user", cascade="all, delete-orphan"
     )
-    achievements: Mapped[list["UserAchievement"]] = relationship(
+    achievements: Mapped[List["UserAchievement"]] = relationship(
         "UserAchievement", back_populates="user", cascade="all, delete-orphan"
     )
-    notifications: Mapped[list["Notification"]] = relationship(
-        "Notification", back_populates="user", cascade="all, delete-orphan"
+    notifications: Mapped[List["UserNotification"]] = relationship(
+        "UserNotification", back_populates="user", cascade="all, delete-orphan"
     )
-    content_progress: Mapped[list["UserContentProgress"]] = relationship(
+    content_progress: Mapped[List["UserContentProgress"]] = relationship(
         "UserContentProgress", back_populates="user", cascade="all, delete-orphan"
     )
-    tool_usages: Mapped[list["UserToolUsage"]] = relationship(
+    tool_usages: Mapped[List["UserToolUsage"]] = relationship(
         "UserToolUsage", back_populates="user", cascade="all, delete-orphan"
     )
-    personal_bests: Mapped[list["PersonalBest"]] = relationship(
+    personal_bests: Mapped[List["PersonalBest"]] = relationship(
         "PersonalBest", back_populates="user", cascade="all, delete-orphan"
     )
-    learning_goals: Mapped[list["LearningGoal"]] = relationship(
+    learning_goals: Mapped[List["LearningGoal"]] = relationship(
         "LearningGoal", back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -72,75 +62,82 @@ class User(Base):
     )
 
 
-class Setting(Base):
+class UserSetting(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """User preferences and settings."""
-    __tablename__ = "settings"
+    __tablename__ = "user_settings"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    # Foreign key
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    # JSON Structure for preferences:
-    # {
-    #     "theme": "light" | "dark",
-    #     "notifications": {
-    #         "daily_reminder": bool,
-    #         "achievement_alerts": bool,
-    #         "study_time": str (HH:MM)
-    #     },
-    #     "accessibility": {
-    #         "font_size": "small" | "medium" | "large",
-    #         "high_contrast": bool
-    #     },
-    #     "study_preferences": {
-    #         "daily_goal_minutes": int,
-    #         "preferred_subject": "Math" | "Informatics"
-    #     }
-    # }
-    preferences: Mapped[dict] = mapped_column(JSON, nullable=False)
+    
+    # Theme settings
+    theme: Mapped[ThemeType] = mapped_column(
+        Enum(ThemeType), 
+        default=ThemeType.LIGHT, 
+        nullable=False
+    )
+    
+    # Notification settings
+    notification_daily_reminder: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    notification_achievement_alerts: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    notification_study_time: Mapped[str] = mapped_column(String(5), default="09:00", nullable=False)
+    
+    # Accessibility settings
+    accessibility_font_size: Mapped[FontSize] = mapped_column(
+        Enum(FontSize),
+        default=FontSize.MEDIUM,
+        nullable=False
+    )
+    accessibility_high_contrast: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    
+    # Study preferences
+    study_daily_goal_minutes: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    study_preferred_subject: Mapped[PreferredSubject] = mapped_column(
+        Enum(PreferredSubject),
+        default=PreferredSubject.MATH,
+        nullable=False
+    )
 
+    # Relationships
     user: Mapped["User"] = relationship("User", back_populates="settings")
     
     # Indexes
     __table_args__ = (
-        Index('idx_setting_user_id', 'user_id'),
+        Index('idx_user_setting_user_id', 'user_id'),
     )
 
 
-class Notification(Base):
+class UserNotification(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """User notifications for various events."""
-    __tablename__ = "notifications"
+    __tablename__ = "user_notifications"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    # Foreign key
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    type: Mapped[str] = mapped_column(
-        Enum("Achievement", "Comment", "Course", "Reminder", "System", name="notification_type_enum"),
+    
+    # Notification details
+    type: Mapped[NotificationType] = mapped_column(
+        Enum(NotificationType),
         nullable=False
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    related_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=True)  # Generic reference to related entity
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
-    )
+    related_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)  # Generic reference to related entity
 
+    # Relationships
     user: Mapped["User"] = relationship("User", back_populates="notifications")
     
     # Indexes
     __table_args__ = (
-        Index('idx_notification_user_id', 'user_id'),
-        Index('idx_notification_type', 'type'),
-        Index('idx_notification_is_read', 'is_read'),
-        Index('idx_notification_created_at', 'created_at'),
+        Index('idx_user_notification_user_id', 'user_id'),
+        Index('idx_user_notification_type', 'type'),
+        Index('idx_user_notification_is_read', 'is_read'),
+        Index('idx_user_notification_created_at', 'created_at'),
     ) 

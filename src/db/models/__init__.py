@@ -1,17 +1,38 @@
 # Import all models to make them available when importing from models
 from .base import Base
+from .mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from .enums import (
-    ContentType, AnswerType, InteractiveType, MathToolType,
-    InformaticsToolType, MetricType
+    AgeGroup, 
+    AnswerType, 
+    Category, 
+    ContentType, 
+    DifficultyLevel, 
+    FontSize,
+    InformaticsToolType, 
+    InteractiveType, 
+    LessonType, 
+    MathToolType, 
+    MetricType, 
+    NotificationType,
+    PreferredSubject,
+    ResourceType, 
+    ThemeType,
+    Topic
 )
-from .user import User, Setting, Notification
+from .user import User, UserSetting, UserNotification
 from .content import (
-    Course, Lesson, Content, TheoryContent, ExerciseContent,
-    AssessmentContent, InteractiveContent, CourseTag, Tag
+    Course, 
+    CourseTag, 
+    Lesson, 
+    Content, 
+    TheoryContent, 
+    ExerciseContent, 
+    AssessmentContent, 
+    InteractiveContent,
+    Tag,
+    Resource
 )
-from .progress import (
-    Progress, UserContentProgress, CompletedLesson
-)
+from .progress import Progress, UserContentProgress, CompletedLesson
 from .achievement import Achievement, UserAchievement
 from .tools import LearningTool, MathTool, InformaticsTool, UserToolUsage
 from .goals import LearningGoal, PersonalBest
@@ -20,22 +41,20 @@ from .tracking import LearningSession, ErrorLog, StudyStreak
 # For convenience, export all models
 __all__ = [
     'Base',
-    # Enums
-    'ContentType', 'AnswerType', 'InteractiveType', 'MathToolType',
-    'InformaticsToolType', 'MetricType',
-    # User models
-    'User', 'Setting', 'Notification',
-    # Content models
-    'Course', 'Lesson', 'Content', 'TheoryContent', 'ExerciseContent',
-    'AssessmentContent', 'InteractiveContent', 'CourseTag', 'Tag',
-    # Progress models
-    'Progress', 'UserContentProgress', 'CompletedLesson',
-    # Achievement models
+    'TimestampMixin',
+    'UUIDPrimaryKeyMixin',
+    # Models
+    'User', 'UserSetting', 'UserNotification',
     'Achievement', 'UserAchievement',
-    # Tool models
-    'LearningTool', 'MathTool', 'InformaticsTool', 'UserToolUsage',
-    # Goal models
+    'Course', 'CourseTag', 'Lesson', 'Content', 'TheoryContent', 'ExerciseContent', 
+    'AssessmentContent', 'InteractiveContent', 'Tag', 'Resource',
     'LearningGoal', 'PersonalBest',
-    # Tracking models
-    'LearningSession', 'ErrorLog', 'StudyStreak'
+    'Progress', 'UserContentProgress', 'CompletedLesson',
+    'LearningTool', 'MathTool', 'InformaticsTool', 'UserToolUsage',
+    'LearningSession', 'ErrorLog', 'StudyStreak',
+    # Enums
+    'AgeGroup', 'AnswerType', 'Category', 'ContentType', 'DifficultyLevel',
+    'FontSize', 'InformaticsToolType', 'InteractiveType', 'LessonType',
+    'MathToolType', 'MetricType', 'NotificationType', 'PreferredSubject',
+    'ResourceType', 'ThemeType', 'Topic'
 ] 

@@ -1,36 +1,34 @@
 from datetime import datetime, timezone
 import uuid
+from typing import Optional, List
 
 from sqlalchemy import Index, String, Text, Integer, Enum, TIMESTAMP, ForeignKey, Float, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .progress import Progress, UserContentProgress
-from .base import Base
-from .enums import Category, DifficultyLevel, LessonType, ResourceType, Topic
+from src.db.models.progress import Progress, UserContentProgress
+from src.db.models.base import Base
+from src.db.models.enums import Category, DifficultyLevel, LessonType, ResourceType, Topic
+from src.db.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-class Course(Base):
+class Course(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Course model representing a complete learning module."""
     __tablename__ = "courses"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     topic: Mapped[Topic] = mapped_column(
         Enum(Topic), nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
-    )
-    lessons: Mapped[list["Lesson"]] = relationship(
+    
+    # Relationships
+    lessons: Mapped[List["Lesson"]] = relationship(
         "Lesson", back_populates="course", cascade="all, delete-orphan"
     )
-    progress: Mapped[list["Progress"]] = relationship(
+    progress: Mapped[List["Progress"]] = relationship(
         "Progress", back_populates="course"
     )
-    tags: Mapped[list["Tag"]] = relationship(
+    tags: Mapped[List["Tag"]] = relationship(
         "Tag", secondary="course_tags", back_populates="courses"
     )
     
@@ -63,13 +61,10 @@ class CourseTag(Base):
     )
 
 
-class Lesson(Base):
+class Lesson(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Individual lesson within a course."""
     __tablename__ = "lessons"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     course_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("courses.id", ondelete="CASCADE"),
@@ -87,20 +82,13 @@ class Lesson(Base):
     lesson_order: Mapped[int] = mapped_column(Integer, nullable=False)
     estimated_time: Mapped[int] = mapped_column(Integer, nullable=False)  # in minutes
     points_reward: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
 
+    # Relationships
     course: Mapped["Course"] = relationship("Course", back_populates="lessons")
-    resources: Mapped[list["Resource"]] = relationship(
+    resources: Mapped[List["Resource"]] = relationship(
         "Resource", back_populates="lesson", cascade="all, delete-orphan"
     )
-    contents: Mapped[list["Content"]] = relationship(
+    contents: Mapped[List["Content"]] = relationship(
         "Content", back_populates="lesson", cascade="all, delete-orphan"
     )
     
@@ -109,23 +97,21 @@ class Lesson(Base):
         Index('idx_lesson_course_id', 'course_id'),
         Index('idx_lesson_lesson_type', 'lesson_type'),
         Index('idx_lesson_difficulty_level', 'difficulty_level'),
+        Index('idx_lesson_lesson_order', 'lesson_order'),
     )
 
 
-class Content(Base):
+class Content(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Base model for all learning content with polymorphic mapping."""
     __tablename__ = "content"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     lesson_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("lessons.id", ondelete="CASCADE"),
         nullable=False,
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     order: Mapped[int] = mapped_column(Integer, nullable=False)
     content_type: Mapped[str] = mapped_column(
         Enum("theory", "exercise", "assessment", "interactive", name="content_type_enum"),
@@ -136,15 +122,7 @@ class Content(Base):
         nullable=False,
         default="Draft"
     )
-    content_metadata: Mapped[dict] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
+    content_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Polymorphic mapping
     __mapper_args__ = {
@@ -154,15 +132,16 @@ class Content(Base):
 
     # Relationships
     lesson: Mapped["Lesson"] = relationship("Lesson", back_populates="contents")
-    user_progress: Mapped[list["UserContentProgress"]] = relationship(
+    user_progress: Mapped[List["UserContentProgress"]] = relationship(
         "UserContentProgress", back_populates="content", cascade="all, delete-orphan"
     )
     
     # Indexes
     __table_args__ = (
         Index('idx_content_lesson_id', 'lesson_id'),
-        Index('idx_content_type', 'content_type'),
+        Index('idx_content_content_type', 'content_type'),
         Index('idx_content_status', 'status'),
+        Index('idx_content_order', 'order'),
     )
 
 
@@ -176,8 +155,8 @@ class TheoryContent(Content):
         primary_key=True
     )
     text_content: Mapped[str] = mapped_column(Text, nullable=False)
-    examples: Mapped[dict] = mapped_column(JSON, nullable=True)
-    references: Mapped[dict] = mapped_column(JSON, nullable=True)
+    examples: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    references: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
     __mapper_args__ = {
         "polymorphic_identity": "theory"
@@ -195,7 +174,7 @@ class ExerciseContent(Content):
     )
     problems: Mapped[dict] = mapped_column(JSON, nullable=False)
     difficulty_level: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    estimated_time: Mapped[int] = mapped_column(Integer, nullable=True)  # in minutes
+    estimated_time: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # in minutes
     
     __mapper_args__ = {
         "polymorphic_identity": "exercise"
@@ -212,7 +191,7 @@ class AssessmentContent(Content):
         primary_key=True
     )
     questions: Mapped[dict] = mapped_column(JSON, nullable=False)
-    time_limit: Mapped[int] = mapped_column(Integer, nullable=True)  # in minutes
+    time_limit: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # in minutes
     passing_score: Mapped[float] = mapped_column(Float, default=70.0, nullable=False)
     attempts_allowed: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
     
@@ -235,31 +214,26 @@ class InteractiveContent(Content):
         nullable=False
     )
     configuration: Mapped[dict] = mapped_column(JSON, nullable=False)
-    instructions: Mapped[str] = mapped_column(Text, nullable=True)
+    instructions: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     __mapper_args__ = {
         "polymorphic_identity": "interactive"
     }
 
 
-class Tag(Base):
+class Tag(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Tags for categorizing content."""
     __tablename__ = "tags"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     category: Mapped[Category] = mapped_column(
         Enum(Category),
         nullable=False,
         default=Category.TOPIC
     )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
-    )
 
-    courses: Mapped[list["Course"]] = relationship(
+    # Relationships
+    courses: Mapped[List["Course"]] = relationship(
         "Course", secondary="course_tags", back_populates="tags"
     )
     
@@ -269,45 +243,36 @@ class Tag(Base):
         Index('idx_tag_category', 'category'),
     )
 
-class Resource(Base):
+
+class Resource(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Educational resources and media files."""
     __tablename__ = "resources"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     type: Mapped[ResourceType] = mapped_column(
         Enum(ResourceType),
         nullable=False
     )
     url: Mapped[str] = mapped_column(String(1024), nullable=False)
-    lesson_id: Mapped[uuid.UUID] = mapped_column(
+    lesson_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("lessons.id", ondelete="CASCADE"),
         nullable=True,
     )
-    created_by: Mapped[uuid.UUID] = mapped_column(
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
 
-    lesson: Mapped["Lesson"] = relationship("Lesson", back_populates="resources")
-    creator: Mapped["User"] = relationship("User")
+    # Relationships
+    lesson: Mapped[Optional["Lesson"]] = relationship("Lesson", back_populates="resources")
+    creator: Mapped[Optional["User"]] = relationship("User")
     
     # Indexes
     __table_args__ = (
-        Index('idx_resource_lesson_id', 'lesson_id'),
         Index('idx_resource_type', 'type'),
+        Index('idx_resource_lesson_id', 'lesson_id'),
         Index('idx_resource_created_by', 'created_by'),
     )

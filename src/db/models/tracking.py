@@ -1,29 +1,28 @@
 from datetime import datetime, timezone
 import uuid
+from typing import Optional
 
 from sqlalchemy import Index, String, Text, Integer, Enum, TIMESTAMP, ForeignKey, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from src.db.models.base import Base
+from src.db.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-class LearningSession(Base):
+class LearningSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Records of individual learning sessions."""
     __tablename__ = "learning_sessions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
     start_time: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
+        TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
-    end_time: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)
-    duration: Mapped[int] = mapped_column(Integer, nullable=True)  # in minutes
+    end_time: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # in minutes
     # JSON Structure for session_data:
     # {
     #     "activities": [
@@ -48,6 +47,7 @@ class LearningSession(Base):
     # }
     session_data: Mapped[dict] = mapped_column(JSON, nullable=False)
 
+    # Relationships
     user: Mapped["User"] = relationship("User")
     
     # Indexes
@@ -57,19 +57,16 @@ class LearningSession(Base):
     )
 
 
-class ErrorLog(Base):
+class ErrorLog(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Records of student mistakes for analysis."""
     __tablename__ = "error_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    lesson_id: Mapped[uuid.UUID] = mapped_column(
+    lesson_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("lessons.id", ondelete="CASCADE"),
         nullable=True,
@@ -92,12 +89,10 @@ class ErrorLog(Base):
     #     ]
     # }
     error_data: Mapped[dict] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
-    )
 
+    # Relationships
     user: Mapped["User"] = relationship("User")
-    lesson: Mapped["Lesson"] = relationship("Lesson")
+    lesson: Mapped[Optional["Lesson"]] = relationship("Lesson")
     
     # Indexes
     __table_args__ = (
@@ -107,13 +102,10 @@ class ErrorLog(Base):
     )
 
 
-class StudyStreak(Base):
+class StudyStreak(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Tracks user's learning consistency."""
     __tablename__ = "study_streaks"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -122,7 +114,7 @@ class StudyStreak(Base):
     current_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     longest_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     last_study_date: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
+        TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     # JSON Structure for streak_data:
     # {
@@ -142,6 +134,7 @@ class StudyStreak(Base):
     # }
     streak_data: Mapped[dict] = mapped_column(JSON, nullable=False)
 
+    # Relationships
     user: Mapped["User"] = relationship("User")
     
     # Indexes

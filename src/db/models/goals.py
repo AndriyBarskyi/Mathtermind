@@ -1,20 +1,19 @@
 from datetime import datetime, timezone
 import uuid
+from typing import Optional
 
 from sqlalchemy import Index, String, Text, Integer, Enum, TIMESTAMP, ForeignKey, Float, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
-from .enums import MetricType
+from src.db.models.base import Base
+from src.db.models.enums import MetricType
+from src.db.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-class LearningGoal(Base):
+class LearningGoal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """User-defined learning goals and targets."""
     __tablename__ = "learning_goals"
     
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -33,9 +32,9 @@ class LearningGoal(Base):
     )
     current_progress: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     start_date: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
+        TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
-    end_date: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=True)
+    end_date: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
@@ -49,29 +48,26 @@ class LearningGoal(Base):
     )
 
 
-class PersonalBest(Base):
+class PersonalBest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Tracks personal best performances for self-improvement."""
     __tablename__ = "personal_bests"
     
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    metric_type: Mapped[str] = mapped_column(
+    metric_type: Mapped[MetricType] = mapped_column(
         Enum(MetricType), nullable=False
     )
     value: Mapped[float] = mapped_column(Float, nullable=False)
-    context_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=True)  # Content ID, Lesson ID, etc.
-    context_type: Mapped[str] = mapped_column(String(50), nullable=True)  # "lesson", "content", "course", etc.
+    context_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)  # Content ID, Lesson ID, etc.
+    context_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "lesson", "content", "course", etc.
     achieved_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, default=datetime.now(timezone.utc)
+        TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
-    previous_best: Mapped[float] = mapped_column(Float, nullable=True)
-    improvement: Mapped[float] = mapped_column(Float, nullable=True)  # Percentage or absolute improvement
+    previous_best: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    improvement: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Percentage or absolute improvement
     
     user: Mapped["User"] = relationship("User", back_populates="personal_bests")
     

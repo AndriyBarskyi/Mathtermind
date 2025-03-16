@@ -92,4 +92,27 @@ class LessonType(str, enum.Enum):
     EXERCISE = "Exercise"
     ASSESSMENT = "Assessment"
     INTERACTIVE = "Interactive"
+
+class ThemeType(str, enum.Enum):
+    """User interface theme options."""
+    LIGHT = "light"
+    DARK = "dark"
+
+class FontSize(str, enum.Enum):
+    """Font size options for accessibility."""
+    SMALL = "small"
+    MEDIUM = "medium"
+    LARGE = "large"
+
+class PreferredSubject(str, enum.Enum):
+    """User's preferred subject for study."""
+    MATH = "Math"
+    INFORMATICS = "Informatics"
+
+class NotificationType(str, enum.Enum):
+    """Types of notifications in the system."""
+    ACHIEVEMENT = "Achievement"
+    COURSE = "Course"
+    REMINDER = "Reminder"
+    SYSTEM = "System"
     
