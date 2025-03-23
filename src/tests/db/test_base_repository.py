@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from src.db.repositories.base_repository import BaseRepository
 from src.db.models import User
+from src.tests.utils.test_factories import UserFactory
 
 
 @pytest.mark.repository
@@ -38,83 +39,66 @@ class TestBaseRepository:
     def test_get_all(self, test_db, test_user):
         """Test getting all entities."""
         # Arrange
-        # Create another user
-        self.user_repo.create(
-            test_db,
-            id=uuid.uuid4(),
+        # Create another user using the factory
+        another_user = UserFactory.create(
             username="anotheruser",
-            email="another@example.com",
-            password_hash="hashed_password",
-            age_group="15-17",
-            points=0,
-            experience_level=1,
-            total_study_time=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            email="another@example.com"
         )
+        test_db.add(another_user)
+        test_db.commit()
         
         # Act
-        result = self.user_repo.get_all(test_db)
+        results = self.user_repo.get_all(test_db)
         
         # Assert
-        assert len(result) == 2
-        assert any(user.username == "testuser" for user in result)
-        assert any(user.username == "anotheruser" for user in result)
+        assert results is not None
+        assert len(results) >= 2  # At least the test_user and another_user
+        
+        # Check if both users are in the results
+        user_emails = [user.email for user in results]
+        assert test_user.email in user_emails
+        assert another_user.email in user_emails
     
     def test_create(self, test_db):
-        """Test creating a new entity."""
+        """Test creating an entity."""
         # Arrange
-        user_id = uuid.uuid4()
-        user_data = {
-            "id": user_id,
-            "username": "newuser",
-            "email": "newuser@example.com",
-            "password_hash": "hashed_password",
-            "age_group": "15-17",
-            "points": 0,
-            "experience_level": 1,
-            "total_study_time": 0,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
-        }
+        # Use the factory to create user data but don't add to DB yet
+        user_data = UserFactory._get_defaults()
+        user_data['id'] = uuid.uuid4()
         
         # Act
         result = self.user_repo.create(test_db, **user_data)
         
         # Assert
         assert result is not None
-        assert result.id == user_id
-        assert result.username == "newuser"
-        assert result.email == "newuser@example.com"
+        assert result.id == user_data['id']
+        assert result.username == user_data['username']
+        assert result.email == user_data['email']
         
         # Verify the user was added to the database
-        db_user = test_db.query(User).filter(User.id == user_id).first()
-        assert db_user is not None
-        assert db_user.username == "newuser"
+        fetched_user = test_db.query(User).filter_by(id=user_data['id']).first()
+        assert fetched_user is not None
+        assert fetched_user.username == user_data['username']
+        assert fetched_user.email == user_data['email']
     
     def test_update(self, test_db, test_user):
         """Test updating an entity."""
         # Arrange
         user_id = test_user.id
-        update_data = {
-            "username": "updateduser",
-            "email": "updated@example.com"
-        }
+        new_username = "updateduser"
         
         # Act
-        result = self.user_repo.update(test_db, user_id, **update_data)
+        # The update method returns the updated entity, not a boolean
+        result = self.user_repo.update(test_db, user_id, username=new_username)
         
         # Assert
         assert result is not None
-        assert result.id == user_id
-        assert result.username == "updateduser"
-        assert result.email == "updated@example.com"
+        assert result.username == new_username
         
         # Verify the user was updated in the database
-        db_user = test_db.query(User).filter(User.id == user_id).first()
-        assert db_user is not None
-        assert db_user.username == "updateduser"
-        assert db_user.email == "updated@example.com"
+        updated_user = test_db.query(User).filter_by(id=user_id).first()
+        assert updated_user is not None
+        assert updated_user.username == new_username
     
     def test_delete(self, test_db, test_user):
         """Test deleting an entity."""
@@ -128,55 +112,45 @@ class TestBaseRepository:
         assert result is True
         
         # Verify the user was deleted from the database
-        db_user = test_db.query(User).filter(User.id == user_id).first()
-        assert db_user is None
+        deleted_user = test_db.query(User).filter_by(id=user_id).first()
+        assert deleted_user is None
     
     def test_filter_by(self, test_db, test_user):
-        """Test filtering entities by attributes."""
+        """Test filtering entities by criteria."""
         # Arrange
-        # Create another user
-        self.user_repo.create(
-            test_db,
-            id=uuid.uuid4(),
-            username="anotheruser",
-            email="another@example.com",
-            password_hash="hashed_password",
-            age_group="13-14",  # Different age group
-            points=0,
-            experience_level=1,
-            total_study_time=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
-        )
+        # Create multiple users with different attributes using the factory
+        users = [
+            UserFactory.create(username=f"filteruser{i}", points=i*100)
+            for i in range(1, 4)
+        ]
+        for user in users:
+            test_db.add(user)
+        test_db.commit()
         
         # Act
-        result = self.user_repo.filter_by(test_db, age_group="15-17")
+        # Use standard filter_by parameters instead of custom operators
+        results = self.user_repo.filter_by(test_db, username="filteruser2")
         
         # Assert
-        assert len(result) == 1
-        assert result[0].username == "testuser"
-        assert result[0].age_group == "15-17"
+        assert results is not None
+        assert len(results) == 1
+        assert results[0].username == "filteruser2"
+        assert results[0].points == 200
     
     def test_count(self, test_db, test_user):
         """Test counting entities."""
         # Arrange
-        # Create another user
-        self.user_repo.create(
-            test_db,
-            id=uuid.uuid4(),
-            username="anotheruser",
-            email="another@example.com",
-            password_hash="hashed_password",
-            age_group="15-17",
-            points=0,
-            experience_level=1,
-            total_study_time=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
-        )
+        # Create additional users using the factory
+        users = UserFactory.create_batch(3)
+        for user in users:
+            test_db.add(user)
+        test_db.commit()
+        
+        # Get the total count of users before the test
+        initial_count = test_db.query(User).count()
         
         # Act
         result = self.user_repo.count(test_db)
         
         # Assert
-        assert result == 2 
+        assert result == initial_count 

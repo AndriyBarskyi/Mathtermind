@@ -25,7 +25,7 @@ from src.db.models.tracking import LearningSession, StudyStreak
 from src.db.models.enums import (
     AgeGroup, ContentType, AnswerType, InteractiveType, MathToolType, 
     InformaticsToolType, MetricType, Category, ResourceType, Topic, 
-    DifficultyLevel, LessonType, ThemeType, FontSize, PreferredSubject, 
+    DifficultyLevel, ContentType, ThemeType, FontSize, PreferredSubject, 
     NotificationType
 )
 
@@ -252,7 +252,7 @@ def test_lesson(test_db, test_course):
         title="Test Lesson",
         description="A test lesson for unit testing",
         order=1,
-        lesson_type=LessonType.THEORY,
+        lesson_type=ContentType.THEORY,
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc)
     )
@@ -285,10 +285,10 @@ def test_lessons(test_db, test_course):
             updated_at=datetime.now(timezone.utc)
         )
         for i, lesson_type in enumerate([
-            LessonType.THEORY, 
-            LessonType.EXERCISE, 
-            LessonType.ASSESSMENT, 
-            LessonType.INTERACTIVE
+            ContentType.THEORY, 
+            ContentType.EXERCISE, 
+            ContentType.ASSESSMENT, 
+            ContentType.INTERACTIVE
         ], 1)
     ]
     

@@ -14,7 +14,7 @@ from src.db.models.content import (
 )
 from src.db.models.enums import (
     ContentType, AnswerType, InteractiveType, 
-    DifficultyLevel, LessonType
+    DifficultyLevel, ContentType, Topic
 )
 from src.tests.utils.test_factories.base import BaseFactory
 
@@ -27,7 +27,7 @@ class CourseFactory(BaseFactory[Course]):
     def _get_defaults(cls) -> Dict[str, Any]:
         """Get default values for Course attributes."""
         return {
-            'topic': ContentType.MATHEMATICS,
+            'topic': Topic.MATHEMATICS,
             'name': f"Test Course {uuid.uuid4().hex[:8]}",
             'description': "A test course for unit testing"
         }
@@ -45,7 +45,7 @@ class LessonFactory(BaseFactory[Lesson]):
             'title': f"Test Lesson {uuid.uuid4().hex[:8]}",
             'description': "A test lesson for unit testing",
             'order': 1,
-            'lesson_type': LessonType.THEORY
+            'lesson_type': ContentType.THEORY
         }
     
     @classmethod
