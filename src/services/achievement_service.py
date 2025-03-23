@@ -1,329 +1,421 @@
+"""
+Achievement service for Mathtermind.
+
+This module provides service methods for managing achievements and rewards.
+"""
+
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
 import uuid
 import logging
+from datetime import datetime
 
 from src.db import get_db
-from src.db.repositories import achievement_repo, user_achievement_repo
-from src.db.models import Achievement as DBAchievement, UserAchievement as DBUserAchievement
+from src.db.models import (
+    Achievement as DBAchievement,
+    UserAchievement as DBUserAchievement
+)
+from src.db.repositories import (
+    AchievementRepository,
+    UserRepository,
+    ProgressRepository
+)
+from src.models.achievement import Achievement, UserAchievement
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-class Achievement:
-    """Model for an achievement"""
-    def __init__(
-        self,
-        id: str,
-        title: str,
-        description: str,
-        icon: str,
-        criteria: Dict[str, Any],
-        points: int,
-        created_at: datetime,
-        is_active: bool
-    ):
-        self.id = id
-        self.title = title
-        self.description = description
-        self.icon = icon
-        self.criteria = criteria
-        self.points = points
-        self.created_at = created_at
-        self.is_active = is_active
-
-
-class UserAchievement:
-    """Model for a user's earned achievement"""
-    def __init__(
-        self,
-        id: str,
-        user_id: str,
-        achievement_id: str,
-        achieved_at: datetime,
-        achievement: Optional[Achievement] = None
-    ):
-        self.id = id
-        self.user_id = user_id
-        self.achievement_id = achievement_id
-        self.achieved_at = achieved_at
-        self.achievement = achievement
-
 
 class AchievementService:
-    """
-    Service class for handling achievement operations.
-    This class provides methods for fetching, awarding, and tracking achievements.
-    """
+    """Service for managing user achievements and rewards."""
+    
+    def __init__(self):
+        """Initialize the achievement service."""
+        self.db = next(get_db())
+        self.achievement_repo = AchievementRepository(self.db)
+        self.user_repo = UserRepository(self.db)
+        self.progress_repo = ProgressRepository(self.db)
     
     def get_all_achievements(self) -> List[Achievement]:
         """
-        Get all available achievements
+        Get all available achievements.
         
         Returns:
-            List of all achievements
+            A list of achievements
         """
         try:
-            db = next(get_db())
-            db_achievements = achievement_repo.get_all_achievements(db)
-            achievements = [self._convert_db_achievement_to_achievement(achievement) for achievement in db_achievements]
-            db.close()
-            return achievements
+            # Get all achievements from the repository
+            db_achievements = self.achievement_repo.get_all()
+            
+            # Convert to UI models
+            return [self._convert_db_achievement_to_ui_achievement(ach) for ach in db_achievements]
         except Exception as e:
-            logger.error(f"Error fetching all achievements: {str(e)}")
+            logger.error(f"Error getting all achievements: {str(e)}")
             return []
     
-    def get_achievement(self, achievement_id: str) -> Optional[Achievement]:
+    def get_achievement_by_id(self, achievement_id: str) -> Optional[Achievement]:
         """
-        Get an achievement by its ID
+        Get an achievement by ID.
         
         Args:
-            achievement_id: The ID of the achievement to retrieve
+            achievement_id: The ID of the achievement
             
         Returns:
             The achievement if found, None otherwise
         """
         try:
-            db = next(get_db())
-            db_achievement = achievement_repo.get_achievement(db, achievement_id)
-            if db_achievement:
-                achievement = self._convert_db_achievement_to_achievement(db_achievement)
-                db.close()
-                return achievement
-            db.close()
-            return None
+            achievement_uuid = uuid.UUID(achievement_id)
+            
+            # Get the achievement from the repository
+            db_achievement = self.achievement_repo.get_by_id(achievement_uuid)
+            
+            if not db_achievement:
+                return None
+                
+            return self._convert_db_achievement_to_ui_achievement(db_achievement)
         except Exception as e:
-            logger.error(f"Error getting achievement: {str(e)}")
+            logger.error(f"Error getting achievement by ID: {str(e)}")
             return None
+    
+    def get_achievements_by_category(self, category: str) -> List[Achievement]:
+        """
+        Get achievements by category.
+        
+        Args:
+            category: The category of achievements
+            
+        Returns:
+            A list of achievements in the category
+        """
+        try:
+            # Get achievements by category
+            db_achievements = self.achievement_repo.get_by_category(category)
+            
+            # Convert to UI models
+            return [self._convert_db_achievement_to_ui_achievement(ach) for ach in db_achievements]
+        except Exception as e:
+            logger.error(f"Error getting achievements by category: {str(e)}")
+            return []
     
     def get_user_achievements(self, user_id: str) -> List[UserAchievement]:
         """
-        Get all achievements earned by a user
+        Get all achievements earned by a user.
         
         Args:
             user_id: The ID of the user
             
         Returns:
-            List of user achievement records
+            A list of user achievements
         """
         try:
-            db = next(get_db())
-            db_user_achievements = user_achievement_repo.get_user_achievements(db, user_id)
+            user_uuid = uuid.UUID(user_id)
             
-            # Get achievement details for each user achievement
-            user_achievements = []
-            for db_user_achievement in db_user_achievements:
-                db_achievement = achievement_repo.get_achievement(db, db_user_achievement.achievement_id)
-                achievement = self._convert_db_achievement_to_achievement(db_achievement) if db_achievement else None
-                
-                user_achievement = self._convert_db_user_achievement_to_user_achievement(
-                    db_user_achievement, 
-                    achievement
-                )
-                user_achievements.append(user_achievement)
+            # Get the user's achievements
+            db_user_achievements = self.achievement_repo.get_user_achievements(user_uuid)
             
-            db.close()
-            return user_achievements
+            # Convert to UI models
+            return [self._convert_db_user_achievement_to_ui_user_achievement(ua) for ua in db_user_achievements]
         except Exception as e:
             logger.error(f"Error getting user achievements: {str(e)}")
             return []
     
-    def award_achievement(self, user_id: str, achievement_id: str) -> Optional[UserAchievement]:
+    def award_achievement(self, 
+                        user_id: str, 
+                        achievement_id: str, 
+                        progress_data: Optional[Dict[str, Any]] = None) -> Optional[UserAchievement]:
         """
-        Award an achievement to a user
+        Award an achievement to a user.
         
         Args:
             user_id: The ID of the user
-            achievement_id: The ID of the achievement to award
+            achievement_id: The ID of the achievement
+            progress_data: Optional progress data related to the achievement
             
         Returns:
-            The created user achievement record if successful, None otherwise
+            The awarded user achievement if successful, None otherwise
         """
         try:
-            db = next(get_db())
+            user_uuid = uuid.UUID(user_id)
+            achievement_uuid = uuid.UUID(achievement_id)
             
-            # Check if achievement exists and is active
-            db_achievement = achievement_repo.get_achievement(db, achievement_id)
-            if not db_achievement or not db_achievement.is_active:
-                db.close()
+            # Check if user already has the achievement
+            existing = self.achievement_repo.get_user_achievement(user_uuid, achievement_uuid)
+            if existing:
+                logger.info(f"User {user_id} already has achievement {achievement_id}")
+                return self._convert_db_user_achievement_to_ui_user_achievement(existing)
+            
+            # Get the achievement
+            achievement = self.achievement_repo.get_by_id(achievement_uuid)
+            if not achievement:
+                logger.warning(f"Achievement not found: {achievement_id}")
                 return None
             
-            # Check if user already has this achievement
-            existing_achievement = user_achievement_repo.get_user_achievement(db, user_id, achievement_id)
-            if existing_achievement:
-                db.close()
-                return self._convert_db_user_achievement_to_user_achievement(
-                    existing_achievement,
-                    self._convert_db_achievement_to_achievement(db_achievement)
-                )
-            
-            # Create new user achievement record
-            user_achievement = DBUserAchievement(
-                id=uuid.uuid4(),
-                user_id=user_id,
-                achievement_id=achievement_id,
-                achieved_at=datetime.now(timezone.utc)
+            # Award the achievement
+            db_user_achievement = self.achievement_repo.award_achievement(
+                user_uuid, 
+                achievement_uuid, 
+                progress_data or {}
             )
             
-            # Save to database
-            created_achievement = user_achievement_repo.create_user_achievement(db, user_achievement)
+            if not db_user_achievement:
+                return None
             
-            # Convert to model
-            result = self._convert_db_user_achievement_to_user_achievement(
-                created_achievement,
-                self._convert_db_achievement_to_achievement(db_achievement)
-            )
+            # Award points to the user
+            if achievement.points_value > 0:
+                user = self.user_repo.get_by_id(user_uuid)
+                if user:
+                    user.points = (user.points or 0) + achievement.points_value
+                    self.user_repo.update(user)
             
-            db.close()
-            return result
+            return self._convert_db_user_achievement_to_ui_user_achievement(db_user_achievement)
         except Exception as e:
             logger.error(f"Error awarding achievement: {str(e)}")
+            self.db.rollback()
             return None
     
-    def check_achievement_criteria(self, user_id: str, event_type: str, event_data: Dict[str, Any]) -> List[Achievement]:
+    def check_progress_achievements(self, user_id: str, progress_id: str) -> List[UserAchievement]:
         """
-        Check if a user has met the criteria for any achievements based on an event
+        Check and award progress-related achievements for a user.
         
         Args:
             user_id: The ID of the user
-            event_type: The type of event (e.g., "course_completion", "points", "streak")
-            event_data: Data related to the event
+            progress_id: The ID of the progress record
             
         Returns:
-            List of achievements that the user has newly qualified for
+            A list of newly awarded achievements
         """
         try:
-            db = next(get_db())
+            user_uuid = uuid.UUID(user_id)
+            progress_uuid = uuid.UUID(progress_id)
             
-            # Get all active achievements
-            db_achievements = achievement_repo.get_active_achievements(db)
+            # Get the progress record
+            progress = self.progress_repo.get_by_id(progress_uuid)
+            if not progress:
+                logger.warning(f"Progress not found: {progress_id}")
+                return []
             
-            # Get user's existing achievements
-            existing_achievements = user_achievement_repo.get_user_achievements(db, user_id)
-            existing_achievement_ids = [str(a.achievement_id) for a in existing_achievements]
+            # Get all progress-related achievements
+            achievements = self.achievement_repo.get_by_category("progress")
             
-            # Filter achievements by event type and check criteria
-            qualified_achievements = []
-            
-            for db_achievement in db_achievements:
-                # Skip if user already has this achievement
-                if str(db_achievement.id) in existing_achievement_ids:
+            # Check each achievement
+            awarded = []
+            for achievement in achievements:
+                # Skip if user already has the achievement
+                if self.achievement_repo.get_user_achievement(user_uuid, achievement.id):
                     continue
                 
-                # Check if achievement criteria matches event type
-                criteria = db_achievement.criteria
-                if criteria.get("type") != event_type:
-                    continue
+                # Check achievement criteria
+                criteria = achievement.criteria
+                criteria_type = criteria.get("type", "")
                 
-                # Check specific criteria based on event type
-                if self._meets_criteria(criteria, event_data):
-                    qualified_achievements.append(self._convert_db_achievement_to_achievement(db_achievement))
+                if criteria_type == "course_completion":
+                    # Award for completing a course
+                    if progress.is_completed:
+                        user_achievement = self.award_achievement(
+                            user_id,
+                            str(achievement.id),
+                            {"progress_id": str(progress_uuid), "course_id": str(progress.course_id)}
+                        )
+                        if user_achievement:
+                            awarded.append(user_achievement)
+                
+                elif criteria_type == "progress_percentage":
+                    # Award for reaching a progress percentage
+                    min_percentage = criteria.get("min_percentage", 0)
+                    if progress.progress_percentage >= min_percentage:
+                        user_achievement = self.award_achievement(
+                            user_id,
+                            str(achievement.id),
+                            {"progress_id": str(progress_uuid), "percentage": progress.progress_percentage}
+                        )
+                        if user_achievement:
+                            awarded.append(user_achievement)
+                
+                elif criteria_type == "points_earned":
+                    # Award for earning points
+                    min_points = criteria.get("min_points", 0)
+                    if progress.total_points_earned >= min_points:
+                        user_achievement = self.award_achievement(
+                            user_id,
+                            str(achievement.id),
+                            {"progress_id": str(progress_uuid), "points": progress.total_points_earned}
+                        )
+                        if user_achievement:
+                            awarded.append(user_achievement)
             
-            db.close()
-            return qualified_achievements
+            return awarded
         except Exception as e:
-            logger.error(f"Error checking achievement criteria: {str(e)}")
+            logger.error(f"Error checking progress achievements: {str(e)}")
             return []
     
-    def _meets_criteria(self, criteria: Dict[str, Any], event_data: Dict[str, Any]) -> bool:
+    def check_user_achievements(self, user_id: str) -> List[UserAchievement]:
         """
-        Check if an event meets the criteria for an achievement
+        Check and award user-related achievements.
         
         Args:
-            criteria: The achievement criteria
-            event_data: Data related to the event
+            user_id: The ID of the user
             
         Returns:
-            True if the criteria is met, False otherwise
+            A list of newly awarded achievements
         """
         try:
-            criteria_type = criteria.get("type")
-            requirements = criteria.get("requirements", {})
+            user_uuid = uuid.UUID(user_id)
             
-            if criteria_type == "course_completion":
-                # Check if completed course is in required courses
-                course_id = event_data.get("course_id")
-                required_courses = requirements.get("course_ids", [])
-                return course_id in required_courses
+            # Get the user
+            user = self.user_repo.get_by_id(user_uuid)
+            if not user:
+                logger.warning(f"User not found: {user_id}")
+                return []
+            
+            # Get all user-related achievements
+            achievements = self.achievement_repo.get_by_category("user")
+            
+            # Check each achievement
+            awarded = []
+            for achievement in achievements:
+                # Skip if user already has the achievement
+                if self.achievement_repo.get_user_achievement(user_uuid, achievement.id):
+                    continue
                 
-            elif criteria_type == "points":
-                # Check if points earned meets or exceeds required points
-                points = event_data.get("points", 0)
-                required_points = requirements.get("points_required", 0)
-                return points >= required_points
+                # Check achievement criteria
+                criteria = achievement.criteria
+                criteria_type = criteria.get("type", "")
                 
-            elif criteria_type == "streak":
-                # Check if streak days meets or exceeds required days
-                streak_days = event_data.get("streak_days", 0)
-                required_days = requirements.get("days_required", 0)
-                return streak_days >= required_days
+                if criteria_type == "total_points":
+                    # Award for total points
+                    min_points = criteria.get("min_points", 0)
+                    if user.points >= min_points:
+                        user_achievement = self.award_achievement(
+                            user_id,
+                            str(achievement.id),
+                            {"total_points": user.points}
+                        )
+                        if user_achievement:
+                            awarded.append(user_achievement)
                 
-            elif criteria_type == "time":
-                # Check if study time meets or exceeds required time
-                study_time = event_data.get("study_time", 0)
-                required_time = requirements.get("time_required", 0)
-                return study_time >= required_time
+                elif criteria_type == "account_age":
+                    # Award for account age in days
+                    min_days = criteria.get("min_days", 0)
+                    account_age = (datetime.now() - user.created_at).days
+                    if account_age >= min_days:
+                        user_achievement = self.award_achievement(
+                            user_id,
+                            str(achievement.id),
+                            {"account_age_days": account_age}
+                        )
+                        if user_achievement:
+                            awarded.append(user_achievement)
                 
-            elif criteria_type == "perfect_score":
-                # Check if quiz is in required quizzes and score is 100%
-                quiz_id = event_data.get("quiz_id")
-                score = event_data.get("score", 0)
-                required_quizzes = requirements.get("quiz_ids", [])
-                return quiz_id in required_quizzes and score == 100
-                
-            return False
+                elif criteria_type == "study_time":
+                    # Award for total study time in minutes
+                    min_minutes = criteria.get("min_minutes", 0)
+                    if user.total_study_time and user.total_study_time >= min_minutes:
+                        user_achievement = self.award_achievement(
+                            user_id,
+                            str(achievement.id),
+                            {"total_study_time": user.total_study_time}
+                        )
+                        if user_achievement:
+                            awarded.append(user_achievement)
+            
+            return awarded
         except Exception as e:
-            logger.error(f"Error checking achievement criteria: {str(e)}")
-            return False
+            logger.error(f"Error checking user achievements: {str(e)}")
+            return []
     
-    def _convert_db_achievement_to_achievement(self, db_achievement: DBAchievement) -> Achievement:
-        """Convert a database achievement model to an Achievement model"""
+    def create_achievement(self, 
+                         name: str,
+                         description: str,
+                         category: str,
+                         criteria: Dict[str, Any],
+                         icon_url: str,
+                         points_value: int = 0,
+                         display_order: int = 0,
+                         is_hidden: bool = False,
+                         metadata: Optional[Dict[str, Any]] = None) -> Optional[Achievement]:
+        """
+        Create a new achievement.
+        
+        Args:
+            name: The name of the achievement
+            description: The description of the achievement
+            category: The category of the achievement
+            criteria: The criteria for earning the achievement
+            icon_url: The URL to the achievement icon
+            points_value: The points value of the achievement
+            display_order: The display order of the achievement
+            is_hidden: Whether the achievement is hidden until earned
+            metadata: Additional metadata for the achievement
+            
+        Returns:
+            The created achievement if successful, None otherwise
+        """
         try:
-            return Achievement(
-                id=str(db_achievement.id),
-                title=db_achievement.title,
-                description=db_achievement.description,
-                icon=db_achievement.icon,
-                criteria=db_achievement.criteria,
-                points=db_achievement.points,
-                created_at=db_achievement.created_at,
-                is_active=db_achievement.is_active
+            # Create a new achievement
+            db_achievement = self.achievement_repo.create(
+                name=name,
+                description=description,
+                category=category,
+                criteria=criteria,
+                icon_url=icon_url,
+                points_value=points_value,
+                display_order=display_order,
+                is_hidden=is_hidden,
+                metadata=metadata or {}
             )
+            
+            if not db_achievement:
+                return None
+                
+            return self._convert_db_achievement_to_ui_achievement(db_achievement)
         except Exception as e:
-            logger.error(f"Error converting achievement: {str(e)}")
-            # Return a default achievement as fallback
-            return Achievement(
-                id=str(db_achievement.id) if hasattr(db_achievement, 'id') else "unknown",
-                title=db_achievement.title if hasattr(db_achievement, 'title') else "Unknown Achievement",
-                description="No description available",
-                icon="default_icon.png",
-                criteria={},
-                points=0,
-                created_at=datetime.now(timezone.utc),
-                is_active=True
-            )
+            logger.error(f"Error creating achievement: {str(e)}")
+            self.db.rollback()
+            return None
     
-    def _convert_db_user_achievement_to_user_achievement(
-        self, 
-        db_user_achievement: DBUserAchievement, 
-        achievement: Optional[Achievement] = None
-    ) -> UserAchievement:
-        """Convert a database user achievement model to a UserAchievement model"""
-        try:
-            return UserAchievement(
-                id=str(db_user_achievement.id),
-                user_id=str(db_user_achievement.user_id),
-                achievement_id=str(db_user_achievement.achievement_id),
-                achieved_at=db_user_achievement.achieved_at,
-                achievement=achievement
-            )
-        except Exception as e:
-            logger.error(f"Error converting user achievement: {str(e)}")
-            # Return a default user achievement as fallback
-            return UserAchievement(
-                id=str(db_user_achievement.id) if hasattr(db_user_achievement, 'id') else "unknown",
-                user_id=str(db_user_achievement.user_id) if hasattr(db_user_achievement, 'user_id') else "unknown",
-                achievement_id=str(db_user_achievement.achievement_id) if hasattr(db_user_achievement, 'achievement_id') else "unknown",
-                achieved_at=datetime.now(timezone.utc),
-                achievement=None
-            ) 
+    # Conversion Methods
+    
+    def _convert_db_achievement_to_ui_achievement(self, db_achievement: DBAchievement) -> Achievement:
+        """
+        Convert a database achievement to a UI achievement.
+        
+        Args:
+            db_achievement: The database achievement
+            
+        Returns:
+            The corresponding UI achievement
+        """
+        return Achievement(
+            id=str(db_achievement.id),
+            name=db_achievement.name,
+            description=db_achievement.description,
+            category=db_achievement.category,
+            criteria=db_achievement.criteria,
+            icon_url=db_achievement.icon_url,
+            points_value=db_achievement.points_value,
+            display_order=db_achievement.display_order,
+            is_hidden=db_achievement.is_hidden,
+            metadata=db_achievement.metadata,
+            created_at=db_achievement.created_at,
+            updated_at=db_achievement.updated_at
+        )
+    
+    def _convert_db_user_achievement_to_ui_user_achievement(self, db_user_achievement: DBUserAchievement) -> UserAchievement:
+        """
+        Convert a database user achievement to a UI user achievement.
+        
+        Args:
+            db_user_achievement: The database user achievement
+            
+        Returns:
+            The corresponding UI user achievement
+        """
+        return UserAchievement(
+            id=str(db_user_achievement.id),
+            user_id=str(db_user_achievement.user_id),
+            achievement_id=str(db_user_achievement.achievement_id),
+            achievement=self._convert_db_achievement_to_ui_achievement(db_user_achievement.achievement) if db_user_achievement.achievement else None,
+            awarded_at=db_user_achievement.awarded_at,
+            progress_data=db_user_achievement.progress_data,
+            created_at=db_user_achievement.created_at,
+            updated_at=db_user_achievement.updated_at
+        ) 
