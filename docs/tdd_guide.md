@@ -9,8 +9,7 @@ Test-Driven Development is a software development process that relies on the rep
 1. **Red**: Write a failing test for the functionality you want to implement
 2. **Green**: Write the minimum amount of code to make the test pass
 3. **Refactor**: Improve the code while ensuring the tests still pass
-
-## Benefits of TDD
+# Benefits of TDD
 
 - **Higher code quality**: TDD encourages simple, modular designs and prevents over-engineering
 - **Better test coverage**: All code is written to satisfy a test, ensuring high test coverage

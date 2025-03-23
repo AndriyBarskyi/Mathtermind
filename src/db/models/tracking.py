@@ -2,15 +2,23 @@ from datetime import datetime, timezone
 import uuid
 from typing import Optional
 
-from sqlalchemy import Index, String, Text, Integer, Enum, TIMESTAMP, ForeignKey, JSON, Boolean
+from sqlalchemy import (
+    Index,
+    Integer,
+    TIMESTAMP,
+    ForeignKey,
+    JSON,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.models.base import Base
 from src.db.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
+
 class LearningSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Records of individual learning sessions."""
+
     __tablename__ = "learning_sessions"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -22,7 +30,9 @@ class LearningSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         TIMESTAMP, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     end_time: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
-    duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # in minutes
+    duration: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True
+    )  # in minutes
     # JSON Structure for session_data:
     # {
     #     "activities": [
@@ -49,16 +59,17 @@ class LearningSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User")
-    
+
     # Indexes
     __table_args__ = (
-        Index('idx_learning_session_user_id', 'user_id'),
-        Index('idx_learning_session_start_time', 'start_time'),
+        Index("idx_learning_session_user_id", "user_id"),
+        Index("idx_learning_session_start_time", "start_time"),
     )
 
 
 class ErrorLog(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Records of student mistakes for analysis."""
+
     __tablename__ = "error_logs"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -93,17 +104,18 @@ class ErrorLog(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Relationships
     user: Mapped["User"] = relationship("User")
     lesson: Mapped[Optional["Lesson"]] = relationship("Lesson")
-    
+
     # Indexes
     __table_args__ = (
-        Index('idx_error_log_user_id', 'user_id'),
-        Index('idx_error_log_lesson_id', 'lesson_id'),
-        Index('idx_error_log_created_at', 'created_at'),
+        Index("idx_error_log_user_id", "user_id"),
+        Index("idx_error_log_lesson_id", "lesson_id"),
+        Index("idx_error_log_created_at", "created_at"),
     )
 
 
 class StudyStreak(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Tracks user's learning consistency."""
+
     __tablename__ = "study_streaks"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -136,10 +148,11 @@ class StudyStreak(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User")
-    
+
     # Indexes
     __table_args__ = (
-        Index('idx_study_streak_user_id', 'user_id'),
-        Index('idx_study_streak_current_streak', 'current_streak'),
-        Index('idx_study_streak_last_study_date', 'last_study_date'),
-    ) 
+        Index("idx_study_streak_user_id", "user_id"),
+        Index("idx_study_streak_current_streak", "current_streak"),
+        Index("idx_study_streak_last_study_date", "last_study_date"),
+    )
+
