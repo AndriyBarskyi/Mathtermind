@@ -1,174 +1,343 @@
-from sqlalchemy.orm import Session
-from src.db.models import Course
-import uuid
+"""
+Repository module for Course model in the Mathtermind application.
+"""
+
 from typing import List, Optional, Dict, Any
-import json
+import uuid
 from datetime import datetime, timezone
-import logging
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
 
-logger = logging.getLogger(__name__)
+from src.db.models import Course, Lesson
+from .base_repository import BaseRepository
 
 
-def create_course(db: Session, 
-                 topic: str,
-                 name: str, 
-                 description: str,
-                 difficulty_level: str = "Beginner",
-                 target_age_group: str = "15-17",
-                 estimated_time: int = 300,
-                 points_reward: int = 100,
-                 prerequisites: Optional[Dict[str, Any]] = None,
-                 tags: Optional[List[str]] = None) -> Course:
-    """
-    Create a new course in the database
+class CourseRepository(BaseRepository[Course]):
+    """Repository for Course model."""
     
-    Args:
-        db: Database session
-        topic: Course topic ("Informatics" or "Math")
-        name: Course name
-        description: Course description
-        difficulty_level: Course difficulty level ("Beginner", "Intermediate", or "Advanced")
-        target_age_group: Target age group ("10-12", "13-14", or "15-17")
-        estimated_time: Estimated time to complete the course in minutes
-        points_reward: Points reward for completing the course
-        prerequisites: Optional prerequisites for the course
-        tags: Optional tags for the course
+    def __init__(self):
+        """Initialize the repository with the Course model."""
+        super().__init__(Course)
+    
+    def create_course(self, db: Session, 
+                    topic: str,
+                    name: str, 
+                    description: str,
+                    difficulty_level: str = "beginner",
+                    target_age_group: str = "15-17",
+                    estimated_time: Optional[int] = None,
+                    prerequisites: Optional[List[uuid.UUID]] = None,
+                    tags: Optional[List[str]] = None,
+                    is_published: bool = False,
+                    thumbnail_url: Optional[str] = None,
+                    points_reward: int = 100,
+                    author_id: Optional[uuid.UUID] = None,
+                    metadata: Optional[Dict[str, Any]] = None) -> Course:
+        """
+        Create a new course.
         
-    Returns:
-        Created course
-    """
-    # Create the course with the basic fields
-    course = Course(
-        id=uuid.uuid4(),
-        topic=topic,
-        name=name,
-        description=description,
-        created_at=datetime.now(timezone.utc)
-    )
-    db.add(course)
-    db.commit()
-    db.refresh(course)
-    return course
-
-
-def delete_course(db: Session, course_id: uuid.UUID) -> Optional[Course]:
-    """
-    Delete a course from the database
-    
-    Args:
-        db: Database session
-        course_id: Course ID
+        Args:
+            db: Database session
+            topic: Course topic (math, programming, etc.)
+            name: Course name
+            description: Course description
+            difficulty_level: Course difficulty level (beginner, intermediate, advanced)
+            target_age_group: Target age group
+            estimated_time: Estimated time to complete in minutes
+            prerequisites: List of prerequisite course IDs
+            tags: List of tags
+            is_published: Whether the course is published
+            thumbnail_url: URL to course thumbnail image
+            points_reward: Points reward for completing the course
+            author_id: Author/creator user ID
+            metadata: Additional metadata
+            
+        Returns:
+            Created course
+        """
+        course = Course(
+            topic=topic,
+            name=name,
+            description=description,
+            difficulty_level=difficulty_level,
+            target_age_group=target_age_group,
+            estimated_time=estimated_time,
+            prerequisites=prerequisites or [],
+            tags=tags or [],
+            is_published=is_published,
+            thumbnail_url=thumbnail_url,
+            points_reward=points_reward,
+            author_id=author_id,
+            created_at=datetime.now(timezone.utc),
+            metadata=metadata or {}
+        )
         
-    Returns:
-        Deleted course or None if not found
-    """
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if course is None:
-        return None
-    db.delete(course)
-    db.commit()
-    return course
-
-
-def get_course(db: Session, course_id: uuid.UUID) -> Optional[Course]:
-    """
-    Get a course by ID
+        db.add(course)
+        db.commit()
+        db.refresh(course)
+        return course
     
-    Args:
-        db: Database session
-        course_id: Course ID
+    def update_course(self, db: Session, 
+                    course_id: uuid.UUID,
+                    topic: Optional[str] = None,
+                    name: Optional[str] = None, 
+                    description: Optional[str] = None,
+                    difficulty_level: Optional[str] = None,
+                    target_age_group: Optional[str] = None,
+                    estimated_time: Optional[int] = None,
+                    prerequisites: Optional[List[uuid.UUID]] = None,
+                    tags: Optional[List[str]] = None,
+                    is_published: Optional[bool] = None,
+                    thumbnail_url: Optional[str] = None,
+                    points_reward: Optional[int] = None,
+                    metadata: Optional[Dict[str, Any]] = None) -> Optional[Course]:
+        """
+        Update a course.
         
-    Returns:
-        Course or None if not found
-    """
-    return db.query(Course).filter(Course.id == course_id).first()
-
-
-def update_course(db: Session, 
-                 course_id: uuid.UUID, 
-                 **kwargs) -> Optional[Course]:
-    """
-    Update a course in the database
+        Args:
+            db: Database session
+            course_id: Course ID
+            topic: New course topic
+            name: New course name
+            description: New course description
+            difficulty_level: New difficulty level
+            target_age_group: New target age group
+            estimated_time: New estimated time
+            prerequisites: New list of prerequisite course IDs
+            tags: New list of tags
+            is_published: New published status
+            thumbnail_url: New thumbnail URL
+            points_reward: New points reward
+            metadata: New metadata to merge with existing
+            
+        Returns:
+            Updated course or None if not found
+        """
+        course = self.get_by_id(db, course_id)
+        if course:
+            if topic is not None:
+                course.topic = topic
+                
+            if name is not None:
+                course.name = name
+                
+            if description is not None:
+                course.description = description
+                
+            if difficulty_level is not None:
+                course.difficulty_level = difficulty_level
+                
+            if target_age_group is not None:
+                course.target_age_group = target_age_group
+                
+            if estimated_time is not None:
+                course.estimated_time = estimated_time
+                
+            if prerequisites is not None:
+                course.prerequisites = prerequisites
+                
+            if tags is not None:
+                course.tags = tags
+                
+            if is_published is not None:
+                course.is_published = is_published
+                
+            if thumbnail_url is not None:
+                course.thumbnail_url = thumbnail_url
+                
+            if points_reward is not None:
+                course.points_reward = points_reward
+                
+            if metadata is not None:
+                if not course.metadata:
+                    course.metadata = {}
+                course.metadata.update(metadata)
+                
+            # Update last modified time
+            course.updated_at = datetime.now(timezone.utc)
+                
+            db.commit()
+            db.refresh(course)
+        return course
     
-    Args:
-        db: Database session
-        course_id: Course ID
-        **kwargs: Fields to update
+    def delete_course(self, db: Session, course_id: uuid.UUID) -> Optional[Course]:
+        """
+        Delete a course.
         
-    Returns:
-        Updated course or None if not found
-    """
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if course is None:
-        return None
+        Args:
+            db: Database session
+            course_id: Course ID
+            
+        Returns:
+            Deleted course or None if not found
+        """
+        course = self.get_by_id(db, course_id)
+        if course:
+            db.delete(course)
+            db.commit()
+        return course
     
-    # Update basic fields
-    basic_fields = ["name", "description", "topic"]
-    for field in basic_fields:
-        if field in kwargs:
-            setattr(course, field, kwargs[field])
-    
-    db.commit()
-    db.refresh(course)
-    return course
-
-
-def get_all_courses(db: Session) -> List[Course]:
-    """
-    Get all courses from the database
-    
-    Args:
-        db: Database session
+    def get_courses_by_topic(self, db: Session, topic: str) -> List[Course]:
+        """
+        Get all courses for a topic.
         
-    Returns:
-        List of all courses
-    """
-    return db.query(Course).all()
-
-
-def get_courses_by_topic(db: Session, topic: str) -> List[Course]:
-    """
-    Get courses by topic
+        Args:
+            db: Database session
+            topic: Course topic
+            
+        Returns:
+            List of courses
+        """
+        return db.query(Course).filter(
+            Course.topic == topic
+        ).all()
     
-    Args:
-        db: Database session
-        topic: Course topic ("Informatics" or "Math")
+    def get_published_courses(self, db: Session) -> List[Course]:
+        """
+        Get all published courses.
         
-    Returns:
-        List of courses with the specified topic
-    """
-    return db.query(Course).filter(Course.topic == topic).all()
-
-
-def get_courses_by_difficulty(db: Session, difficulty_level: str) -> List[Course]:
-    """
-    Get courses by difficulty level
+        Args:
+            db: Database session
+            
+        Returns:
+            List of published courses
+        """
+        return db.query(Course).filter(
+            Course.is_published == True
+        ).all()
     
-    Args:
-        db: Database session
-        difficulty_level: Course difficulty level ("Beginner", "Intermediate", or "Advanced")
+    def get_courses_with_lessons(self, db: Session, course_id: uuid.UUID) -> Dict[str, Any]:
+        """
+        Get a course with all its lessons.
         
-    Returns:
-        List of courses with the specified difficulty level
-    """
-    # Since course_metadata no longer exists, we can't filter by difficulty level
-    # Return all courses instead
-    logger.warning("get_courses_by_difficulty: course_metadata no longer exists, returning all courses")
-    return get_all_courses(db)
-
-
-def get_courses_by_age_group(db: Session, target_age_group: str) -> List[Course]:
-    """
-    Get courses by target age group
+        Args:
+            db: Database session
+            course_id: Course ID
+            
+        Returns:
+            Dictionary with course and lessons
+        """
+        course = self.get_by_id(db, course_id)
+        if not course:
+            return None
+            
+        lessons = db.query(Lesson).filter(
+            Lesson.course_id == course_id
+        ).order_by(Lesson.order).all()
+        
+        return {
+            "course": course,
+            "lessons": lessons
+        }
     
-    Args:
-        db: Database session
-        target_age_group: Target age group ("10-12", "13-14", or "15-17")
+    def publish_course(self, db: Session, course_id: uuid.UUID) -> Optional[Course]:
+        """
+        Publish a course.
         
-    Returns:
-        List of courses with the specified target age group
-    """
-    # Since course_metadata no longer exists, we can't filter by age group
-    # Return all courses instead
-    logger.warning("get_courses_by_age_group: course_metadata no longer exists, returning all courses")
-    return get_all_courses(db)
+        Args:
+            db: Database session
+            course_id: Course ID
+            
+        Returns:
+            Updated course or None if not found
+        """
+        return self.update_course(db, course_id, is_published=True)
+    
+    def unpublish_course(self, db: Session, course_id: uuid.UUID) -> Optional[Course]:
+        """
+        Unpublish a course.
+        
+        Args:
+            db: Database session
+            course_id: Course ID
+            
+        Returns:
+            Updated course or None if not found
+        """
+        return self.update_course(db, course_id, is_published=False)
+    
+    def search_courses(self, db: Session, 
+                     query: str,
+                     topic: Optional[str] = None,
+                     difficulty_level: Optional[str] = None,
+                     published_only: bool = True) -> List[Course]:
+        """
+        Search for courses.
+        
+        Args:
+            db: Database session
+            query: Search query
+            topic: Optional topic filter
+            difficulty_level: Optional difficulty level filter
+            published_only: Whether to return only published courses
+            
+        Returns:
+            List of matching courses
+        """
+        search_filter = (
+            Course.name.ilike(f"%{query}%") | 
+            Course.description.ilike(f"%{query}%")
+        )
+        
+        filters = [search_filter]
+        
+        if topic:
+            filters.append(Course.topic == topic)
+            
+        if difficulty_level:
+            filters.append(Course.difficulty_level == difficulty_level)
+            
+        if published_only:
+            filters.append(Course.is_published == True)
+            
+        return db.query(Course).filter(*filters).all()
+    
+    def get_courses_by_tag(self, db: Session, tag: str) -> List[Course]:
+        """
+        Get all courses with a specific tag.
+        
+        Args:
+            db: Database session
+            tag: Tag to search for
+            
+        Returns:
+            List of courses with the tag
+        """
+        # Note: This is inefficient in SQL but works for JSONB arrays
+        courses = db.query(Course).all()
+        return [c for c in courses if c.tags and tag in c.tags]
+    
+    def get_prerequisite_courses(self, db: Session, course_id: uuid.UUID) -> List[Course]:
+        """
+        Get all prerequisite courses for a course.
+        
+        Args:
+            db: Database session
+            course_id: Course ID
+            
+        Returns:
+            List of prerequisite courses
+        """
+        course = self.get_by_id(db, course_id)
+        if not course or not course.prerequisites:
+            return []
+            
+        return db.query(Course).filter(
+            Course.id.in_(course.prerequisites)
+        ).all()
+        
+    def update_course_metadata(self, db: Session, 
+                             course_id: uuid.UUID, 
+                             metadata: Dict[str, Any]) -> Optional[Course]:
+        """
+        Update the metadata of a course.
+        
+        Args:
+            db: Database session
+            course_id: Course ID
+            metadata: New metadata to merge with existing
+            
+        Returns:
+            Updated course or None if not found
+        """
+        return self.update_course(db, course_id, metadata=metadata)
