@@ -1,298 +1,664 @@
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
+"""
+Progress service for Mathtermind.
+
+This module provides service methods for tracking user progress in courses and lessons.
+"""
+
+from typing import List, Optional, Dict, Any, Union
 import uuid
 import logging
+from datetime import datetime
 
 from src.db import get_db
-from src.db.repositories import progress_repo
-from src.db.models import Progress as DBProgress
+from src.db.models import (
+    Progress as DBProgress,
+    ContentState as DBContentState,
+    CompletedLesson as DBCompletedLesson,
+    CompletedCourse as DBCompletedCourse,
+    UserContentProgress as DBUserContentProgress
+)
+from src.db.repositories import (
+    ProgressRepository,
+    ContentStateRepository,
+    CompletedLessonRepository,
+    CompletedCourseRepository,
+    UserContentProgressRepository,
+    LessonRepository,
+    CourseRepository
+)
+from src.models.progress import (
+    Progress, 
+    ContentState, 
+    CompletedLesson, 
+    CompletedCourse, 
+    UserContentProgress
+)
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-class Progress:
-    """Model for user progress in a course"""
-    def __init__(
-        self,
-        id: str,
-        user_id: str,
-        course_id: str,
-        current_lesson_id: Optional[str],
-        completed_lessons: List[Dict[str, Any]],
-        current_difficulty: str,
-        progress_percentage: float,
-        total_points_earned: int,
-        time_spent: int,
-        strengths: List[Dict[str, Any]],
-        weaknesses: List[Dict[str, Any]],
-        learning_path: Dict[str, Any],
-        progress_data: Dict[str, Any],
-        last_accessed: datetime
-    ):
-        self.id = id
-        self.user_id = user_id
-        self.course_id = course_id
-        self.current_lesson_id = current_lesson_id
-        self.completed_lessons = completed_lessons
-        self.current_difficulty = current_difficulty
-        self.progress_percentage = progress_percentage
-        self.total_points_earned = total_points_earned
-        self.time_spent = time_spent
-        self.strengths = strengths
-        self.weaknesses = weaknesses
-        self.learning_path = learning_path
-        self.progress_data = progress_data
-        self.last_accessed = last_accessed
-
 
 class ProgressService:
-    """
-    Service class for handling user progress operations.
-    This class provides methods for tracking, updating, and analyzing user progress.
-    """
+    """Service for managing user progress."""
+    
+    def __init__(self):
+        """Initialize the progress service."""
+        self.db = next(get_db())
+        self.progress_repo = ProgressRepository(self.db)
+        self.content_state_repo = ContentStateRepository(self.db)
+        self.completed_lesson_repo = CompletedLessonRepository(self.db)
+        self.completed_course_repo = CompletedCourseRepository(self.db)
+        self.user_content_progress_repo = UserContentProgressRepository(self.db)
+        self.lesson_repo = LessonRepository(self.db)
+        self.course_repo = CourseRepository(self.db)
+    
+    # Progress Methods
     
     def get_user_progress(self, user_id: str) -> List[Progress]:
         """
-        Get all progress records for a user
+        Get all progress records for a user.
         
         Args:
             user_id: The ID of the user
             
         Returns:
-            List of progress records for the user
+            A list of progress records
         """
         try:
-            db = next(get_db())
-            db_progress_records = progress_repo.get_progress_by_user(db, user_id)
-            progress_records = [self._convert_db_progress_to_progress(record) for record in db_progress_records]
-            db.close()
-            return progress_records
+            user_uuid = uuid.UUID(user_id)
+            
+            # Get all progress records for the user
+            db_progress_records = self.progress_repo.get_user_progress(user_uuid)
+            
+            # Convert to UI models
+            return [self._convert_db_progress_to_ui_progress(record) for record in db_progress_records]
         except Exception as e:
-            logger.error(f"Error fetching user progress: {str(e)}")
+            logger.error(f"Error getting user progress: {str(e)}")
             return []
     
     def get_course_progress(self, user_id: str, course_id: str) -> Optional[Progress]:
         """
-        Get progress record for a specific course and user
+        Get progress for a specific course.
         
         Args:
             user_id: The ID of the user
             course_id: The ID of the course
             
         Returns:
-            Progress record if found, None otherwise
+            The progress record if found, None otherwise
         """
         try:
-            db = next(get_db())
-            db_progress = progress_repo.get_progress_by_user_and_course(db, user_id, course_id)
-            if db_progress:
-                progress = self._convert_db_progress_to_progress(db_progress)
-                db.close()
-                return progress
-            db.close()
-            return None
+            user_uuid = uuid.UUID(user_id)
+            course_uuid = uuid.UUID(course_id)
+            
+            # Get the progress for the course
+            db_progress = self.progress_repo.get_user_course_progress(user_uuid, course_uuid)
+            
+            if not db_progress:
+                return None
+                
+            return self._convert_db_progress_to_ui_progress(db_progress)
         except Exception as e:
-            logger.error(f"Error fetching course progress: {str(e)}")
+            logger.error(f"Error getting course progress: {str(e)}")
             return None
     
-    def update_current_lesson(self, user_id: str, course_id: str, lesson_id: str) -> bool:
+    def create_course_progress(self, user_id: str, course_id: str) -> Optional[Progress]:
         """
-        Update the current lesson for a user's course progress
+        Create a new progress record for a course.
         
         Args:
             user_id: The ID of the user
             course_id: The ID of the course
+            
+        Returns:
+            The created progress record if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            course_uuid = uuid.UUID(course_id)
+            
+            # Check if progress already exists
+            existing_progress = self.progress_repo.get_user_course_progress(user_uuid, course_uuid)
+            if existing_progress:
+                return self._convert_db_progress_to_ui_progress(existing_progress)
+            
+            # Get the first lesson of the course
+            course = self.course_repo.get_by_id(course_uuid)
+            if not course:
+                logger.warning(f"Course not found: {course_id}")
+                return None
+                
+            first_lesson = self.lesson_repo.get_first_lesson_for_course(course_uuid)
+            first_lesson_id = first_lesson.id if first_lesson else None
+            
+            # Create the progress
+            db_progress = self.progress_repo.create_progress(
+                user_id=user_uuid,
+                course_id=course_uuid,
+                current_lesson_id=first_lesson_id
+            )
+            
+            if not db_progress:
+                return None
+                
+            return self._convert_db_progress_to_ui_progress(db_progress)
+        except Exception as e:
+            logger.error(f"Error creating course progress: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    def update_progress_percentage(self, progress_id: str, percentage: float) -> Optional[Progress]:
+        """
+        Update the progress percentage.
+        
+        Args:
+            progress_id: The ID of the progress record
+            percentage: The new progress percentage
+            
+        Returns:
+            The updated progress record if successful, None otherwise
+        """
+        try:
+            progress_uuid = uuid.UUID(progress_id)
+            
+            # Update the progress percentage
+            db_progress = self.progress_repo.update_progress_percentage(
+                progress_id=progress_uuid,
+                percentage=percentage
+            )
+            
+            if not db_progress:
+                return None
+                
+            return self._convert_db_progress_to_ui_progress(db_progress)
+        except Exception as e:
+            logger.error(f"Error updating progress percentage: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    def update_current_lesson(self, progress_id: str, lesson_id: str) -> Optional[Progress]:
+        """
+        Update the current lesson.
+        
+        Args:
+            progress_id: The ID of the progress record
             lesson_id: The ID of the new current lesson
             
         Returns:
-            True if successful, False otherwise
+            The updated progress record if successful, None otherwise
         """
         try:
-            db = next(get_db())
-            progress = progress_repo.get_progress_by_user_and_course(db, user_id, course_id)
+            progress_uuid = uuid.UUID(progress_id)
+            lesson_uuid = uuid.UUID(lesson_id)
             
-            if not progress:
-                db.close()
-                return False
+            # Update the current lesson
+            db_progress = self.progress_repo.update_current_lesson(
+                progress_id=progress_uuid,
+                lesson_id=lesson_uuid
+            )
             
-            # Update current lesson and last accessed time
-            progress.current_lesson_id = lesson_id
-            progress.last_accessed = datetime.now(timezone.utc)
-            
-            db.commit()
-            db.close()
-            return True
+            if not db_progress:
+                return None
+                
+            return self._convert_db_progress_to_ui_progress(db_progress)
         except Exception as e:
             logger.error(f"Error updating current lesson: {str(e)}")
-            return False
+            self.db.rollback()
+            return None
     
-    def complete_lesson(self, user_id: str, course_id: str, lesson_id: str, score: float, time_spent: int) -> bool:
+    def add_points(self, progress_id: str, points: int) -> Optional[Progress]:
         """
-        Mark a lesson as completed and update progress
+        Add points to the progress.
         
         Args:
-            user_id: The ID of the user
-            course_id: The ID of the course
-            lesson_id: The ID of the completed lesson
-            score: The score achieved (0-100)
-            time_spent: Time spent on the lesson in minutes
+            progress_id: The ID of the progress record
+            points: The points to add
             
         Returns:
-            True if successful, False otherwise
+            The updated progress record if successful, None otherwise
         """
         try:
-            db = next(get_db())
-            progress = progress_repo.get_progress_by_user_and_course(db, user_id, course_id)
+            progress_uuid = uuid.UUID(progress_id)
             
-            if not progress:
-                db.close()
-                return False
+            # Add points to the progress
+            db_progress = self.progress_repo.add_points(
+                progress_id=progress_uuid,
+                points=points
+            )
             
-            # Create completed lesson record
-            completed_lesson = {
-                "lesson_id": lesson_id,
-                "completed_at": datetime.now(timezone.utc).isoformat(),
-                "score": score,
-                "time_spent": time_spent
-            }
-            
-            # Check if lesson is already completed
-            lesson_already_completed = False
-            for i, lesson in enumerate(progress.completed_lessons):
-                if lesson.get("lesson_id") == lesson_id:
-                    # Update existing record
-                    progress.completed_lessons[i] = completed_lesson
-                    lesson_already_completed = True
-                    break
-            
-            # Add to completed lessons if not already there
-            if not lesson_already_completed:
-                progress.completed_lessons.append(completed_lesson)
-            
-            # Update total time spent
-            progress.time_spent += time_spent
-            
-            # Update last accessed time
-            progress.last_accessed = datetime.now(timezone.utc)
-            
-            # Update progress percentage (this would need to know total lessons in course)
-            # For now, we'll just estimate based on completed lessons
-            # In a real implementation, you'd query the course for total lessons
-            progress.progress_percentage = min(100.0, len(progress.completed_lessons) * 10.0)
-            
-            db.commit()
-            db.close()
-            return True
-        except Exception as e:
-            logger.error(f"Error completing lesson: {str(e)}")
-            return False
-    
-    def add_points(self, user_id: str, course_id: str, points: int) -> bool:
-        """
-        Add points to a user's course progress
-        
-        Args:
-            user_id: The ID of the user
-            course_id: The ID of the course
-            points: The number of points to add
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            db = next(get_db())
-            progress = progress_repo.get_progress_by_user_and_course(db, user_id, course_id)
-            
-            if not progress:
-                db.close()
-                return False
-            
-            # Add points
-            progress.total_points_earned += points
-            
-            # Update last accessed time
-            progress.last_accessed = datetime.now(timezone.utc)
-            
-            db.commit()
-            db.close()
-            return True
+            if not db_progress:
+                return None
+                
+            return self._convert_db_progress_to_ui_progress(db_progress)
         except Exception as e:
             logger.error(f"Error adding points: {str(e)}")
-            return False
+            self.db.rollback()
+            return None
     
-    def update_difficulty(self, user_id: str, course_id: str, new_difficulty: str) -> bool:
+    def add_time_spent(self, progress_id: str, minutes: int) -> Optional[Progress]:
         """
-        Update the difficulty level for a user's course progress
+        Add time spent to the progress.
+        
+        Args:
+            progress_id: The ID of the progress record
+            minutes: The minutes to add
+            
+        Returns:
+            The updated progress record if successful, None otherwise
+        """
+        try:
+            progress_uuid = uuid.UUID(progress_id)
+            
+            # Add time spent to the progress
+            db_progress = self.progress_repo.add_time_spent(
+                progress_id=progress_uuid,
+                minutes=minutes
+            )
+            
+            if not db_progress:
+                return None
+                
+            return self._convert_db_progress_to_ui_progress(db_progress)
+        except Exception as e:
+            logger.error(f"Error adding time spent: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    def complete_progress(self, progress_id: str) -> Optional[Progress]:
+        """
+        Mark progress as completed.
+        
+        Args:
+            progress_id: The ID of the progress record
+            
+        Returns:
+            The updated progress record if successful, None otherwise
+        """
+        try:
+            progress_uuid = uuid.UUID(progress_id)
+            
+            # Mark progress as completed
+            db_progress = self.progress_repo.complete_progress(progress_uuid)
+            
+            if not db_progress:
+                return None
+                
+            return self._convert_db_progress_to_ui_progress(db_progress)
+        except Exception as e:
+            logger.error(f"Error completing progress: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    # Completed Lesson Methods
+    
+    def complete_lesson(self, 
+                     user_id: str, 
+                     lesson_id: str, 
+                     course_id: str, 
+                     score: Optional[int] = None,
+                     time_spent: Optional[int] = None) -> Optional[CompletedLesson]:
+        """
+        Mark a lesson as completed.
+        
+        Args:
+            user_id: The ID of the user
+            lesson_id: The ID of the lesson
+            course_id: The ID of the course
+            score: Optional score for the lesson
+            time_spent: Optional time spent on the lesson in minutes
+            
+        Returns:
+            The completed lesson record if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            lesson_uuid = uuid.UUID(lesson_id)
+            course_uuid = uuid.UUID(course_id)
+            
+            # Check if already completed
+            is_completed = self.completed_lesson_repo.is_lesson_completed(user_uuid, lesson_uuid)
+            if is_completed:
+                # Get the completion record
+                db_completed = self.completed_lesson_repo.get_lesson_completion(user_uuid, lesson_uuid)
+                return self._convert_db_completed_lesson_to_ui_completed_lesson(db_completed)
+            
+            # Create completed lesson
+            db_completed = self.completed_lesson_repo.create_completed_lesson(
+                user_id=user_uuid,
+                lesson_id=lesson_uuid,
+                course_id=course_uuid,
+                score=score,
+                time_spent=time_spent
+            )
+            
+            if not db_completed:
+                return None
+            
+            # Update course progress
+            progress = self.progress_repo.get_user_course_progress(user_uuid, course_uuid)
+            if progress:
+                # Calculate new progress percentage
+                total_lessons = self.lesson_repo.count_lessons_for_course(course_uuid)
+                completed_lessons = self.completed_lesson_repo.count_completed_lessons(user_uuid, course_uuid)
+                
+                if total_lessons > 0:
+                    new_percentage = (completed_lessons / total_lessons) * 100
+                    self.progress_repo.update_progress_percentage(progress.id, new_percentage)
+                
+                # Check if all lessons are completed
+                if completed_lessons == total_lessons:
+                    self.progress_repo.complete_progress(progress.id)
+                    
+                    # Create completed course record
+                    self.completed_course_repo.create_completed_course(
+                        user_id=user_uuid,
+                        course_id=course_uuid
+                    )
+            
+            return self._convert_db_completed_lesson_to_ui_completed_lesson(db_completed)
+        except Exception as e:
+            logger.error(f"Error completing lesson: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    def get_user_completed_lessons(self, user_id: str) -> List[CompletedLesson]:
+        """
+        Get all completed lessons for a user.
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            A list of completed lesson records
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Get all completed lessons for the user
+            db_completed_lessons = self.completed_lesson_repo.get_user_completed_lessons(user_uuid)
+            
+            # Convert to UI models
+            return [self._convert_db_completed_lesson_to_ui_completed_lesson(record) for record in db_completed_lessons]
+        except Exception as e:
+            logger.error(f"Error getting user completed lessons: {str(e)}")
+            return []
+    
+    def get_course_completed_lessons(self, user_id: str, course_id: str) -> List[CompletedLesson]:
+        """
+        Get all completed lessons for a user in a course.
         
         Args:
             user_id: The ID of the user
             course_id: The ID of the course
-            new_difficulty: The new difficulty level ("Beginner", "Intermediate", or "Advanced")
             
         Returns:
-            True if successful, False otherwise
+            A list of completed lesson records
         """
         try:
-            db = next(get_db())
-            progress = progress_repo.get_progress_by_user_and_course(db, user_id, course_id)
+            user_uuid = uuid.UUID(user_id)
+            course_uuid = uuid.UUID(course_id)
             
-            if not progress:
-                db.close()
-                return False
-            
-            # Validate difficulty level
-            if new_difficulty not in ["Beginner", "Intermediate", "Advanced"]:
-                db.close()
-                return False
-            
-            # Update difficulty
-            progress.current_difficulty = new_difficulty
-            
-            # Update last accessed time
-            progress.last_accessed = datetime.now(timezone.utc)
-            
-            db.commit()
-            db.close()
-            return True
-        except Exception as e:
-            logger.error(f"Error updating difficulty: {str(e)}")
-            return False
-    
-    def _convert_db_progress_to_progress(self, db_progress: DBProgress) -> Progress:
-        """Convert a database progress model to a Progress model"""
-        try:
-            return Progress(
-                id=str(db_progress.id),
-                user_id=str(db_progress.user_id),
-                course_id=str(db_progress.course_id),
-                current_lesson_id=str(db_progress.current_lesson_id) if db_progress.current_lesson_id else None,
-                completed_lessons=db_progress.completed_lessons,
-                current_difficulty=db_progress.current_difficulty,
-                progress_percentage=db_progress.progress_percentage,
-                total_points_earned=db_progress.total_points_earned,
-                time_spent=db_progress.time_spent,
-                strengths=db_progress.strengths,
-                weaknesses=db_progress.weaknesses,
-                learning_path=db_progress.learning_path,
-                progress_data=db_progress.progress_data,
-                last_accessed=db_progress.last_accessed
+            # Get all completed lessons for the user in the course
+            db_completed_lessons = self.completed_lesson_repo.get_course_completed_lessons(
+                user_id=user_uuid,
+                course_id=course_uuid
             )
+            
+            # Convert to UI models
+            return [self._convert_db_completed_lesson_to_ui_completed_lesson(record) for record in db_completed_lessons]
         except Exception as e:
-            logger.error(f"Error converting progress: {str(e)}")
-            # Return a default progress as fallback
-            return Progress(
-                id=str(db_progress.id) if hasattr(db_progress, 'id') else "unknown",
-                user_id=str(db_progress.user_id) if hasattr(db_progress, 'user_id') else "unknown",
-                course_id=str(db_progress.course_id) if hasattr(db_progress, 'course_id') else "unknown",
-                current_lesson_id=None,
-                completed_lessons=[],
-                current_difficulty="Beginner",
-                progress_percentage=0.0,
-                total_points_earned=0,
-                time_spent=0,
-                strengths=[],
-                weaknesses=[],
-                learning_path={},
-                progress_data={},
-                last_accessed=datetime.now(timezone.utc)
-            ) 
+            logger.error(f"Error getting course completed lessons: {str(e)}")
+            return []
+    
+    # Completed Course Methods
+    
+    def get_user_completed_courses(self, user_id: str) -> List[CompletedCourse]:
+        """
+        Get all completed courses for a user.
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            A list of completed course records
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Get all completed courses for the user
+            db_completed_courses = self.completed_course_repo.get_user_completed_courses(user_uuid)
+            
+            # Convert to UI models
+            return [self._convert_db_completed_course_to_ui_completed_course(record) for record in db_completed_courses]
+        except Exception as e:
+            logger.error(f"Error getting user completed courses: {str(e)}")
+            return []
+    
+    def get_course_completion(self, user_id: str, course_id: str) -> Optional[CompletedCourse]:
+        """
+        Get the completion record for a course.
+        
+        Args:
+            user_id: The ID of the user
+            course_id: The ID of the course
+            
+        Returns:
+            The completed course record if found, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            course_uuid = uuid.UUID(course_id)
+            
+            # Get the completion record for the course
+            db_completion = self.completed_course_repo.get_course_completion(
+                user_id=user_uuid,
+                course_id=course_uuid
+            )
+            
+            if not db_completion:
+                return None
+                
+            return self._convert_db_completed_course_to_ui_completed_course(db_completion)
+        except Exception as e:
+            logger.error(f"Error getting course completion: {str(e)}")
+            return None
+    
+    # User Content Progress Methods
+    
+    def get_content_progress(self, 
+                         user_id: str, 
+                         content_id: str) -> Optional[UserContentProgress]:
+        """
+        Get user progress for a specific content item.
+        
+        Args:
+            user_id: The ID of the user
+            content_id: The ID of the content
+            
+        Returns:
+            The user content progress record if found, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            content_uuid = uuid.UUID(content_id)
+            
+            # Get the content progress
+            db_content_progress = self.user_content_progress_repo.get_content_progress(
+                user_id=user_uuid,
+                content_id=content_uuid
+            )
+            
+            if not db_content_progress:
+                return None
+                
+            return self._convert_db_user_content_progress_to_ui_user_content_progress(db_content_progress)
+        except Exception as e:
+            logger.error(f"Error getting content progress: {str(e)}")
+            return None
+    
+    def update_content_progress(self, 
+                             user_id: str, 
+                             content_id: str, 
+                             status: str, 
+                             score: Optional[int] = None,
+                             time_spent: Optional[int] = None,
+                             custom_data: Optional[Dict[str, Any]] = None) -> Optional[UserContentProgress]:
+        """
+        Update or create user progress for a content item.
+        
+        Args:
+            user_id: The ID of the user
+            content_id: The ID of the content
+            status: The status of the content progress
+            score: Optional score for the content
+            time_spent: Optional time spent on the content in minutes
+            custom_data: Optional custom data
+            
+        Returns:
+            The updated or created user content progress record if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            content_uuid = uuid.UUID(content_id)
+            
+            # Get existing progress or create new
+            db_content_progress = self.user_content_progress_repo.get_content_progress(
+                user_id=user_uuid,
+                content_id=content_uuid
+            )
+            
+            if db_content_progress:
+                # Update existing progress
+                updates = {}
+                if status:
+                    updates["status"] = status
+                if score is not None:
+                    updates["score"] = score
+                if time_spent is not None:
+                    updates["time_spent"] = db_content_progress.time_spent + time_spent
+                if custom_data is not None:
+                    existing_data = db_content_progress.custom_data or {}
+                    existing_data.update(custom_data)
+                    updates["custom_data"] = existing_data
+                
+                db_content_progress = self.user_content_progress_repo.update_content_progress(
+                    progress_id=db_content_progress.id,
+                    updates=updates
+                )
+            else:
+                # Create new progress
+                db_content_progress = self.user_content_progress_repo.create_content_progress(
+                    user_id=user_uuid,
+                    content_id=content_uuid,
+                    status=status,
+                    score=score,
+                    time_spent=time_spent,
+                    custom_data=custom_data
+                )
+            
+            if not db_content_progress:
+                return None
+                
+            return self._convert_db_user_content_progress_to_ui_user_content_progress(db_content_progress)
+        except Exception as e:
+            logger.error(f"Error updating content progress: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    # Conversion Methods
+    
+    def _convert_db_progress_to_ui_progress(self, db_progress: DBProgress) -> Progress:
+        """
+        Convert a database progress to a UI progress.
+        
+        Args:
+            db_progress: The database progress
+            
+        Returns:
+            The corresponding UI progress
+        """
+        return Progress(
+            id=str(db_progress.id),
+            user_id=str(db_progress.user_id),
+            course_id=str(db_progress.course_id),
+            current_lesson_id=str(db_progress.current_lesson_id) if db_progress.current_lesson_id else None,
+            total_points_earned=db_progress.total_points_earned,
+            time_spent=db_progress.time_spent,
+            progress_percentage=db_progress.progress_percentage,
+            progress_data=db_progress.progress_data,
+            last_accessed=db_progress.last_accessed,
+            is_completed=db_progress.is_completed,
+            created_at=db_progress.created_at,
+            updated_at=db_progress.updated_at
+        )
+    
+    def _convert_db_completed_lesson_to_ui_completed_lesson(self, db_completed_lesson: DBCompletedLesson) -> CompletedLesson:
+        """
+        Convert a database completed lesson to a UI completed lesson.
+        
+        Args:
+            db_completed_lesson: The database completed lesson
+            
+        Returns:
+            The corresponding UI completed lesson
+        """
+        return CompletedLesson(
+            id=str(db_completed_lesson.id),
+            user_id=str(db_completed_lesson.user_id),
+            lesson_id=str(db_completed_lesson.lesson_id),
+            course_id=str(db_completed_lesson.course_id),
+            completed_at=db_completed_lesson.completed_at,
+            score=db_completed_lesson.score,
+            time_spent=db_completed_lesson.time_spent,
+            created_at=db_completed_lesson.created_at,
+            updated_at=db_completed_lesson.updated_at
+        )
+    
+    def _convert_db_completed_course_to_ui_completed_course(self, db_completed_course: DBCompletedCourse) -> CompletedCourse:
+        """
+        Convert a database completed course to a UI completed course.
+        
+        Args:
+            db_completed_course: The database completed course
+            
+        Returns:
+            The corresponding UI completed course
+        """
+        return CompletedCourse(
+            id=str(db_completed_course.id),
+            user_id=str(db_completed_course.user_id),
+            course_id=str(db_completed_course.course_id),
+            completed_at=db_completed_course.completed_at,
+            final_score=db_completed_course.final_score,
+            total_time_spent=db_completed_course.total_time_spent,
+            completed_lessons_count=db_completed_course.completed_lessons_count,
+            achievements_earned=db_completed_course.achievements_earned,
+            certificate_id=db_completed_course.certificate_id,
+            created_at=db_completed_course.created_at,
+            updated_at=db_completed_course.updated_at
+        )
+    
+    def _convert_db_user_content_progress_to_ui_user_content_progress(self, db_content_progress: DBUserContentProgress) -> UserContentProgress:
+        """
+        Convert a database user content progress to a UI user content progress.
+        
+        Args:
+            db_content_progress: The database user content progress
+            
+        Returns:
+            The corresponding UI user content progress
+        """
+        return UserContentProgress(
+            id=str(db_content_progress.id),
+            user_id=str(db_content_progress.user_id),
+            content_id=str(db_content_progress.content_id),
+            lesson_id=str(db_content_progress.lesson_id) if db_content_progress.lesson_id else None,
+            progress_id=str(db_content_progress.progress_id) if db_content_progress.progress_id else None,
+            status=db_content_progress.status,
+            score=db_content_progress.score,
+            time_spent=db_content_progress.time_spent,
+            last_interaction=db_content_progress.last_interaction,
+            custom_data=db_content_progress.custom_data,
+            created_at=db_content_progress.created_at,
+            updated_at=db_content_progress.updated_at
+        ) 

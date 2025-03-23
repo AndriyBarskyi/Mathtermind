@@ -1,235 +1,457 @@
-import uuid
-import hashlib
-import os
+"""
+User service for Mathtermind.
+
+This module provides service methods for managing users.
+"""
+
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
-from sqlalchemy.orm import Session
-import bcrypt
+import uuid
+import logging
+from datetime import datetime
 
 from src.db import get_db
-from src.db.models import User, Setting
-from src.db.repositories.user_repo import (
-    create_user,
-    get_user_by_id,
-    get_user_by_email,
-    update_user,
-    delete_user
-)
+from src.db.models import User as DBUser
+from src.db.repositories import UserRepository
+from src.models.user import User
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 
 class UserService:
-    """Service for handling user-related operations."""
+    """Service for managing users."""
     
-    @staticmethod
-    def hash_password(password: str) -> str:
-        """Hash a password for storing using SHA-256 with salt."""
-        # Generate a random salt
-        salt = os.urandom(32)
-        # Hash the password with the salt
-        hash_obj = hashlib.pbkdf2_hmac(
-            'sha256',
-            password.encode('utf-8'),
-            salt,
-            100000  # Number of iterations
-        )
-        # Return the salt and hash as a single string
-        return salt.hex() + ':' + hash_obj.hex()
+    def __init__(self):
+        """Initialize the user service."""
+        self.db = next(get_db())
+        self.user_repo = UserRepository(self.db)
     
-    @staticmethod
-    def verify_password(plain_password: str, stored_password: str) -> bool:
-        """Verify a password against a hash."""
+    def get_user_by_id(self, user_id: str) -> Optional[User]:
+        """
+        Get a user by ID.
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            The user if found, None otherwise
+        """
         try:
-            # Check if the stored password is in bcrypt format
-            if stored_password.startswith('$2b$') or stored_password.startswith('$2a$') or stored_password.startswith('$2y$'):
-                # Use bcrypt to verify the password
-                return bcrypt.checkpw(plain_password.encode('utf-8'), stored_password.encode('utf-8'))
+            user_uuid = uuid.UUID(user_id)
             
-            # Otherwise, assume it's in our PBKDF2 format
-            # Split the stored password into salt and hash
-            salt_hex, hash_hex = stored_password.split(':')
-            salt = bytes.fromhex(salt_hex)
-            stored_hash = bytes.fromhex(hash_hex)
+            # Get the user from the repository
+            db_user = self.user_repo.get_by_id(user_uuid)
             
-            # Hash the provided password with the same salt
-            hash_obj = hashlib.pbkdf2_hmac(
-                'sha256',
-                plain_password.encode('utf-8'),
-                salt,
-                100000  # Same number of iterations as in hash_password
+            if not db_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(db_user)
+        except Exception as e:
+            logger.error(f"Error getting user by ID: {str(e)}")
+            return None
+    
+    def get_user_by_username(self, username: str) -> Optional[User]:
+        """
+        Get a user by username.
+        
+        Args:
+            username: The username of the user
+            
+        Returns:
+            The user if found, None otherwise
+        """
+        try:
+            # Get the user from the repository
+            db_user = self.user_repo.get_user_by_username(username)
+            
+            if not db_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(db_user)
+        except Exception as e:
+            logger.error(f"Error getting user by username: {str(e)}")
+            return None
+    
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        """
+        Get a user by email.
+        
+        Args:
+            email: The email of the user
+            
+        Returns:
+            The user if found, None otherwise
+        """
+        try:
+            # Get the user from the repository
+            db_user = self.user_repo.get_user_by_email(email)
+            
+            if not db_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(db_user)
+        except Exception as e:
+            logger.error(f"Error getting user by email: {str(e)}")
+            return None
+    
+    def get_all_users(self) -> List[User]:
+        """
+        Get all users.
+        
+        Returns:
+            A list of users
+        """
+        try:
+            # Get all users from the repository
+            db_users = self.user_repo.get_all()
+            
+            # Convert to UI models
+            return [self._convert_db_user_to_ui_user(user) for user in db_users]
+        except Exception as e:
+            logger.error(f"Error getting all users: {str(e)}")
+            return []
+    
+    def get_active_users(self) -> List[User]:
+        """
+        Get all active users.
+        
+        Returns:
+            A list of active users
+        """
+        try:
+            # Get active users from the repository
+            db_users = self.user_repo.get_active_users()
+            
+            # Convert to UI models
+            return [self._convert_db_user_to_ui_user(user) for user in db_users]
+        except Exception as e:
+            logger.error(f"Error getting active users: {str(e)}")
+            return []
+    
+    def create_user(self, 
+                  username: str,
+                  email: str,
+                  hashed_password: str,
+                  first_name: Optional[str] = None,
+                  last_name: Optional[str] = None,
+                  age_group: Optional[str] = None,
+                  is_admin: bool = False,
+                  avatar_url: Optional[str] = None,
+                  metadata: Optional[Dict[str, Any]] = None) -> Optional[User]:
+        """
+        Create a new user.
+        
+        Args:
+            username: The username of the user
+            email: The email of the user
+            hashed_password: The hashed password of the user
+            first_name: Optional first name of the user
+            last_name: Optional last name of the user
+            age_group: Optional age group of the user
+            is_admin: Whether the user is an admin
+            avatar_url: Optional URL to the user's avatar
+            metadata: Additional metadata
+            
+        Returns:
+            The created user if successful, None otherwise
+        """
+        try:
+            # Check if username or email already exists
+            if self.user_repo.get_user_by_username(username):
+                logger.warning(f"Username already exists: {username}")
+                return None
+                
+            if self.user_repo.get_user_by_email(email):
+                logger.warning(f"Email already exists: {email}")
+                return None
+            
+            # Create the user
+            db_user = self.user_repo.create(
+                username=username,
+                email=email,
+                hashed_password=hashed_password,
+                first_name=first_name,
+                last_name=last_name,
+                age_group=age_group,
+                is_admin=is_admin,
+                avatar_url=avatar_url,
+                metadata=metadata or {}
             )
             
-            # Compare the hashes
-            return hash_obj == stored_hash
+            if not db_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(db_user)
         except Exception as e:
-            # If there's any error, log it and return False
-            print(f"Password verification error: {str(e)}")
+            logger.error(f"Error creating user: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    def update_user(self, 
+                  user_id: str,
+                  updates: Dict[str, Any]) -> Optional[User]:
+        """
+        Update a user.
+        
+        Args:
+            user_id: The ID of the user
+            updates: The updates to apply
+            
+        Returns:
+            The updated user if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Get the user
+            db_user = self.user_repo.get_by_id(user_uuid)
+            if not db_user:
+                logger.warning(f"User not found: {user_id}")
+                return None
+            
+            # Update the user
+            for key, value in updates.items():
+                if hasattr(db_user, key):
+                    setattr(db_user, key, value)
+            
+            # Save the updates
+            updated_user = self.user_repo.update(db_user)
+            
+            if not updated_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(updated_user)
+        except Exception as e:
+            logger.error(f"Error updating user: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    def update_user_metadata(self, 
+                          user_id: str, 
+                          metadata_updates: Dict[str, Any]) -> Optional[User]:
+        """
+        Update user metadata.
+        
+        Args:
+            user_id: The ID of the user
+            metadata_updates: The updates to apply to the metadata
+            
+        Returns:
+            The updated user if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Get the user
+            db_user = self.user_repo.get_by_id(user_uuid)
+            if not db_user:
+                logger.warning(f"User not found: {user_id}")
+                return None
+            
+            # Update metadata
+            metadata = db_user.metadata or {}
+            metadata.update(metadata_updates)
+            
+            # Save the updates
+            db_user.metadata = metadata
+            updated_user = self.user_repo.update(db_user)
+            
+            if not updated_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(updated_user)
+        except Exception as e:
+            logger.error(f"Error updating user metadata: {str(e)}")
+            self.db.rollback()
+            return None
+    
+    def delete_user(self, user_id: str) -> bool:
+        """
+        Delete a user.
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Delete the user
+            return self.user_repo.delete(user_uuid)
+        except Exception as e:
+            logger.error(f"Error deleting user: {str(e)}")
+            self.db.rollback()
             return False
     
-    @staticmethod
-    def get_user(user_id: uuid.UUID) -> Optional[User]:
-        """Get a user by ID."""
-        db = next(get_db())
-        return get_user_by_id(db, user_id)
-    
-    @staticmethod
-    def get_user_by_email(email: str) -> Optional[User]:
-        """Get a user by email."""
-        db = next(get_db())
-        return get_user_by_email(db, email)
-    
-    @staticmethod
-    def create_new_user(
-        username: str,
-        email: str,
-        password: str,
-        age_group: str
-    ) -> User:
-        """Create a new user."""
-        db = next(get_db())
+    def activate_user(self, user_id: str) -> Optional[User]:
+        """
+        Activate a user.
         
-        # Check if user already exists
-        existing_user = get_user_by_email(db, email)
-        if existing_user:
-            raise ValueError(f"User with email {email} already exists")
-        
-        # Create new user
-        user = User(
-            id=uuid.uuid4(),
-            username=username,
-            email=email,
-            password_hash=UserService.hash_password(password),
-            age_group=age_group,
-            points=0,
-            experience_level=1,
-            total_study_time=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
-        )
-        
-        created_user = create_user(db, user)
-        
-        # Create default settings for the user
-        default_preferences = {
-            "theme": "light",
-            "notifications": {
-                "daily_reminder": True,
-                "achievement_alerts": True,
-                "study_time": "16:00"
-            },
-            "accessibility": {
-                "font_size": "medium",
-                "high_contrast": False
-            },
-            "study_preferences": {
-                "daily_goal_minutes": 30,
-                "preferred_subject": "Math"
-            }
-        }
-        
-        setting = Setting(
-            id=uuid.uuid4(),
-            user_id=created_user.id,
-            preferences=default_preferences
-        )
-        
-        db.add(setting)
-        db.commit()
-        
-        return created_user
-    
-    @staticmethod
-    def authenticate_user(email: str, password: str) -> Optional[User]:
-        """Authenticate a user by email and password."""
-        user = UserService.get_user_by_email(email)
-        if not user:
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            The updated user if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Activate the user
+            db_user = self.user_repo.activate_user(user_uuid)
+            
+            if not db_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(db_user)
+        except Exception as e:
+            logger.error(f"Error activating user: {str(e)}")
+            self.db.rollback()
             return None
-        
-        if not UserService.verify_password(password, user.password_hash):
-            return None
-        
-        return user
     
-    @staticmethod
-    def update_user_info(
-        user_id: uuid.UUID,
-        username: Optional[str] = None,
-        email: Optional[str] = None,
-        age_group: Optional[str] = None
-    ) -> Optional[User]:
-        """Update user information."""
-        db = next(get_db())
-        user = get_user_by_id(db, user_id)
+    def deactivate_user(self, user_id: str) -> Optional[User]:
+        """
+        Deactivate a user.
         
-        if not user:
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            The updated user if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Deactivate the user
+            db_user = self.user_repo.deactivate_user(user_uuid)
+            
+            if not db_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(db_user)
+        except Exception as e:
+            logger.error(f"Error deactivating user: {str(e)}")
+            self.db.rollback()
             return None
-        
-        if username:
-            user.username = username
-        
-        if email:
-            user.email = email
-        
-        if age_group:
-            user.age_group = age_group
-        
-        user.updated_at = datetime.now(timezone.utc)
-        
-        return update_user(db, user)
     
-    @staticmethod
-    def change_password(user_id: uuid.UUID, new_password: str) -> Optional[User]:
-        """Change a user's password."""
-        db = next(get_db())
-        user = get_user_by_id(db, user_id)
+    def add_points(self, user_id: str, points: int) -> Optional[User]:
+        """
+        Add points to a user.
         
-        if not user:
+        Args:
+            user_id: The ID of the user
+            points: The points to add
+            
+        Returns:
+            The updated user if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Get the user
+            db_user = self.user_repo.get_by_id(user_uuid)
+            if not db_user:
+                logger.warning(f"User not found: {user_id}")
+                return None
+            
+            # Add points
+            db_user.points = (db_user.points or 0) + points
+            
+            # Save the updates
+            updated_user = self.user_repo.update(db_user)
+            
+            if not updated_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(updated_user)
+        except Exception as e:
+            logger.error(f"Error adding points to user: {str(e)}")
+            self.db.rollback()
             return None
-        
-        user.password_hash = UserService.hash_password(new_password)
-        user.updated_at = datetime.now(timezone.utc)
-        
-        return update_user(db, user)
     
-    @staticmethod
-    def add_points(user_id: uuid.UUID, points: int) -> Optional[User]:
-        """Add points to a user's account."""
-        db = next(get_db())
-        user = get_user_by_id(db, user_id)
+    def update_study_time(self, user_id: str, minutes: int) -> Optional[User]:
+        """
+        Update the study time for a user.
         
-        if not user:
+        Args:
+            user_id: The ID of the user
+            minutes: The minutes to add
+            
+        Returns:
+            The updated user if successful, None otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            
+            # Get the user
+            db_user = self.user_repo.get_by_id(user_uuid)
+            if not db_user:
+                logger.warning(f"User not found: {user_id}")
+                return None
+            
+            # Update study time
+            db_user.total_study_time = (db_user.total_study_time or 0) + minutes
+            
+            # Save the updates
+            updated_user = self.user_repo.update(db_user)
+            
+            if not updated_user:
+                return None
+                
+            return self._convert_db_user_to_ui_user(updated_user)
+        except Exception as e:
+            logger.error(f"Error updating user study time: {str(e)}")
+            self.db.rollback()
             return None
-        
-        user.points += points
-        
-        # Check if user should level up (simple algorithm: level up every 100 points)
-        if user.points >= (user.experience_level * 100):
-            user.experience_level += 1
-        
-        user.updated_at = datetime.now(timezone.utc)
-        
-        return update_user(db, user)
     
-    @staticmethod
-    def add_study_time(user_id: uuid.UUID, minutes: int) -> Optional[User]:
-        """Add study time to a user's account."""
-        db = next(get_db())
-        user = get_user_by_id(db, user_id)
+    def search_users(self, query: str, limit: int = 10) -> List[User]:
+        """
+        Search for users.
         
-        if not user:
-            return None
-        
-        user.total_study_time += minutes
-        user.updated_at = datetime.now(timezone.utc)
-        
-        return update_user(db, user)
+        Args:
+            query: The search query
+            limit: Maximum number of results to return
+            
+        Returns:
+            A list of matching users
+        """
+        try:
+            # Search for users
+            db_users = self.user_repo.search_users(query, limit)
+            
+            # Convert to UI models
+            return [self._convert_db_user_to_ui_user(user) for user in db_users]
+        except Exception as e:
+            logger.error(f"Error searching users: {str(e)}")
+            return []
     
-    @staticmethod
-    def delete_user_account(user_id: uuid.UUID) -> bool:
-        """Delete a user account."""
-        db = next(get_db())
-        user = get_user_by_id(db, user_id)
+    # Conversion Methods
+    
+    def _convert_db_user_to_ui_user(self, db_user: DBUser) -> User:
+        """
+        Convert a database user to a UI user.
         
-        if not user:
-            return False
-        
-        delete_user(db, user)
-        return True 
+        Args:
+            db_user: The database user
+            
+        Returns:
+            The corresponding UI user
+        """
+        return User(
+            id=str(db_user.id),
+            username=db_user.username,
+            email=db_user.email,
+            first_name=db_user.first_name,
+            last_name=db_user.last_name,
+            age_group=db_user.age_group,
+            is_active=db_user.is_active,
+            is_admin=db_user.is_admin,
+            points=db_user.points,
+            experience_level=db_user.experience_level,
+            total_study_time=db_user.total_study_time,
+            avatar_url=db_user.avatar_url,
+            created_at=db_user.created_at,
+            updated_at=db_user.updated_at,
+            metadata=db_user.metadata
+        ) 
