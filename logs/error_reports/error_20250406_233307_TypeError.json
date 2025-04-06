@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-04-06T23:33:07.728097",
+  "error_type": "TypeError",
+  "error_message": "User.__init__() got an unexpected keyword argument 'total_study_minutes'. Did you mean 'total_study_time'?",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/user_service.py\", line 542, in _convert_db_user_to_ui_user\n    user = User(\n        id=str(db_user.id),\n    ...<11 lines>...\n        metadata=db_user.metadata or {},\n    )\nTypeError: User.__init__() got an unexpected keyword argument 'total_study_minutes'. Did you mean 'total_study_time'?\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1570976,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "additional_data": {
+    "operation": "_convert_db_user_to_ui_user",
+    "user_id": "d0ac38e7-250d-4b19-a96f-d09488a2fe9d"
+  }
+}

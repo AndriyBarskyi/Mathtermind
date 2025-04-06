@@ -92,7 +92,7 @@ class ProgressService:
             course_uuid = uuid.UUID(course_id)
             
             # Get the progress for the course
-            db_progress = self.progress_repo.get_user_course_progress(user_uuid, course_uuid)
+            db_progress = self.progress_repo.get_course_progress(user_uuid, course_uuid)
             
             if not db_progress:
                 return None
@@ -118,7 +118,7 @@ class ProgressService:
             course_uuid = uuid.UUID(course_id)
             
             # Check if progress already exists
-            existing_progress = self.progress_repo.get_user_course_progress(user_uuid, course_uuid)
+            existing_progress = self.progress_repo.get_course_progress(user_uuid, course_uuid)
             if existing_progress:
                 return self._convert_db_progress_to_ui_progress(existing_progress)
             
@@ -128,8 +128,9 @@ class ProgressService:
                 logger.warning(f"Course not found: {course_id}")
                 return None
                 
-            first_lesson = self.lesson_repo.get_first_lesson_for_course(course_uuid)
-            first_lesson_id = first_lesson.id if first_lesson else None
+            # Get all lessons and use the first one based on order
+            lessons = self.lesson_repo.get_lessons_by_course_id(course_uuid)
+            first_lesson_id = lessons[0].id if lessons else None
             
             # Create the progress
             db_progress = self.progress_repo.create_progress(
@@ -264,30 +265,18 @@ class ProgressService:
             self.db.rollback()
             return None
     
-    def complete_progress(self, progress_id: str) -> Optional[Progress]:
+    def complete_progress(self, user_id: str, progress_id: str) -> None:
         """
         Mark progress as completed.
         
         Args:
+            user_id: The ID of the user
             progress_id: The ID of the progress record
-            
-        Returns:
-            The updated progress record if successful, None otherwise
         """
-        try:
-            progress_uuid = uuid.UUID(progress_id)
+        progress_uuid = uuid.UUID(progress_id)
             
-            # Mark progress as completed
-            db_progress = self.progress_repo.complete_progress(progress_uuid)
-            
-            if not db_progress:
-                return None
-                
-            return self._convert_db_progress_to_ui_progress(db_progress)
-        except Exception as e:
-            logger.error(f"Error completing progress: {str(e)}")
-            self.db.rollback()
-            return None
+        # Mark progress as completed
+        self.progress_repo.mark_as_completed(progress_uuid)
     
     # Completed Lesson Methods
     
@@ -335,10 +324,11 @@ class ProgressService:
                 return None
             
             # Update course progress
-            progress = self.progress_repo.get_user_course_progress(user_uuid, course_uuid)
+            progress = self.progress_repo.get_course_progress(user_uuid, course_uuid)
             if progress:
                 # Calculate new progress percentage
-                total_lessons = self.lesson_repo.count_lessons_for_course(course_uuid)
+                lessons = self.lesson_repo.get_lessons_by_course_id(course_uuid)
+                total_lessons = len(lessons)
                 completed_lessons = self.completed_lesson_repo.count_completed_lessons(user_uuid, course_uuid)
                 
                 if total_lessons > 0:
@@ -347,7 +337,7 @@ class ProgressService:
                 
                 # Check if all lessons are completed
                 if completed_lessons == total_lessons:
-                    self.progress_repo.complete_progress(progress.id)
+                    self.progress_repo.mark_as_completed(progress.id)
                     
                     # Create completed course record
                     self.completed_course_repo.create_completed_course(

@@ -194,14 +194,17 @@ class TestSessionManager(unittest.TestCase):
         # Set up Redis mock
         self.mock_redis_client.delete.return_value = 1
         
+        # Mock the get_session method to avoid json.loads issue with MagicMock
+        self.session_manager.get_session = MagicMock(return_value={"user_id": "test-user-id"})
+        
         # Destroy session
         result = self.session_manager.destroy_session(self.session_token)
         
-        # Verify Redis was used
-        self.mock_redis_client.delete.assert_called_once_with(f"session:{self.session_token}")
-        
         # Verify result
         self.assertTrue(result)
+        
+        # Verify Redis delete was called with correct key
+        self.mock_redis_client.delete.assert_called_once_with(f"session:{self.session_token}")
 
     def test_destroy_session_without_redis(self):
         """Test destroying a session in in-memory storage."""

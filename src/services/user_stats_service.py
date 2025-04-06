@@ -142,7 +142,7 @@ class UserStatsService(BaseService):
             
             # Get various statistics
             total_points = user.points
-            study_time = user.study_time
+            study_time = user.total_study_time
             
             # Get completed courses count
             completed_courses = self.completed_course_repository.get_by_user_id(
@@ -267,8 +267,8 @@ class UserStatsService(BaseService):
                     raise EntityNotFoundError(f"User with ID {user_id} not found")
                 
                 # Update study time
-                new_time = user.study_time + minutes_to_add
-                self.user_repository.update(self.db, user_id, study_time=new_time)
+                new_time = user.total_study_time + minutes_to_add
+                self.user_repository.update(self.db, user_id, total_study_time=new_time)
             
             # Execute the update in a transaction
             self.execute_in_transaction(update_time)
@@ -332,11 +332,11 @@ class UserStatsService(BaseService):
                 
                 # Update stats
                 new_points = user.points + points
-                new_time = user.study_time + time_spent
+                new_time = user.total_study_time + time_spent
                 self.user_repository.update(
                     self.db, user_id, 
                     points=new_points, 
-                    study_time=new_time
+                    total_study_time=new_time
                 )
                 updated_count += 1
                 

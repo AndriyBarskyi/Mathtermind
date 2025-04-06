@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-04-06T23:30:06.850879",
+  "error_type": "TypeError",
+  "error_message": "MathtermindError.__init__() got an unexpected keyword argument 'field'",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/user_service.py\", line 272, in create_user\n    raise ValidationError(\n          ~~~~~~~~~~~~~~~^\n        message=f\"Username '{username}' is already taken\",\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        field=\"username\",\n        ^^^^^^^^^^^^^^^^^\n        value=username\n        ^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/exceptions.py\", line 149, in __init__\n    super().__init__(message, **kwargs)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/exceptions.py\", line 136, in __init__\n    super().__init__(message, **kwargs)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\nTypeError: MathtermindError.__init__() got an unexpected keyword argument 'field'\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1565565,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "additional_data": {
+    "context_name": "check_existing_user"
+  }
+}

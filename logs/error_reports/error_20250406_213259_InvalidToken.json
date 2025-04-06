@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-04-06T21:32:59.395543",
+  "error_type": "InvalidToken",
+  "error_message": "",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/venv/lib/python3.13/site-packages/cryptography/fernet.py\", line 113, in _get_unverified_token_data\n    data = base64.urlsafe_b64decode(token)\n  File \"/usr/lib/python3.13/base64.py\", line 134, in urlsafe_b64decode\n    return b64decode(s)\n  File \"/usr/lib/python3.13/base64.py\", line 88, in b64decode\n    return binascii.a2b_base64(s, strict_mode=validate)\n           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nbinascii.Error: Incorrect padding\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/credentials_manager.py\", line 219, in load_credentials\n    decrypted_data = cipher.decrypt(encrypted_data)\n  File \"/home/andrii/Documents/Projects/Mathtermind/venv/lib/python3.13/site-packages/cryptography/fernet.py\", line 84, in decrypt\n    timestamp, data = Fernet._get_unverified_token_data(token)\n                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/andrii/Documents/Projects/Mathtermind/venv/lib/python3.13/site-packages/cryptography/fernet.py\", line 115, in _get_unverified_token_data\n    raise InvalidToken\ncryptography.fernet.InvalidToken\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1359227,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "additional_data": {
+    "context": {
+      "file_path": "/home/andrii/.mathtermind/credentials.enc",
+      "action": "load_credentials"
+    }
+  }
+}

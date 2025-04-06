@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-04-06T21:37:13.469734",
+  "error_type": "SessionError",
+  "error_message": "[SESSION_ERROR] Failed to retrieve session - Details: {'error': 'the JSON object must be str, bytes or bytearray, not MagicMock', 'token_prefix': 'session-'}",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/session_manager.py\", line 171, in get_session\n    session_data = json.loads(session_json)\n  File \"/usr/lib/python3.13/json/__init__.py\", line 339, in loads\n    raise TypeError(f'the JSON object must be str, bytes or bytearray, '\n                    f'not {s.__class__.__name__}')\nTypeError: the JSON object must be str, bytes or bytearray, not MagicMock\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/session_manager.py\", line 302, in destroy_session\n    session_data = self.get_session(token)\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/handlers.py\", line 387, in wrapper\n    error_handler.handle_error(e, {\"operation\": operation or func.__name__, \"service_name\": service_name})\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/handlers.py\", line 384, in wrapper\n    return func(*args, **kwargs)\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/session_manager.py\", line 200, in get_session\n    raise SessionError(\n    ...<2 lines>...\n    ) from e\nsrc.core.error_handling.exceptions.SessionError: [SESSION_ERROR] Failed to retrieve session - Details: {'error': 'the JSON object must be str, bytes or bytearray, not MagicMock', 'token_prefix': 'session-'}\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1367060,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "error_details": {
+    "error": "SessionError",
+    "message": "Failed to retrieve session",
+    "error_code": "SESSION_ERROR",
+    "details": {
+      "error": "the JSON object must be str, bytes or bytearray, not MagicMock",
+      "token_prefix": "session-"
+    }
+  },
+  "additional_data": {
+    "operation": "destroy_session",
+    "token_prefix": "session-"
+  }
+}

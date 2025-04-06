@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch, MagicMock
 import re
 from src.services.password_utils import (
     hash_password,
@@ -7,6 +8,7 @@ from src.services.password_utils import (
     generate_reset_token,
     generate_temporary_password
 )
+from src.core.error_handling.exceptions import SecurityError
 
 
 class TestPasswordUtils(unittest.TestCase):
@@ -58,8 +60,9 @@ class TestPasswordUtils(unittest.TestCase):
         # Verify an incorrect password
         self.assertFalse(verify_password("WrongPassword123!", hashed))
         
-        # Verify with an empty password
-        self.assertFalse(verify_password("", hashed))
+        # Verify with an empty password should raise SecurityError
+        with self.assertRaises(SecurityError):
+            verify_password("", hashed)
 
     def test_validate_password_strength_weak_passwords(self):
         """Test that weak passwords fail validation."""

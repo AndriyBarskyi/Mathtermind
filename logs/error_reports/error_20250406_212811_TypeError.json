@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-04-06T21:28:11.602706",
+  "error_type": "TypeError",
+  "error_message": "src.core.error_handling.exceptions.MathtermindError.__init__() got multiple values for keyword argument 'error_code'",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/auth_service.py\", line 493, in request_password_reset\n    raise ResourceNotFoundError(\n          ~~~~~~~~~~~~~~~~~~~~~^\n        message=\"User not found\",\n        ^^^^^^^^^^^^^^^^^^^^^^^^^\n        resource_type=\"user\",\n        ^^^^^^^^^^^^^^^^^^^^^\n        resource_id=email\n        ^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/exceptions.py\", line 147, in __init__\n    super().__init__(message, error_code=\"RESOURCE_NOT_FOUND\", **kwargs)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/exceptions.py\", line 122, in __init__\n    super().__init__(message, error_code=\"SERVICE_ERROR\", **kwargs)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: src.core.error_handling.exceptions.MathtermindError.__init__() got multiple values for keyword argument 'error_code'\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1350273,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "additional_data": {
+    "context": {
+      "email": "nonexistent@email.com"
+    }
+  }
+}

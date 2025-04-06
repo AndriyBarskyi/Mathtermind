@@ -14,12 +14,11 @@ class TestCredentialsManager(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.temp_file = os.path.join(self.temp_dir, ".test_credentials")
         
-        # Patch the CREDENTIALS_FILE to use our temporary file
-        self.patcher = patch.object(CredentialsManager, 'CREDENTIALS_FILE', self.temp_file)
-        self.patcher.start()
-        
         # Create an instance of CredentialsManager
-        self.manager = CredentialsManager()
+        self.manager = CredentialsManager(app_data_dir=self.temp_dir)
+        
+        # Set the credentials_file directly 
+        self.manager.credentials_file = self.temp_file
         
         # Test data
         self.test_email = "test@example.com"
@@ -27,9 +26,6 @@ class TestCredentialsManager(unittest.TestCase):
 
     def tearDown(self):
         """Clean up after each test."""
-        # Stop the patcher
-        self.patcher.stop()
-        
         # Remove the temporary file if it exists
         if os.path.exists(self.temp_file):
             os.remove(self.temp_file)

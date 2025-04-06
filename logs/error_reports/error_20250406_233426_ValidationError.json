@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-04-06T23:34:26.038284",
+  "error_type": "ValidationError",
+  "error_message": "[VALIDATION_ERROR] Username 'testuser' is already taken",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/user_service.py\", line 272, in create_user\n    raise ValidationError(\n          ~~~~~~~~~~~~~~~^\n        message=f\"Username '{username}' is already taken\",\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        field=\"username\",\n        ^^^^^^^^^^^^^^^^^\n        value=username\n        ^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/usr/lib/python3.13/unittest/mock.py\", line 1167, in __call__\n    return self._mock_call(*args, **kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/unittest/mock.py\", line 1171, in _mock_call\n    return self._execute_mock_call(*args, **kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/unittest/mock.py\", line 1226, in _execute_mock_call\n    raise effect\nsrc.core.error_handling.exceptions.ValidationError: [VALIDATION_ERROR] Username 'testuser' is already taken\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1573309,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "error_details": {
+    "error": "ValidationError",
+    "message": "Username 'testuser' is already taken",
+    "error_code": "VALIDATION_ERROR",
+    "details": {}
+  },
+  "additional_data": {
+    "context_name": "check_existing_user"
+  }
+}

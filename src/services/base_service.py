@@ -132,9 +132,17 @@ class BaseService(Generic[T]):
         """
         for i in range(0, len(items), batch_size):
             batch = items[i:i + batch_size]
-            with self.transaction():
-                for item in batch:
-                    operation(item)
+            try:
+                with self.transaction():
+                    for item in batch:
+                        try:
+                            operation(item)
+                        except Exception as e:
+                            # Log the error but continue with other items
+                            self.logger.error(f"Error processing item {item}: {str(e)}")
+            except Exception as e:
+                # Log the batch error but continue with other batches
+                self.logger.error(f"Batch operation failed: {str(e)}")
     
     def cache(self, key: str, ttl: Optional[timedelta] = None) -> Callable:
         """Decorator for caching method results.

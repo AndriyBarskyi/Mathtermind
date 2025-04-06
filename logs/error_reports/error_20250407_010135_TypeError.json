@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-04-07T01:01:35.199351",
+  "error_type": "TypeError",
+  "error_message": "MathtermindError.__init__() got an unexpected keyword argument 'field'",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/settings_service.py\", line 64, in get_user_settings\n    user_id = uuid.UUID(user_id)\n  File \"/usr/lib/python3.13/uuid.py\", line 181, in __init__\n    raise ValueError('badly formed hexadecimal UUID string')\nValueError: badly formed hexadecimal UUID string\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/settings_service.py\", line 68, in get_user_settings\n    raise ValidationError(\n          ~~~~~~~~~~~~~~~^\n        message=f\"Invalid user ID format: {user_id}\",\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        field=\"user_id\",\n        ^^^^^^^^^^^^^^^^\n        value=user_id\n        ^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/exceptions.py\", line 149, in __init__\n    super().__init__(message, **kwargs)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/exceptions.py\", line 136, in __init__\n    super().__init__(message, **kwargs)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\nTypeError: MathtermindError.__init__() got an unexpected keyword argument 'field'\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1735634,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "additional_data": {
+    "operation": "get_user_settings",
+    "user_id": "invalid-id"
+  }
+}
