@@ -29,7 +29,7 @@ help:
 # Setup target
 setup:
 	$(PYTHON) setup.py
-
+# 
 # Run target
 run:
 	$(PYTHON) main.py

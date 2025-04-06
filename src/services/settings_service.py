@@ -3,7 +3,7 @@ import uuid
 import json
 import logging
 from src.db import get_db
-from src.db.models import Setting, User
+from src.db.models import UserSetting, User
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -34,12 +34,28 @@ class SettingsService:
                 user_id = uuid.UUID(user_id)
                 
             # Query the database for user settings
-            settings = self.db.query(Setting).filter(Setting.user_id == user_id).first()
+            settings = self.db.query(UserSetting).filter(UserSetting.user_id == user_id).first()
             
             if not settings:
                 return self._get_default_settings()
                 
-            return settings.preferences
+            # Convert the ORM model to a dictionary
+            return {
+                "theme": settings.theme.value if settings.theme else "light",
+                "notifications": {
+                    "daily_reminder": settings.notification_daily_reminder,
+                    "achievement_alerts": settings.notification_achievement_alerts,
+                    "study_time": settings.notification_study_time
+                },
+                "accessibility": {
+                    "font_size": settings.accessibility_font_size.value if settings.accessibility_font_size else "medium",
+                    "high_contrast": settings.accessibility_high_contrast
+                },
+                "study_preferences": {
+                    "daily_goal_minutes": settings.study_daily_goal_minutes,
+                    "preferred_subject": settings.study_preferred_subject.value if settings.study_preferred_subject else "Math"
+                }
+            }
         except Exception as e:
             logger.error(f"Error getting user settings: {str(e)}")
             return self._get_default_settings()
@@ -67,17 +83,37 @@ class SettingsService:
                 user_id = uuid.UUID(user_id)
                 
             # Check if settings already exist for this user
-            existing_settings = self.db.query(Setting).filter(Setting.user_id == user_id).first()
+            existing_settings = self.db.query(UserSetting).filter(UserSetting.user_id == user_id).first()
+            
+            # Extract values from settings_data
+            theme = settings_data.get("theme", "light")
+            notifications = settings_data.get("notifications", {})
+            accessibility = settings_data.get("accessibility", {})
+            study_preferences = settings_data.get("study_preferences", {})
             
             if existing_settings:
                 # Update existing settings
-                existing_settings.preferences = settings_data
+                existing_settings.theme = theme
+                existing_settings.notification_daily_reminder = notifications.get("daily_reminder", True)
+                existing_settings.notification_achievement_alerts = notifications.get("achievement_alerts", True)
+                existing_settings.notification_study_time = notifications.get("study_time", "18:00")
+                existing_settings.accessibility_font_size = accessibility.get("font_size", "medium")
+                existing_settings.accessibility_high_contrast = accessibility.get("high_contrast", False)
+                existing_settings.study_daily_goal_minutes = study_preferences.get("daily_goal_minutes", 30)
+                existing_settings.study_preferred_subject = study_preferences.get("preferred_subject", "Math")
             else:
                 # Create new settings
-                new_settings = Setting(
+                new_settings = UserSetting(
                     id=uuid.uuid4(),
                     user_id=user_id,
-                    preferences=settings_data
+                    theme=theme,
+                    notification_daily_reminder=notifications.get("daily_reminder", True),
+                    notification_achievement_alerts=notifications.get("achievement_alerts", True),
+                    notification_study_time=notifications.get("study_time", "18:00"),
+                    accessibility_font_size=accessibility.get("font_size", "medium"),
+                    accessibility_high_contrast=accessibility.get("high_contrast", False),
+                    study_daily_goal_minutes=study_preferences.get("daily_goal_minutes", 30),
+                    study_preferred_subject=study_preferences.get("preferred_subject", "Math")
                 )
                 self.db.add(new_settings)
                 

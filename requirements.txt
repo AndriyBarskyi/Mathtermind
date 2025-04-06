@@ -7,6 +7,11 @@ python-dotenv>=0.19.0
 # Database
 sqlite3>=0.0.0
 
+# Security
+bcrypt>=4.0.0  
+cryptography>=38.0.0
+redis>=4.3.0  # Optional: Used for session management if available
+
 # Utilities
 uuid>=1.30
 pathlib>=1.0.1
