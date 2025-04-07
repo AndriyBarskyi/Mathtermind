@@ -44,13 +44,13 @@ class ProgressService:
     def __init__(self):
         """Initialize the progress service."""
         self.db = next(get_db())
-        self.progress_repo = ProgressRepository(self.db)
-        self.content_state_repo = ContentStateRepository(self.db)
-        self.completed_lesson_repo = CompletedLessonRepository(self.db)
-        self.completed_course_repo = CompletedCourseRepository(self.db)
-        self.user_content_progress_repo = UserContentProgressRepository(self.db)
-        self.lesson_repo = LessonRepository(self.db)
-        self.course_repo = CourseRepository(self.db)
+        self.progress_repo = ProgressRepository()
+        self.content_state_repo = ContentStateRepository()
+        self.completed_lesson_repo = CompletedLessonRepository()
+        self.completed_course_repo = CompletedCourseRepository()
+        self.user_content_progress_repo = UserContentProgressRepository()
+        self.lesson_repo = LessonRepository()
+        self.course_repo = CourseRepository()
     
     # Progress Methods
     
@@ -287,13 +287,13 @@ class ProgressService:
                      score: Optional[int] = None,
                      time_spent: Optional[int] = None) -> Optional[CompletedLesson]:
         """
-        Mark a lesson as completed.
+        Mark a lesson as complete for a user.
         
         Args:
             user_id: The ID of the user
             lesson_id: The ID of the lesson
-            course_id: The ID of the course
-            score: Optional score for the lesson
+            course_id: The ID of the course the lesson belongs to
+            score: Optional score achieved in the lesson
             time_spent: Optional time spent on the lesson in minutes
             
         Returns:
@@ -359,7 +359,7 @@ class ProgressService:
             user_id: The ID of the user
             
         Returns:
-            A list of completed lesson records
+            A list of completed lessons
         """
         try:
             user_uuid = uuid.UUID(user_id)
@@ -368,10 +368,33 @@ class ProgressService:
             db_completed_lessons = self.completed_lesson_repo.get_user_completed_lessons(user_uuid)
             
             # Convert to UI models
-            return [self._convert_db_completed_lesson_to_ui_completed_lesson(record) for record in db_completed_lessons]
+            return [self._convert_db_completed_lesson_to_ui_completed_lesson(lesson) for lesson in db_completed_lessons]
         except Exception as e:
             logger.error(f"Error getting user completed lessons: {str(e)}")
             return []
+    
+    def has_completed_lesson(self, user_id: str, lesson_id: str) -> bool:
+        """
+        Check if a user has completed a specific lesson.
+        
+        Args:
+            user_id: The ID of the user
+            lesson_id: The ID of the lesson to check
+            
+        Returns:
+            True if the user has completed the lesson, False otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            lesson_uuid = uuid.UUID(lesson_id)
+            
+            # Check if the lesson exists in the user's completed lessons
+            db_completed_lesson = self.completed_lesson_repo.get_completed_lesson(user_uuid, lesson_uuid)
+            
+            return db_completed_lesson is not None
+        except Exception as e:
+            logger.error(f"Error checking if lesson is completed: {str(e)}")
+            return False
     
     def get_course_completed_lessons(self, user_id: str, course_id: str) -> List[CompletedLesson]:
         """
@@ -651,4 +674,161 @@ class ProgressService:
             custom_data=db_content_progress.custom_data,
             created_at=db_content_progress.created_at,
             updated_at=db_content_progress.updated_at
-        ) 
+        )
+
+    def mark_lesson_complete(self, user_id: str, lesson_id: str) -> bool:
+        """
+        Mark a lesson as complete for a user.
+        
+        Args:
+            user_id: The ID of the user
+            lesson_id: The ID of the lesson
+            
+        Returns:
+            True if the lesson was marked as complete, False otherwise
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            lesson_uuid = uuid.UUID(lesson_id)
+            
+            # Get the lesson to verify it exists
+            lesson = self.lesson_repo.get_lesson(self.db, lesson_uuid)
+            if not lesson:
+                logger.warning(f"Lesson not found with ID: {lesson_id}")
+                return False
+                
+            # Get the course ID from the lesson
+            course_id = lesson.course_id
+            
+            # Complete the lesson
+            return self.complete_lesson(user_id, str(course_id), lesson_id)
+        except Exception as e:
+            logger.error(f"Error marking lesson as complete: {str(e)}")
+            return False
+
+    def get_lesson_score(self, user_id: str, lesson_id: str) -> float:
+        """
+        Get the user's score for a lesson.
+        
+        Args:
+            user_id: The ID of the user
+            lesson_id: The ID of the lesson
+            
+        Returns:
+            The user's score for the lesson (0-100)
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            lesson_uuid = uuid.UUID(lesson_id)
+            
+            # Check if the lesson is completed
+            completed_lesson = self.completed_lesson_repo.get_by_user_and_lesson(
+                self.db, user_uuid, lesson_uuid
+            )
+            
+            if completed_lesson and completed_lesson.score is not None:
+                return completed_lesson.score
+                
+            # If not completed, calculate average from content progress
+            content_items = self.lesson_repo.get_lesson_content(self.db, lesson_uuid)
+            if not content_items:
+                return 0.0
+                
+            total_score = 0.0
+            scored_items = 0
+            
+            for content in content_items:
+                progress = self.user_content_progress_repo.get_progress(
+                    self.db, user_uuid, content.id
+                )
+                if progress and progress.score is not None:
+                    total_score += progress.score
+                    scored_items += 1
+                    
+            if scored_items == 0:
+                return 0.0
+                
+            return total_score / scored_items
+        except Exception as e:
+            logger.error(f"Error getting lesson score: {str(e)}")
+            return 0.0
+
+    def get_completed_content_ids(self, user_id: str, lesson_id: str) -> List[str]:
+        """
+        Get the IDs of content items the user has completed in a lesson.
+        
+        Args:
+            user_id: The ID of the user
+            lesson_id: The ID of the lesson
+            
+        Returns:
+            List of content IDs the user has completed
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            lesson_uuid = uuid.UUID(lesson_id)
+            
+            # Check if the lesson is completed
+            completed_lesson = self.completed_lesson_repo.get_by_user_and_lesson(
+                self.db, user_uuid, lesson_uuid
+            )
+            
+            if completed_lesson:
+                # Get all content items for the lesson
+                content_items = self.lesson_repo.get_lesson_content(self.db, lesson_uuid)
+                return [str(item.id) for item in content_items]
+                
+            # If not, get individually completed content items
+            content_items = self.lesson_repo.get_lesson_content(self.db, lesson_uuid)
+            completed_ids = []
+            
+            for content in content_items:
+                progress = self.user_content_progress_repo.get_progress(
+                    self.db, user_uuid, content.id
+                )
+                if progress and progress.is_completed:
+                    completed_ids.append(str(content.id))
+                    
+            return completed_ids
+        except Exception as e:
+            logger.error(f"Error getting completed content IDs: {str(e)}")
+            return []
+
+    def get_time_spent_on_lesson(self, user_id: str, lesson_id: str) -> int:
+        """
+        Get the total time spent on a lesson by the user.
+        
+        Args:
+            user_id: The ID of the user
+            lesson_id: The ID of the lesson
+            
+        Returns:
+            Time spent in minutes
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            lesson_uuid = uuid.UUID(lesson_id)
+            
+            # Check if the lesson is completed
+            completed_lesson = self.completed_lesson_repo.get_by_user_and_lesson(
+                self.db, user_uuid, lesson_uuid
+            )
+            
+            if completed_lesson and completed_lesson.time_spent is not None:
+                return completed_lesson.time_spent
+                
+            # If not, sum up time from content progress
+            content_items = self.lesson_repo.get_lesson_content(self.db, lesson_uuid)
+            total_time = 0
+            
+            for content in content_items:
+                progress = self.user_content_progress_repo.get_progress(
+                    self.db, user_uuid, content.id
+                )
+                if progress and progress.time_spent is not None:
+                    total_time += progress.time_spent
+                    
+            return total_time
+        except Exception as e:
+            logger.error(f"Error getting time spent on lesson: {str(e)}")
+            return 0 

@@ -19,14 +19,30 @@ class LessonRepository(BaseRepository[Lesson]):
         """Initialize the repository with the Lesson model."""
         super().__init__(Lesson)
     
+    def get_lesson(self, db: Session, lesson_id: uuid.UUID) -> Optional[Lesson]:
+        """
+        Get a lesson by its ID. Alias for get_by_id.
+        
+        Args:
+            db: Database session
+            lesson_id: Lesson ID
+            
+        Returns:
+            Lesson if found, None otherwise
+        """
+        return self.get_by_id(db, lesson_id)
+    
     def create_lesson(self, db: Session, 
                     course_id: uuid.UUID,
-                    name: str, 
-                    description: str,
-                    order: int,
-                    prerequisites: Optional[List[uuid.UUID]] = None,
+                    title: str, 
+                    lesson_type: str,
+                    difficulty_level: str,
+                    lesson_order: int,
                     estimated_time: int = 0,
-                    difficulty: str = "beginner",
+                    points_reward: int = 10,
+                    prerequisites: Optional[Dict[str, Any]] = None,
+                    learning_objectives: Optional[List[str]] = None,
+                    content: Optional[Dict[str, Any]] = None,
                     is_required: bool = True,
                     metadata: Optional[Dict[str, Any]] = None) -> Lesson:
         """
@@ -35,12 +51,15 @@ class LessonRepository(BaseRepository[Lesson]):
         Args:
             db: Database session
             course_id: Course ID
-            name: Lesson name
-            description: Lesson description
-            order: Display order in the course
-            prerequisites: List of prerequisite lesson IDs
+            title: Lesson title
+            lesson_type: Type of lesson
+            difficulty_level: Difficulty level
+            lesson_order: Display order in the course
             estimated_time: Estimated time to complete in minutes
-            difficulty: Lesson difficulty level
+            points_reward: Points reward for completing the lesson
+            prerequisites: Dictionary of prerequisite lessons
+            learning_objectives: List of learning objectives
+            content: Content of the lesson
             is_required: Whether this lesson is required to complete the course
             metadata: Additional metadata
             
@@ -49,12 +68,15 @@ class LessonRepository(BaseRepository[Lesson]):
         """
         lesson = Lesson(
             course_id=course_id,
-            name=name,
-            description=description,
-            order=order,
-            prerequisites=prerequisites or [],
+            title=title,
+            lesson_type=lesson_type,
+            difficulty_level=difficulty_level,
+            lesson_order=lesson_order,
             estimated_time=estimated_time,
-            difficulty=difficulty,
+            points_reward=points_reward,
+            prerequisites=prerequisites or {},
+            learning_objectives=learning_objectives or [],
+            content=content or {},
             is_required=is_required,
             metadata=metadata or {}
         )
@@ -66,12 +88,15 @@ class LessonRepository(BaseRepository[Lesson]):
     
     def update_lesson(self, db: Session, 
                     lesson_id: uuid.UUID,
-                    name: Optional[str] = None,
-                    description: Optional[str] = None,
-                    order: Optional[int] = None,
-                    prerequisites: Optional[List[uuid.UUID]] = None,
+                    title: Optional[str] = None,
+                    lesson_type: Optional[str] = None,
+                    lesson_order: Optional[int] = None,
+                    prerequisites: Optional[Dict[str, Any]] = None,
                     estimated_time: Optional[int] = None,
-                    difficulty: Optional[str] = None,
+                    difficulty_level: Optional[str] = None,
+                    points_reward: Optional[int] = None,
+                    learning_objectives: Optional[List[str]] = None,
+                    content: Optional[Dict[str, Any]] = None,
                     is_required: Optional[bool] = None,
                     metadata: Optional[Dict[str, Any]] = None) -> Optional[Lesson]:
         """
@@ -80,12 +105,15 @@ class LessonRepository(BaseRepository[Lesson]):
         Args:
             db: Database session
             lesson_id: Lesson ID
-            name: New lesson name
-            description: New lesson description
-            order: New display order
-            prerequisites: New list of prerequisite lesson IDs
+            title: New lesson title
+            lesson_type: New lesson type
+            lesson_order: New display order
+            prerequisites: New dictionary of prerequisite lessons
             estimated_time: New estimated time to complete
-            difficulty: New difficulty level
+            difficulty_level: New difficulty level
+            points_reward: New points reward
+            learning_objectives: New learning objectives
+            content: New content
             is_required: New required status
             metadata: New metadata to merge with existing
             
@@ -94,14 +122,14 @@ class LessonRepository(BaseRepository[Lesson]):
         """
         lesson = self.get_by_id(db, lesson_id)
         if lesson:
-            if name is not None:
-                lesson.name = name
+            if title is not None:
+                lesson.title = title
                 
-            if description is not None:
-                lesson.description = description
+            if lesson_type is not None:
+                lesson.lesson_type = lesson_type
                 
-            if order is not None:
-                lesson.order = order
+            if lesson_order is not None:
+                lesson.lesson_order = lesson_order
                 
             if prerequisites is not None:
                 lesson.prerequisites = prerequisites
@@ -109,8 +137,17 @@ class LessonRepository(BaseRepository[Lesson]):
             if estimated_time is not None:
                 lesson.estimated_time = estimated_time
                 
-            if difficulty is not None:
-                lesson.difficulty = difficulty
+            if difficulty_level is not None:
+                lesson.difficulty_level = difficulty_level
+                
+            if points_reward is not None:
+                lesson.points_reward = points_reward
+                
+            if learning_objectives is not None:
+                lesson.learning_objectives = learning_objectives
+                
+            if content is not None:
+                lesson.content = content
                 
             if is_required is not None:
                 lesson.is_required = is_required
@@ -154,7 +191,7 @@ class LessonRepository(BaseRepository[Lesson]):
         """
         return db.query(Lesson).filter(
             Lesson.course_id == course_id
-        ).order_by(Lesson.order).all()
+        ).order_by(Lesson.lesson_order).all()
     
     def get_required_lessons(self, db: Session, course_id: uuid.UUID) -> List[Lesson]:
         """
@@ -170,7 +207,7 @@ class LessonRepository(BaseRepository[Lesson]):
         return db.query(Lesson).filter(
             Lesson.course_id == course_id,
             Lesson.is_required == True
-        ).order_by(Lesson.order).all()
+        ).order_by(Lesson.lesson_order).all()
     
     def get_lesson_with_content(self, db: Session, lesson_id: uuid.UUID) -> Dict[str, Any]:
         """
@@ -210,7 +247,7 @@ class LessonRepository(BaseRepository[Lesson]):
         Returns:
             Updated lesson or None if not found
         """
-        return self.update_lesson(db, lesson_id, order=new_order)
+        return self.update_lesson(db, lesson_id, lesson_order=new_order)
     
     def get_prerequisite_lessons(self, db: Session, lesson_id: uuid.UUID) -> List[Lesson]:
         """

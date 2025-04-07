@@ -28,6 +28,7 @@ from .exceptions import (
     ValidationError,
     ResourceNotFoundError,
     DependencyError,
+    BusinessLogicError,
     
     # UI exceptions
     UIError,

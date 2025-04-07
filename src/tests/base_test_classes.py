@@ -38,6 +38,9 @@ class BaseServiceTest(unittest.TestCase):
         # Create a mock database session
         self.mock_db = MagicMock()
         
+        # Create an alias for mock_db as mock_session for backward compatibility
+        self.mock_session = self.mock_db
+        
         # Create a patch for the get_db function
         self.get_db_patcher = patch('src.db.get_db')
         self.mock_get_db = self.get_db_patcher.start()

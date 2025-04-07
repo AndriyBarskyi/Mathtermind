@@ -4,30 +4,30 @@
 
 ### Core Services Implementation
 
-1. **Complete Base Service Implementation**
-   - Enhance the `BaseService` class with additional error handling
-   - Implement transaction management utilities
-   - Add caching mechanisms for frequently accessed data
+1. **Complete Base Service Implementation** 
+   + Enhance the `BaseService` class with additional error handling
+   + Implement transaction management utilities
+   + Add caching mechanisms for frequently accessed data
 
 2. **Authentication and Authorization Services**
-   - Implement robust authentication service with session management
-   - Create role-based authorization controls
-   - Develop secure credential storage and password reset workflows
+   + Implement robust authentication service with session management
+   + Create role-based authorization controls
+   + Develop secure credential storage and password reset workflows
 
 3. **Logging and Error Handling Framework**
-   - Implement a comprehensive logging system
-   - Create standardized error handling patterns
-   - Develop error reporting and monitoring capabilities
+   + Implement a comprehensive logging system
+   + Create standardized error handling patterns
+   + Develop error reporting and monitoring capabilities
 
 ## Phase 2: Core Educational Content Services (3 weeks)
 
 ### Course and Lesson Management
 
 1. **Course Service Enhancement**
-   - Complete CRUD operations for courses
-   - Implement course categorization and tagging
-   - Add course search and filtering capabilities
-   - Develop course sequencing and prerequisites logic
+   + Complete CRUD operations for courses
+   - [x] Add course search and filtering capabilities (and sorting as well)
+   - [x] Implement course categorization and tagging
+   - Develop course sequencing and prerequisites  (feature to be added later, or not at all)
 
 2. **Lesson Service Enhancement**
    - Implement lesson creation and modification workflows

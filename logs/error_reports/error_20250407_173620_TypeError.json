@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-04-07T17:36:20.127257",
+  "error_type": "TypeError",
+  "error_message": "ProgressRepository.__init__() takes 1 positional argument but 2 were given",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/lesson_service.py\", line 1528, in mark_lesson_complete\n    progress_service = ProgressService()\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/progress_service.py\", line 47, in __init__\n    self.progress_repo = ProgressRepository(self.db)\n                         ~~~~~~~~~~~~~~~~~~^^^^^^^^^\nTypeError: ProgressRepository.__init__() takes 1 positional argument but 2 were given\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1450284,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "additional_data": {
+    "context": {
+      "user_id": "b9c29803-e702-4c65-943c-615d27a00ba9",
+      "lesson_id": "7d130322-2ae8-45e4-99cd-f2bc501df840"
+    }
+  }
+}

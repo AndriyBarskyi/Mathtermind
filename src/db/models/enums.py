@@ -110,6 +110,16 @@ class ContentType(str, enum.Enum):
     RESOURCE = "Ресурс"
 
 
+class LessonType(str, enum.Enum):
+    """Types of lessons."""
+
+    THEORY = "Теорія"
+    EXERCISE = "Завдання"
+    ASSESSMENT = "Оцінювання"
+    INTERACTIVE = "Інтерактивне завдання"
+    RESOURCE = "Ресурс"
+
+
 class ThemeType(str, enum.Enum):
     """User interface theme options."""
 

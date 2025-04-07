@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-04-07T15:47:02.194752",
+  "error_type": "ResourceNotFoundError",
+  "error_message": "[RESOURCE_NOT_FOUND] Lesson not found - Details: {'lesson_id': 'bef4ef08-05c4-4d38-9766-63be5e925df3'}",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/lesson_service.py\", line 642, in reorder_lessons\n    result = self.update_lesson_order(lesson_id, order)\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/handlers.py\", line 254, in wrapper\n    return error_handler.handle_error(e, {\"service_name\": service_name or func.__module__, \"function\": func.__name__})\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/handlers.py\", line 93, in handle_error\n    super().handle_error(error, context)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/handlers.py\", line 72, in handle_error\n    raise error\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/core/error_handling/handlers.py\", line 245, in wrapper\n    return func(*args, **kwargs)\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/lesson_service.py\", line 550, in update_lesson_order\n    raise ResourceNotFoundError(\n    ...<2 lines>...\n    )\nsrc.core.error_handling.exceptions.ResourceNotFoundError: [RESOURCE_NOT_FOUND] Lesson not found - Details: {'lesson_id': 'bef4ef08-05c4-4d38-9766-63be5e925df3'}\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 1148257,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "error_details": {
+    "error": "ResourceNotFoundError",
+    "message": "Lesson not found",
+    "error_code": "RESOURCE_NOT_FOUND",
+    "details": {
+      "lesson_id": "bef4ef08-05c4-4d38-9766-63be5e925df3"
+    }
+  },
+  "additional_data": {
+    "context": {
+      "lesson_id": "bef4ef08-05c4-4d38-9766-63be5e925df3",
+      "new_order": 1
+    }
+  }
+}

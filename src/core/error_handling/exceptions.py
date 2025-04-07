@@ -178,6 +178,19 @@ class DependencyError(ServiceError):
         super().__init__(message, **kwargs)
 
 
+class BusinessLogicError(ServiceError):
+    """Exception raised when a business logic rule or constraint is violated."""
+    def __init__(self, message: str = "Business logic constraint violated", 
+                 constraint: Optional[str] = None, **kwargs):
+        details = kwargs.get('details', {})
+        if constraint:
+            details['constraint'] = constraint
+        kwargs['details'] = details
+        # Pass error_code in kwargs to avoid conflict
+        kwargs['error_code'] = "BUSINESS_LOGIC_ERROR"
+        super().__init__(message, **kwargs)
+
+
 # UI Exceptions
 class UIError(MathtermindError):
     """Base exception for UI-related errors."""

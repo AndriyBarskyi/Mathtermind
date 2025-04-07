@@ -221,61 +221,6 @@ class ContentService:
             self.db.rollback()
             return None
     
-    def create_quiz_content(self, 
-                         lesson_id: str,
-                         title: str,
-                         description: str,
-                         questions: List[Dict[str, Any]],
-                         passing_score: int,
-                         order: int = 0,
-                         estimated_time: int = 0,
-                         metadata: Optional[Dict[str, Any]] = None) -> Optional[QuizContent]:
-        """
-        Create quiz content.
-        
-        Args:
-            lesson_id: The ID of the lesson
-            title: The title of the content
-            description: The description of the content
-            questions: List of questions
-            passing_score: The passing score percentage
-            order: The order of the content within the lesson
-            estimated_time: The estimated time to complete in minutes
-            metadata: Additional metadata
-            
-        Returns:
-            The created quiz content if successful, None otherwise
-        """
-        try:
-            lesson_uuid = uuid.UUID(lesson_id)
-            
-            # Create content data
-            content_data = {
-                "questions": questions,
-                "passing_score": passing_score
-            }
-            
-            # Create the content
-            db_content = self.content_repo.create(
-                lesson_id=lesson_uuid,
-                title=title,
-                content_type="quiz",
-                order=order,
-                description=description,
-                content_data=content_data,
-                estimated_time=estimated_time,
-                metadata=metadata or {}
-            )
-            
-            if not db_content:
-                return None
-                
-            return self._convert_db_content_to_ui_content(db_content)
-        except Exception as e:
-            logger.error(f"Error creating quiz content: {str(e)}")
-            self.db.rollback()
-            return None
-    
     def create_assessment_content(self, 
                                lesson_id: str,
                                title: str,

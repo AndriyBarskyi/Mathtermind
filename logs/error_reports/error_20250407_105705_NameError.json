@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-04-07T10:57:05.967596",
+  "error_type": "NameError",
+  "error_message": "name 'redis' is not defined",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/session_manager.py\", line 65, in __init__\n    self.redis = redis.from_url(redis_url)\n                 ^^^^^\nNameError: name 'redis' is not defined. Did you mean: 'credits'?\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 435594,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "additional_data": {
+    "operation": "redis_connection",
+    "redis_url": "redis://localhost:6379/0"
+  }
+}

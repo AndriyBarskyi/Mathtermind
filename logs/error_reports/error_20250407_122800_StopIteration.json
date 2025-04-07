@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-04-07T12:28:00.383993",
+  "error_type": "StopIteration",
+  "error_message": "",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/andrii/Documents/Projects/Mathtermind/src/services/course_service.py\", line 251, in filter_courses\n    return [self._convert_db_course_to_ui_course(course) for course in filtered_courses]\n            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^\n  File \"/usr/lib/python3.13/unittest/mock.py\", line 1167, in __call__\n    return self._mock_call(*args, **kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/unittest/mock.py\", line 1171, in _mock_call\n    return self._execute_mock_call(*args, **kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/unittest/mock.py\", line 1228, in _execute_mock_call\n    result = next(effect)\nStopIteration\n",
+  "system_info": {
+    "platform": "Linux-6.12.19-1-lts-x86_64-with-glibc2.41",
+    "python_version": "3.13.2",
+    "hostname": "archlinux",
+    "pid": 755612,
+    "cwd": "/home/andrii/Documents/Projects/Mathtermind",
+    "user": "andrii",
+    "executable": "/home/andrii/Documents/Projects/Mathtermind/venv/bin/python"
+  },
+  "additional_data": {
+    "operation": "filter_courses",
+    "filters": {
+      "duration_min": 30,
+      "duration_max": 120
+    }
+  }
+}
