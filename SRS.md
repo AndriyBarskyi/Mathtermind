@@ -529,29 +529,70 @@ The service layer provides the following major services:
 - LessonService: Lesson management
 - SettingsService: User preferences management
 
-### Appendix C: UI Component Hierarchy
-The UI is composed of the following main components:
-- MainWindow: Application container
-- Dashboard: Overview and navigation
-- CourseView: Course listing and details
-- LessonView: Lesson content and navigation
-- ProgressView: Progress statistics and visualization
-- SettingsView: User settings and preferences
-- AchievementView: Achievement gallery and progress
+### Appendix C: Learning Tools Specification
 
-### Appendix D: Test Coverage Requirements
-All components should maintain the following minimum test coverage:
-- Models: 95% line coverage
-- Repositories: 90% line coverage
-- Services: 85% line coverage
-- UI Controllers: 75% line coverage
+#### C.1 Mathematical Tools
+The mathematical tools component provides computational and visualization capabilities for mathematics education:
 
-### Appendix E: Glossary
-- **Course**: A complete learning module on a specific topic
-- **Lesson**: An individual learning unit within a course
-- **Content**: Educational material presented to users (theory, exercises, etc.)
-- **Achievement**: A gamification element awarded for meeting specific criteria
-- **Learning Goal**: A user-defined target for learning progress
-- **Personal Best**: A record of a user's best performance in a specific metric
-- **Learning Session**: A period of active learning tracked by the system
-- **Study Streak**: A record of consecutive days with learning activity
+1. **Core Functionality (MVP)**
+   - Expression evaluation and parsing with support for basic operations and functions
+   - Equation solving for linear equations with step-by-step explanations
+   - Formula validation and formatting
+   - Support for mathematical constants (π, e, etc.)
+   - Basic error handling and explanations
+   - Graph data preparation for function visualization
+   - Systems of linear equations solver
+   - Geometric calculations (area, perimeter, volume, etc.)
+   - Basic statistics (mean, median, mode, standard deviation)
+   - Elementary probability calculations
+   - Data preparation for visualization by UI components
+
+2. **Extended Functionality (Future)**
+   - Support for solving complex systems of equations and inequalities
+   - Symbolic manipulation and simplification
+   - Step-by-step solution generation for complex problems
+   - Advanced geometric calculations and transformations
+   - Advanced statistical analysis tools
+   - Interactive manipulatives for mathematical concepts
+   - Advanced equation types (quadratic, polynomial, differential, etc.)
+   - Unit conversion utilities
+   - Advanced probability calculation tools
+   - Integration with external mathematical libraries (SymPy, NumPy, etc.)
+   - Mathematical notation rendering (LaTeX/MathML)
+
+3. **Visualization (Future)**
+   - Data structures for 2D/3D function graphing
+   - Statistical data visualization formats
+   - Geometric shape representation
+   - Interactive graph manipulation support
+
+#### C.2 Computer Science Tools
+The computer science tools component provides programming, algorithm visualization, and computational thinking tools:
+
+1. **Core Functionality (MVP)**
+   - Code editor with syntax highlighting
+   - Code execution environment with sandboxing
+   - Basic output comparison for expected results
+   - Support for fundamental programming languages (Python, JavaScript)
+   - Simple code correctness validation
+
+2. **Extended Functionality (Future)**
+   - Algorithm visualization and simulation
+   - Data structure visualization
+   - Step-by-step execution with variable inspection
+   - Performance metrics for code optimization
+   - Memory usage analysis
+   - Code style and best practices checking
+   - Interactive tutorials for programming concepts
+   - Logic circuit design and simulation
+   - Database query visualization
+   - Network protocol simulation
+   - Support for multiple programming languages
+   - Debugging tools with breakpoints
+
+3. **Integration (Future)**
+   - Connection to content with relevant coding exercises
+   - Progressive difficulty based on user skill level
+   - Code sharing and version history
+   - Export functionality for completed projects
+   - Integration with version control concepts

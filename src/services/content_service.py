@@ -4,7 +4,7 @@ Content service for Mathtermind.
 This module provides service methods for managing different types of content.
 """
 
-from typing import List, Optional, Dict, Any, Union, Type, TypeVar
+from typing import List, Optional, Dict, Any, Union, Type, TypeVar, Tuple
 import uuid
 import logging
 from datetime import datetime
@@ -32,6 +32,9 @@ from src.models.content import (
 )
 from src.models.course import Course
 from src.models.lesson import Lesson
+from src.services.content_type_registry import ContentTypeRegistry
+from src.services.content_validation_service import ContentValidationService
+from src.core.error_handling.exceptions import ContentError
 
 # Type variable for content types
 T = TypeVar('T', bound=Content)
@@ -50,6 +53,8 @@ class ContentService:
         self.lesson_repo = LessonRepository(self.db)
         self.course_repo = CourseRepository(self.db)
         self.content_state_repo = ContentStateRepository(self.db)
+        self.type_registry = ContentTypeRegistry()
+        self.validation_service = ContentValidationService()
     
     # Content Methods
     
@@ -99,6 +104,97 @@ class ContentService:
             logger.error(f"Error getting lesson content: {str(e)}")
             return []
     
+    def create_content(self,
+                    content_type: str,
+                    lesson_id: str,
+                    title: str,
+                    description: str,
+                    order: int = 0,
+                    estimated_time: int = 0,
+                    metadata: Optional[Dict[str, Any]] = None,
+                    **content_data) -> Optional[Content]:
+        """
+        Create content of any type using the content type registry.
+        
+        Args:
+            content_type: The type of content to create
+            lesson_id: The ID of the lesson
+            title: The title of the content
+            description: The description of the content
+            order: The order of the content within the lesson
+            estimated_time: The estimated time to complete in minutes
+            metadata: Additional metadata
+            **content_data: Additional data specific to the content type
+            
+        Returns:
+            The created content if successful, None otherwise
+        """
+        try:
+            lesson_uuid = uuid.UUID(lesson_id)
+            
+            # Validate the content data structure
+            all_data = {
+                "content_type": content_type,
+                "lesson_id": lesson_id,
+                "title": title,
+                "description": description,
+                "order": order,
+                "estimated_time": estimated_time,
+                "metadata": metadata or {},
+                **content_data
+            }
+            
+            is_valid, errors = self.validation_service.validate_content_structure(all_data)
+            if not is_valid:
+                error_list = "; ".join(errors)
+                logger.warning(f"Content validation failed: {error_list}")
+                raise ContentError(
+                    message=f"Content validation failed: {error_list}",
+                    content_type=content_type,
+                    details={"validation_errors": errors}
+                )
+            
+            # Create content data dictionary
+            db_content_data = {k: v for k, v in content_data.items()}
+            
+            # Create the content in the database
+            db_content = self.content_repo.create(
+                lesson_id=lesson_uuid,
+                title=title,
+                content_type=content_type,
+                order=order,
+                description=description,
+                content_data=db_content_data,
+                estimated_time=estimated_time,
+                metadata=metadata or {}
+            )
+            
+            if not db_content:
+                return None
+                
+            # Convert to UI model
+            content = self._convert_db_content_to_ui_content(db_content)
+            
+            # Final validation
+            is_valid, errors = self.validation_service.validate_content(content)
+            if not is_valid:
+                # If validation fails after creation, delete the content
+                self.content_repo.delete(db_content.id)
+                error_list = "; ".join(errors)
+                logger.warning(f"Content validation failed after creation: {error_list}")
+                raise ContentError(
+                    message=f"Content validation failed after creation: {error_list}",
+                    content_type=content_type,
+                    details={"validation_errors": errors}
+                )
+                
+            return content
+        except Exception as e:
+            if not isinstance(e, ContentError):
+                logger.error(f"Error creating content: {str(e)}")
+            self.db.rollback()
+            return None
+    
     def create_theory_content(self, 
                            lesson_id: str,
                            title: str,
@@ -129,34 +225,47 @@ class ContentService:
             The created theory content if successful, None otherwise
         """
         try:
-            lesson_uuid = uuid.UUID(lesson_id)
+            # Validate references if provided
+            if references:
+                is_valid, errors = self.validation_service.validate_content_references(None, references)
+                if not is_valid:
+                    error_list = "; ".join(errors)
+                    logger.warning(f"References validation failed: {error_list}")
+                    raise ContentError(
+                        message=f"References validation failed: {error_list}",
+                        content_type="theory",
+                        details={"validation_errors": errors}
+                    )
             
-            # Create content data
-            content_data = {
-                "text_content": text_content,
-                "images": images or [],
-                "examples": examples or [],
-                "references": references or []
-            }
+            # Validate metadata if provided
+            if metadata:
+                is_valid, errors = self.validation_service.validate_content_metadata("theory", metadata)
+                if not is_valid:
+                    error_list = "; ".join(errors)
+                    logger.warning(f"Metadata validation failed: {error_list}")
+                    raise ContentError(
+                        message=f"Metadata validation failed: {error_list}",
+                        content_type="theory",
+                        details={"validation_errors": errors}
+                    )
             
             # Create the content
-            db_content = self.content_repo.create(
-                lesson_id=lesson_uuid,
-                title=title,
+            return self.create_content(
                 content_type="theory",
-                order=order,
+                lesson_id=lesson_id,
+                title=title,
                 description=description,
-                content_data=content_data,
+                order=order,
                 estimated_time=estimated_time,
-                metadata=metadata or {}
+                metadata=metadata,
+                text_content=text_content,
+                images=images or [],
+                examples=examples or [],
+                references=references or []
             )
-            
-            if not db_content:
-                return None
-                
-            return self._convert_db_content_to_ui_content(db_content)
         except Exception as e:
-            logger.error(f"Error creating theory content: {str(e)}")
+            if not isinstance(e, ContentError):
+                logger.error(f"Error creating theory content: {str(e)}")
             self.db.rollback()
             return None
     
@@ -430,6 +539,21 @@ class ContentService:
                 logger.warning(f"Content not found: {content_id}")
                 return None
             
+            # Convert to UI model for validation
+            current_content = self._convert_db_content_to_ui_content(db_content)
+            
+            # Validate the updates
+            is_valid, errors = self.validation_service.validate_content_update(current_content, updates)
+            if not is_valid:
+                error_list = "; ".join(errors)
+                logger.warning(f"Update validation failed: {error_list}")
+                raise ContentError(
+                    message=f"Update validation failed: {error_list}",
+                    content_id=content_id,
+                    content_type=db_content.content_type,
+                    details={"validation_errors": errors}
+                )
+            
             # Update the content
             for key, value in updates.items():
                 if hasattr(db_content, key):
@@ -443,7 +567,8 @@ class ContentService:
                 
             return self._convert_db_content_to_ui_content(updated_content)
         except Exception as e:
-            logger.error(f"Error updating content: {str(e)}")
+            if not isinstance(e, ContentError):
+                logger.error(f"Error updating content: {str(e)}")
             self.db.rollback()
             return None
     
@@ -606,114 +731,62 @@ class ContentService:
     
     # Content State Methods
     
-    def get_content_state(self, 
-                       user_id: str, 
-                       content_id: str, 
-                       state_type: str) -> Optional[Dict[str, Any]]:
+    def get_content_state(self, user_id: str, content_id: str, state_type: str) -> Optional[Dict[str, Any]]:
         """
-        Get content state.
+        Get the state of a content item.
         
         Args:
-            user_id: The ID of the user
-            content_id: The ID of the content
-            state_type: The type of state
+            user_id: User ID
+            content_id: Content ID
+            state_type: Type of state to retrieve
             
         Returns:
-            The content state value if found, None otherwise
+            State data as a dictionary or None if not found
         """
         try:
             user_uuid = uuid.UUID(user_id)
             content_uuid = uuid.UUID(content_id)
             
             # Get the content state
-            content_state = self.content_state_repo.get_content_state(
+            state = self.content_state_repo.get_state(
                 user_id=user_uuid,
                 content_id=content_uuid,
                 state_type=state_type
             )
             
-            if not content_state:
-                return None
-            
-            # Return the appropriate value based on state type
-            if content_state.json_value is not None:
-                return content_state.json_value
-            elif content_state.numeric_value is not None:
-                return {"value": content_state.numeric_value}
-            elif content_state.text_value is not None:
-                return {"value": content_state.text_value}
-            else:
-                return {}
+            return state
         except Exception as e:
             logger.error(f"Error getting content state: {str(e)}")
             return None
     
-    def update_content_state(self, 
-                          user_id: str, 
-                          content_id: str, 
-                          state_type: str, 
-                          value: Union[Dict[str, Any], str, int, float]) -> bool:
+    def update_content_state(self, user_id: str, content_id: str, state_type: str, value: Any) -> bool:
         """
-        Update content state.
+        Update the state of a content item.
         
         Args:
-            user_id: The ID of the user
-            content_id: The ID of the content
-            state_type: The type of state
-            value: The value to set
+            user_id: User ID
+            content_id: Content ID
+            state_type: Type of state to update
+            value: The state value to save
             
         Returns:
-            True if successful, False otherwise
+            True if updated successfully, False otherwise
         """
         try:
             user_uuid = uuid.UUID(user_id)
             content_uuid = uuid.UUID(content_id)
             
-            # Get the content
-            content = self.content_repo.get_by_id(content_uuid)
-            if not content:
-                logger.warning(f"Content not found: {content_id}")
-                return False
-            
-            # Get the user's progress for this content's lesson
-            progress = self.progress_repo.get_user_course_progress(
-                user_uuid, 
-                content.lesson.course_id
+            # Update the content state
+            result = self.content_state_repo.set_state(
+                user_id=user_uuid,
+                content_id=content_uuid,
+                state_type=state_type,
+                value=value
             )
-            if not progress:
-                logger.warning(f"Progress not found for user {user_id} in course {content.lesson.course_id}")
-                return False
             
-            # Update or create the content state
-            if isinstance(value, dict):
-                result = self.content_state_repo.update_or_create_state(
-                    user_id=user_uuid,
-                    progress_id=progress.id,
-                    content_id=content_uuid,
-                    state_type=state_type,
-                    json_value=value
-                )
-            elif isinstance(value, (int, float)):
-                result = self.content_state_repo.update_or_create_state(
-                    user_id=user_uuid,
-                    progress_id=progress.id,
-                    content_id=content_uuid,
-                    state_type=state_type,
-                    numeric_value=value
-                )
-            else:
-                result = self.content_state_repo.update_or_create_state(
-                    user_id=user_uuid,
-                    progress_id=progress.id,
-                    content_id=content_uuid,
-                    state_type=state_type,
-                    text_value=str(value)
-                )
-            
-            return result is not None
+            return result
         except Exception as e:
             logger.error(f"Error updating content state: {str(e)}")
-            self.db.rollback()
             return False
     
     # Conversion Methods
@@ -845,4 +918,44 @@ class ContentService:
             metadata=db_course.metadata,
             is_active=db_course.is_active,
             is_completed=False
-        ) 
+        )
+    
+    def get_content_types(self) -> List[Dict[str, Any]]:
+        """
+        Get all registered content types.
+        
+        Returns:
+            List of content type info dictionaries
+        """
+        try:
+            type_infos = self.type_registry.get_all_content_types()
+            
+            # Convert to dictionaries
+            result = []
+            for type_info in type_infos:
+                result.append({
+                    "type": type_info.name,
+                    "name": type_info.display_name,
+                    "description": type_info.description
+                })
+                
+            return result
+        except Exception as e:
+            logger.error(f"Error getting content types: {str(e)}")
+            return []
+    
+    def validate_content_item(self, content: Content) -> Tuple[bool, List[str]]:
+        """
+        Validate a content item.
+        
+        Args:
+            content: The content to validate
+            
+        Returns:
+            Tuple of (is_valid, list of error messages)
+        """
+        try:
+            return self.validation_service.validate_content(content)
+        except Exception as e:
+            logger.error(f"Error validating content: {str(e)}")
+            return False, [f"Validation error: {str(e)}"] 

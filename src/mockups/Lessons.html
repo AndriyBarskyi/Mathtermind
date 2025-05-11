@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathtermind - Уроки</title>
+    <style>
+        :root {
+            --blue: #566CD2;
+            --light-blue: #DDE2F6;
+            --dark-blue: #0F1D35;
+            --mint: #56C3D2;
+            --light-mint: #DDF3F6;
+            --gray: #858A94;
+            --light-gray: #EAEBEF;
+            --white: #FFFFFF;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-gray);
+        }
+        
+        .navbar {
+            display: flex;
+            background-color: var(--white);
+            padding: 15px;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            color: var(--blue);
+            font-weight: bold;
+            font-size: 22px;
+            margin-right: 20px;
+        }
+        
+        .logo img {
+            width: 40px;
+            margin-right: 10px;
+        }
+        
+        .search-bar {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+        }
+        
+        .search-bar input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--light-gray);
+            background-color: var(--light-gray);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-profile img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+        }
+        
+        .sidebar {
+            width: 200px;
+            background-color: var(--white);
+            height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 70px;
+        }
+        
+        .sidebar-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .sidebar-item.active {
+            background-color: var(--light-blue);
+            color: var(--blue);
+            font-weight: bold;
+        }
+        
+        .sidebar-item i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        
+        .main-content {
+            margin-left: 200px;
+            padding: 30px;
+            margin-top: 70px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            color: var(--dark-blue);
+        }
+        
+        .tab-navigation {
+            display: flex;
+            background-color: var(--white);
+            border-radius: 25px;
+            padding: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        .tab-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 20px;
+            text-align: center;
+            font-weight: 500;
+            color: var(--dark-blue);
+            flex: 1;
+        }
+        
+        .tab-item.active {
+            background-color: var(--light-blue);
+            color: var(--blue);
+            font-weight: bold;
+        }
+        
+        .tab-item:hover:not(.active) {
+            background-color: var(--light-gray);
+        }
+        
+        .search-section {
+            position: relative;
+            margin-bottom: 25px;
+        }
+        
+        .search-section input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border-radius: 25px;
+            border: none;
+            background-color: var(--white);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 16px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+        
+        .button {
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            text-align: center;
+            border: none;
+        }
+        
+        .button.primary {
+            background-color: var(--blue);
+            color: var(--white);
+        }
+        
+        .button.secondary {
+            background-color: var(--light-gray);
+            color: var(--dark-blue);
+        }
+        
+        .button:hover {
+            opacity: 0.9;
+        }
+        
+        .lessons-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+        
+        .lesson-card {
+            background-color: var(--white);
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .lesson-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .lesson-content {
+            padding: 20px;
+        }
+        
+        .lesson-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--dark-blue);
+            margin-bottom: 10px;
+            min-height: 54px;
+        }
+        
+        .lesson-description {
+            color: var(--gray);
+            font-size: 14px;
+            margin-bottom: 15px;
+            min-height: 60px;
+        }
+        
+        .lesson-meta {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .meta-tag {
+            padding: 8px 15px;
+            border-radius: 20px;
+            background-color: var(--light-mint);
+            color: var(--dark-blue);
+            font-size: 12px;
+            display: inline-block;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .lesson-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: var(--gray);
+        }
+        
+        .lesson-type {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .lesson-type i {
+            margin-right: 5px;
+            font-size: 16px;
+        }
+        
+        .lesson-duration {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .lesson-duration i {
+            margin-right: 5px;
+            font-size: 16px;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .lesson-progress {
+            height: 8px;
+            background-color: var(--light-gray);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--mint);
+            border-radius: 4px;
+        }
+        
+        .progress-text {
+            text-align: right;
+            font-size: 12px;
+            color: var(--gray);
+        }
+        
+        .course-info {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .course-logo {
+            width: 24px;
+            height: 24px;
+            background-color: var(--light-mint);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            color: var(--mint);
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .course-name {
+            font-size: 14px;
+            color: var(--dark-blue);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 8px;
+            font-weight: 500;
+        }
+        
+        .badge.new {
+            background-color: var(--light-blue);
+            color: var(--blue);
+        }
+        
+        .badge.interactive {
+            background-color: var(--light-mint);
+            color: var(--mint);
+        }
+        
+        .badge.basic {
+            background-color: var(--light-gray);
+            color: var(--gray);
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 30px;
+            background-color: var(--white);
+            border-radius: 15px;
+            color: var(--gray);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <div class="logo">
+            <span>M</span>
+            <span>Mathtermind</span>
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="Пошук...">
+        </div>
+        <div class="user-profile">
+            <img src="https://via.placeholder.com/35" alt="User Profile">
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-item">
+            <i>🏠</i>
+            <span>Головна</span>
+        </div>
+        <div class="sidebar-item">
+            <i>📚</i>
+            <span>Курси</span>
+        </div>
+        <div class="sidebar-item active">
+            <i>📝</i>
+            <span>Уроки</span>
+        </div>
+        <div class="sidebar-item">
+            <i>📈</i>
+            <span>Успішність</span>
+        </div>
+        <div class="sidebar-item">
+            <i>⚙️</i>
+            <span>Налаштування</span>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Уроки</h1>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <div class="tab-item active">Всі уроки (24)</div>
+            <div class="tab-item">Розпочаті (8)</div>
+            <div class="tab-item">Завершені (12)</div>
+        </div>
+        
+        <!-- Search Section -->
+        <div class="search-section">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Пошук уроків...">
+        </div>
+        
+        <!-- Lessons Grid -->
+        <div class="lessons-grid">
+            <!-- Lesson Card 1 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge new">Новий</span>
+                    <span class="badge interactive">Інтерактивний</span>
+                    
+                    <h3 class="lesson-title">Лінійні рівняння: Теорія та практика</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">A</div>
+                        <div class="course-name">Алгебра: основи</div>
+                    </div>
+                    
+                    <p class="lesson-description">Вивчення основних концепцій лінійних рівнянь та методів їх розв'язання.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>📖</i>
+                            <span>Теорія</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>15 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-progress">
+                        <div class="progress-fill" style="width: 65%;"></div>
+                    </div>
+                    <div class="progress-text">65% завершено</div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Продовжити урок</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lesson Card 2 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge interactive">Інтерактивний</span>
+                    <span class="badge basic">Базовий</span>
+                    
+                    <h3 class="lesson-title">Трикутники: Класифікація та властивості</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">Г</div>
+                        <div class="course-name">Геометрія</div>
+                    </div>
+                    
+                    <p class="lesson-description">Вивчення типів трикутників, їх властивостей та основних теорем.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>📐</i>
+                            <span>Вправи</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>20 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-progress">
+                        <div class="progress-fill" style="width: 35%;"></div>
+                    </div>
+                    <div class="progress-text">35% завершено</div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Продовжити урок</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lesson Card 3 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge basic">Базовий</span>
+                    
+                    <h3 class="lesson-title">Множини та операції над ними</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">М</div>
+                        <div class="course-name">Математика</div>
+                    </div>
+                    
+                    <p class="lesson-description">Поняття множини, підмножини, операції об'єднання, перетину та різниці множин.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>📚</i>
+                            <span>Теорія + тест</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>25 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Розпочати урок</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lesson Card 4 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge interactive">Інтерактивний</span>
+                    
+                    <h3 class="lesson-title">Статистичні дані та їх аналіз</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">С</div>
+                        <div class="course-name">Статистика</div>
+                    </div>
+                    
+                    <p class="lesson-description">Методи збору, представлення та аналізу статистичних даних.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>📊</i>
+                            <span>Інтерактивна вправа</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>30 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-progress">
+                        <div class="progress-fill" style="width: 85%;"></div>
+                    </div>
+                    <div class="progress-text">85% завершено</div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Продовжити урок</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lesson Card 5 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge basic">Базовий</span>
+                    
+                    <h3 class="lesson-title">Квадратні рівняння: Розв'язання та застосування</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">А</div>
+                        <div class="course-name">Алгебра: основи</div>
+                    </div>
+                    
+                    <p class="lesson-description">Методи розв'язання квадратних рівнянь та їх застосування у практичних задачах.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>📝</i>
+                            <span>Теорія + вправи</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>25 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-progress">
+                        <div class="progress-fill" style="width: 100%;"></div>
+                    </div>
+                    <div class="progress-text">Завершено</div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Повторити урок</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lesson Card 6 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge new">Новий</span>
+                    <span class="badge interactive">Інтерактивний</span>
+                    
+                    <h3 class="lesson-title">Початкове програмування: Змінні та типи даних</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">І</div>
+                        <div class="course-name">Інформатика</div>
+                    </div>
+                    
+                    <p class="lesson-description">Вступ до програмування: змінні, типи даних та основні операції.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>💻</i>
+                            <span>Практичний</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>35 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Розпочати урок</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lesson Card 7 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge basic">Базовий</span>
+                    
+                    <h3 class="lesson-title">Комбінаторика: Правила та формули</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">М</div>
+                        <div class="course-name">Математика</div>
+                    </div>
+                    
+                    <p class="lesson-description">Основні правила комбінаторики, перестановки, розміщення та комбінації.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>📚</i>
+                            <span>Теорія</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>20 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-progress">
+                        <div class="progress-fill" style="width: 100%;"></div>
+                    </div>
+                    <div class="progress-text">Завершено</div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Повторити урок</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lesson Card 8 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge interactive">Інтерактивний</span>
+                    
+                    <h3 class="lesson-title">Вектори в просторі</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">Г</div>
+                        <div class="course-name">Геометрія</div>
+                    </div>
+                    
+                    <p class="lesson-description">Вектори в тривимірному просторі, дії над векторами, скалярний добуток.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>🔍</i>
+                            <span>Інтерактивний</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>25 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Розпочати урок</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lesson Card 9 -->
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <span class="badge basic">Базовий</span>
+                    
+                    <h3 class="lesson-title">Функції та графіки</h3>
+                    
+                    <div class="course-info">
+                        <div class="course-logo">А</div>
+                        <div class="course-name">Алгебра: основи</div>
+                    </div>
+                    
+                    <p class="lesson-description">Поняття функції, способи задання, властивості функцій та побудова графіків.</p>
+                    
+                    <div class="lesson-info">
+                        <div class="lesson-type">
+                            <i>📈</i>
+                            <span>Практичний</span>
+                        </div>
+                        <div class="lesson-duration">
+                            <i>⏱️</i>
+                            <span>30 хв</span>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-progress">
+                        <div class="progress-fill" style="width: 50%;"></div>
+                    </div>
+                    <div class="progress-text">50% завершено</div>
+                    
+                    <div class="button-container">
+                        <button class="button primary">Продовжити урок</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

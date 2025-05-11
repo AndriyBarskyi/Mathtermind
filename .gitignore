@@ -25,9 +25,11 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-# experimental
+# specific to the project
 ui-experimental/
 project_descr.md
+changelog.md
+src/mockups/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -138,6 +140,7 @@ data/mathtermind.db
 archive/
 *.db
 *.db-journal
+logs/error_reports/
 
 # Spyder project settings
 .spyderproject

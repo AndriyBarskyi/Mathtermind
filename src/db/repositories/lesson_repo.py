@@ -35,7 +35,6 @@ class LessonRepository(BaseRepository[Lesson]):
     def create_lesson(self, db: Session, 
                     course_id: uuid.UUID,
                     title: str, 
-                    lesson_type: str,
                     difficulty_level: str,
                     lesson_order: int,
                     estimated_time: int = 0,
@@ -44,7 +43,8 @@ class LessonRepository(BaseRepository[Lesson]):
                     learning_objectives: Optional[List[str]] = None,
                     content: Optional[Dict[str, Any]] = None,
                     is_required: bool = True,
-                    metadata: Optional[Dict[str, Any]] = None) -> Lesson:
+                    metadata: Optional[Dict[str, Any]] = None,
+                    lesson_type: str = "") -> Lesson:
         """
         Create a new lesson.
         
@@ -52,7 +52,6 @@ class LessonRepository(BaseRepository[Lesson]):
             db: Database session
             course_id: Course ID
             title: Lesson title
-            lesson_type: Type of lesson
             difficulty_level: Difficulty level
             lesson_order: Display order in the course
             estimated_time: Estimated time to complete in minutes
@@ -62,14 +61,19 @@ class LessonRepository(BaseRepository[Lesson]):
             content: Content of the lesson
             is_required: Whether this lesson is required to complete the course
             metadata: Additional metadata
+            lesson_type: Deprecated parameter, kept for database compatibility
             
         Returns:
             Created lesson
+            
+        Note:
+            lesson_type is deprecated. Lessons are containers for content items.
+            Content items have types, not lessons.
         """
         lesson = Lesson(
             course_id=course_id,
             title=title,
-            lesson_type=lesson_type,
+            lesson_type=lesson_type,  # Kept for database compatibility but deprecated
             difficulty_level=difficulty_level,
             lesson_order=lesson_order,
             estimated_time=estimated_time,
@@ -89,7 +93,6 @@ class LessonRepository(BaseRepository[Lesson]):
     def update_lesson(self, db: Session, 
                     lesson_id: uuid.UUID,
                     title: Optional[str] = None,
-                    lesson_type: Optional[str] = None,
                     lesson_order: Optional[int] = None,
                     prerequisites: Optional[Dict[str, Any]] = None,
                     estimated_time: Optional[int] = None,
@@ -98,7 +101,8 @@ class LessonRepository(BaseRepository[Lesson]):
                     learning_objectives: Optional[List[str]] = None,
                     content: Optional[Dict[str, Any]] = None,
                     is_required: Optional[bool] = None,
-                    metadata: Optional[Dict[str, Any]] = None) -> Optional[Lesson]:
+                    metadata: Optional[Dict[str, Any]] = None,
+                    lesson_type: Optional[str] = None) -> Optional[Lesson]:
         """
         Update a lesson.
         
@@ -106,7 +110,6 @@ class LessonRepository(BaseRepository[Lesson]):
             db: Database session
             lesson_id: Lesson ID
             title: New lesson title
-            lesson_type: New lesson type
             lesson_order: New display order
             prerequisites: New dictionary of prerequisite lessons
             estimated_time: New estimated time to complete
@@ -116,9 +119,14 @@ class LessonRepository(BaseRepository[Lesson]):
             content: New content
             is_required: New required status
             metadata: New metadata to merge with existing
+            lesson_type: Deprecated parameter, kept for database compatibility
             
         Returns:
             Updated lesson or None if not found
+            
+        Note:
+            lesson_type is deprecated. Lessons are containers for content items.
+            Content items have types, not lessons.
         """
         lesson = self.get_by_id(db, lesson_id)
         if lesson:
@@ -126,6 +134,7 @@ class LessonRepository(BaseRepository[Lesson]):
                 lesson.title = title
                 
             if lesson_type is not None:
+                # This is kept for database compatibility but is deprecated
                 lesson.lesson_type = lesson_type
                 
             if lesson_order is not None:

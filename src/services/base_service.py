@@ -400,4 +400,37 @@ class BaseService(Generic[T]):
             self.logger.error(f"Error checking if entity exists: {str(e)}")
             if self.test_mode:
                 raise
-            return False 
+            return False
+
+def handle_service_errors(service_name: str = "service"):
+    """
+    Decorator to handle service errors in a standardized way.
+    
+    Args:
+        service_name: The name of the service for error logging
+        
+    Returns:
+        A decorator function
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            logger = logging.getLogger(f"{service_name}")
+            try:
+                return func(*args, **kwargs)
+            except ServiceError as e:
+                # Log service-specific errors
+                logger.error(f"Service error in {func.__name__}: {str(e)}")
+                return {
+                    "success": False,
+                    "error": str(e)
+                }
+            except Exception as e:
+                # Log unexpected errors
+                logger.exception(f"Unexpected error in {func.__name__}: {str(e)}")
+                return {
+                    "success": False,
+                    "error": f"An unexpected error occurred: {str(e)}"
+                }
+        return wrapper
+    return decorator 

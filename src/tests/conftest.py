@@ -29,6 +29,10 @@ from src.db.models.enums import (
     NotificationType
 )
 
+# Temporarily commented out for coverage testing
+from src.services.cs_tools_service import CSToolsService
+from src.services.math_tools_service import MathToolsService
+
 
 # Database fixtures
 @pytest.fixture(scope="function")
@@ -751,3 +755,21 @@ def test_study_streak(test_db, test_user):
     test_db.commit()
     test_db.refresh(study_streak)
     return study_streak
+
+
+@pytest.fixture
+def cs_tools_service():
+    """Create a test instance of CSToolsService with mocked dependencies."""
+    service = CSToolsService()
+    service.tracking_service = MagicMock()
+    service.db = MagicMock()
+    return service
+
+
+@pytest.fixture
+def math_tools_service():
+    """Create a test instance of MathToolsService with mocked dependencies."""
+    service = MathToolsService()
+    service.tracking_service = MagicMock()
+    service.db = MagicMock()
+    return service

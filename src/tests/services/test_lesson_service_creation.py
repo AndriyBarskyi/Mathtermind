@@ -14,7 +14,7 @@ from unittest import TestCase
 
 from src.services.lesson_service import LessonService
 from src.db.repositories import lesson_repo
-from src.db.models.enums import LessonType, DifficultyLevel
+from src.db.models.enums import DifficultyLevel
 from src.models.lesson import Lesson
 from src.core.error_handling.exceptions import ValidationError, ResourceNotFoundError
 
@@ -36,7 +36,6 @@ class TestLessonServiceCreation(unittest.TestCase):
         self.sample_lesson = Lesson(
             id=uuid.UUID(self.lesson_id),
             title="Test Lesson",
-            lesson_type=LessonType.THEORY,
             difficulty_level=DifficultyLevel.BEGINNER,
             estimated_time=30,
             points_reward=10,
@@ -44,14 +43,14 @@ class TestLessonServiceCreation(unittest.TestCase):
             prerequisites=["Basic Math"],
             learning_objectives=["Learn Something"],
             content={"blocks": []},
-            course_id=uuid.uuid4()  # Added course_id
+            course_id=str(uuid.uuid4())  # Changed to string as expected by model
         )
         
         # Create a mock lesson as it would be stored in the database
         self.db_lesson = MagicMock()
         self.db_lesson.id = uuid.UUID(self.lesson_id)
         self.db_lesson.title = "Test Lesson"
-        self.db_lesson.lesson_type = LessonType.THEORY
+        # Note: lesson_type is intentionally removed - lessons don't have types
         self.db_lesson.difficulty_level = DifficultyLevel.BEGINNER
         self.db_lesson.estimated_time = 30
         self.db_lesson.points_reward = 10
@@ -74,7 +73,6 @@ class TestLessonServiceCreation(unittest.TestCase):
         # Setup
         lesson_data = {
             "title": "New Lesson",
-            "lesson_type": "THEORY",
             "course_id": str(uuid.uuid4()),
             "difficulty_level": "BEGINNER",
             "estimated_time": 30,
@@ -91,7 +89,7 @@ class TestLessonServiceCreation(unittest.TestCase):
             mock_db_lesson = MagicMock()
             mock_db_lesson.id = self.db_lesson.id
             mock_db_lesson.title = "New Lesson"  # Match the title in lesson_data
-            mock_db_lesson.lesson_type = LessonType.THEORY
+            # Note: lesson_type is intentionally removed - lessons don't have types
             mock_db_lesson.difficulty_level = DifficultyLevel.BEGINNER
             mock_db_lesson.course_id = self.db_lesson.course_id
             mock_db_lesson.lesson_order = 1
@@ -118,7 +116,6 @@ class TestLessonServiceCreation(unittest.TestCase):
         # Setup
         lesson_data = {
             "title": "",  # Empty title
-            "lesson_type": "THEORY",
             "difficulty_level": "BEGINNER",
             "lesson_order": 1,
             "estimated_time": 30,
@@ -128,7 +125,7 @@ class TestLessonServiceCreation(unittest.TestCase):
         # Test
         with self.assertRaises(ValidationError):
             self.lesson_service.create_lesson(
-                course_id=self.sample_lesson.course_id,
+                course_id=str(self.sample_lesson.course_id),
                 **lesson_data
             )
     
@@ -150,7 +147,7 @@ class TestLessonServiceCreation(unittest.TestCase):
             updated_lesson.title = "Updated Lesson"
             updated_lesson.difficulty_level = DifficultyLevel.INTERMEDIATE
             updated_lesson.estimated_time = 45
-            updated_lesson.lesson_type = self.db_lesson.lesson_type
+            # Note: lesson_type is intentionally removed - lessons don't have types
             updated_lesson.lesson_order = self.db_lesson.lesson_order
             updated_lesson.points_reward = self.db_lesson.points_reward
             updated_lesson.prerequisites = self.db_lesson.prerequisites
@@ -224,26 +221,36 @@ class TestLessonServiceCreation(unittest.TestCase):
             mock_update_order.assert_called_once()
     
     def test_validate_lesson_data(self):
-        """Test validation of lesson data."""
-        # Test valid data
-        valid_data = {
-            "title": "Valid Lesson",
-            "lesson_type": "THEORY",
-            "difficulty_level": "BEGINNER"
-        }
-        
-        # This should not raise an exception
-        LessonService._validate_lesson_data(**valid_data)
-        
-        # Test invalid title
+        """Test validation of lesson data through the create_lesson method."""
+        # Test validation for invalid data directly through create_lesson
         invalid_title_data = {
             "title": "",  # Empty title
-            "lesson_type": "THEORY",
-            "difficulty_level": "BEGINNER"
+            "difficulty_level": "BEGINNER",
+            "course_id": str(uuid.uuid4()),
+            "lesson_order": 1,
+            "estimated_time": 30,
+            "points_reward": 10
         }
         
+        # Test that ValidationError is raised when creating a lesson with invalid data
         with self.assertRaises(ValidationError):
-            LessonService._validate_lesson_data(**invalid_title_data)
+            self.lesson_service.create_lesson(**invalid_title_data)
+        
+        # Test validation for missing title directly through create_lesson
+        missing_title_data = {
+            "title": "",  # Empty title
+            "difficulty_level": "BEGINNER",
+            "lesson_order": 1,
+            "estimated_time": 30,
+        }
+        
+        # Test that ValidationError is raised when title is empty
+        with self.assertRaises(ValidationError):
+            # course_id is a positional argument, so pass it separately
+            self.lesson_service.create_lesson(
+                course_id=str(uuid.uuid4()),
+                **missing_title_data
+            )
 
 if __name__ == '__main__':
     unittest.main() 

@@ -5,7 +5,12 @@ from datetime import datetime
 
 @dataclass
 class Lesson:
-    """Data model representing a lesson"""
+    """
+    Data model representing a lesson.
+    
+    Note: Lessons don't have types - they are containers for various content items.
+    Content items within lessons have types, not the lessons themselves.
+    """
 
     id: str
     title: str
@@ -15,7 +20,6 @@ class Lesson:
     points_reward: int
     difficulty_level: Optional[str] = None
     content: Dict[str, Any] = None
-    lesson_type: Optional[str] = None
     prerequisites: Dict[str, Any] = None
     learning_objectives: List[str] = None
     created_at: Optional[datetime] = None

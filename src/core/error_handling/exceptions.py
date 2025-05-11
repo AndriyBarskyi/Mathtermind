@@ -41,13 +41,18 @@ class MathtermindError(Exception):
 class DatabaseError(MathtermindError):
     """Base exception for database-related errors."""
     def __init__(self, message: str = "A database error occurred", **kwargs):
-        super().__init__(message, error_code="DB_ERROR", **kwargs)
+        # Pass error_code in kwargs to avoid conflict
+        if 'error_code' not in kwargs:
+            kwargs['error_code'] = "DB_ERROR"
+        super().__init__(message, **kwargs)
 
 
 class DatabaseConnectionError(DatabaseError):
     """Exception raised when a database connection cannot be established."""
     def __init__(self, message: str = "Could not connect to the database", **kwargs):
-        super().__init__(message, error_code="DB_CONNECTION_ERROR", **kwargs)
+        # Pass error_code in kwargs to avoid conflict
+        kwargs['error_code'] = "DB_CONNECTION_ERROR"
+        super().__init__(message, **kwargs)
 
 
 class QueryError(DatabaseError):
@@ -57,13 +62,17 @@ class QueryError(DatabaseError):
         if query:
             details['query'] = query
         kwargs['details'] = details
-        super().__init__(message, error_code="DB_QUERY_ERROR", **kwargs)
+        # Pass error_code in kwargs to avoid conflict
+        kwargs['error_code'] = "DB_QUERY_ERROR"
+        super().__init__(message, **kwargs)
 
 
 class MigrationError(DatabaseError):
     """Exception raised when a database migration fails."""
     def __init__(self, message: str = "Database migration failed", **kwargs):
-        super().__init__(message, error_code="DB_MIGRATION_ERROR", **kwargs)
+        # Pass error_code in kwargs to avoid conflict
+        kwargs['error_code'] = "DB_MIGRATION_ERROR"
+        super().__init__(message, **kwargs)
 
 
 # Authentication Exceptions

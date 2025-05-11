@@ -11,10 +11,11 @@ from datetime import datetime, timedelta
 import pytest
 from src.tests.base_test_classes import BaseServiceTest
 from src.services.content_service import ContentService
-from src.models.content import Content, TheoryContent, ExerciseContent, QuizContent, AssessmentContent, InteractiveContent
+from src.models.content import Content, TheoryContent, ExerciseContent, QuizContent, AssessmentContent, InteractiveContent, ResourceContent
 from src.models.course import Course
 from src.models.lesson import Lesson
 from src.db.models import Content as DBContent, Lesson as DBLesson, Course as DBCourse
+from src.exceptions import ContentValidationError
 
 
 class TestContentService(BaseServiceTest):
@@ -483,4 +484,353 @@ class TestContentService(BaseServiceTest):
         self.assertFalse(result)
         
         # Verify mock was not called
-        self.content_repo_mock.delete.assert_not_called() 
+        self.content_repo_mock.delete.assert_not_called()
+    
+    def test_create_content_success(self):
+        """Test creating content successfully."""
+        # Setup mocks
+        self.content_repo_mock.create.return_value = self.mock_db_theory_content
+        
+        # Mock validation service
+        with patch.object(
+            self.content_service.validation_service, 
+            'validate_content_structure', 
+            return_value=(True, [])
+        ) as mock_validate_structure:
+            
+            with patch.object(
+                self.content_service.validation_service, 
+                'validate_content', 
+                return_value=(True, [])
+            ) as mock_validate_content:
+                
+                with patch.object(
+                    self.content_service, 
+                    '_convert_db_content_to_ui_content', 
+                    return_value=self.mock_ui_theory_content
+                ) as mock_convert:
+                    
+                    # Call the method
+                    result = self.content_service.create_content(
+                        content_type="theory",
+                        lesson_id=self.test_lesson_id,
+                        title="Test Theory Content",
+                        description="This is a test theory content",
+                        order=1,
+                        estimated_time=30,
+                        metadata={"key": "value"},
+                        text_content="Test content text",
+                        images=[],
+                        examples=[],
+                        references=[]
+                    )
+                    
+                    # Verify the result
+                    self.assertIsNotNone(result)
+                    self.assertEqual(result.id, self.test_content_id)
+                    self.assertEqual(result.title, "Test Theory Content")
+                    
+                    # Verify mocks were called
+                    mock_validate_structure.assert_called_once()
+                    mock_validate_content.assert_called_once()
+                    mock_convert.assert_called_once()
+                    self.content_repo_mock.create.assert_called_once_with(
+                        lesson_id=uuid.UUID(self.test_lesson_id),
+                        title="Test Theory Content",
+                        content_type="theory",
+                        order=1,
+                        description="This is a test theory content",
+                        content_data=ANY,
+                        estimated_time=30,
+                        metadata={"key": "value"}
+                    )
+    
+    def test_create_content_validation_fails(self):
+        """Test creating content when validation fails."""
+        # Mock validation service
+        validation_errors = ["Field X is required", "Field Y must be a string"]
+        
+        with patch.object(
+            self.content_service.validation_service, 
+            'validate_content', 
+            return_value=(False, validation_errors)
+        ) as mock_validate:
+            
+            # Call the method and ensure it raises ContentValidationError
+            with self.assertRaises(ContentValidationError) as context:
+                self.content_service.create_content(
+                    content_type="theory",
+                    lesson_id=self.test_lesson_id,
+                    title="Invalid Content",
+                    text_content=""  # Invalid, should be non-empty
+                )
+            
+            # Verify the exception
+            self.assertEqual(context.exception.content_type, "theory")
+            self.assertEqual(context.exception.validation_errors, validation_errors)
+            
+            # Verify mock was called
+            mock_validate.assert_called_once()
+            
+            # Verify repository method was not called
+            self.content_repo_mock.create.assert_not_called()
+    
+    def test_create_content_post_validation_fails(self):
+        """Test creating content when post-creation validation fails."""
+        # Mock validation service for initial validation
+        with patch.object(
+            self.content_service.validation_service, 
+            'validate_content', 
+            return_value=(True, [])  # Initial validation passes
+        ) as mock_validate:
+            
+            # Mock the repository to return a valid DB content
+            mock_db_content = MagicMock(spec=DBContent)
+            mock_db_content.id = uuid.uuid4()
+            mock_db_content.content_type = "theory"
+            
+            self.content_repo_mock.create.return_value = mock_db_content
+            
+            # Mock UI content conversion to fail post-creation validation
+            with patch.object(
+                self.content_service, 
+                '_convert_db_content_to_ui_content'
+            ) as mock_convert:
+                # Mock the conversion function to raise an exception
+                mock_convert.side_effect = ContentValidationError(
+                    message="Post-creation validation failed",
+                    content_type="theory",
+                    validation_errors=["Post-creation check failed"]
+                )
+                
+                # Call the method and ensure it raises ContentValidationError
+                with self.assertRaises(ContentValidationError) as context:
+                    self.content_service.create_content(
+                        content_type="theory",
+                        lesson_id=self.test_lesson_id,
+                        title="Invalid After Creation",
+                        text_content="This fails after creation"
+                    )
+                
+                # Verify the exception
+                self.assertEqual(context.exception.content_type, "theory")
+                self.assertEqual(context.exception.validation_errors, ["Post-creation check failed"])
+                
+                # Verify mocks were called
+                mock_validate.assert_called_once()
+                self.content_repo_mock.create.assert_called_once()
+                mock_convert.assert_called_once_with(mock_db_content)
+    
+    def test_create_theory_content_success(self):
+        """Test creating theory content successfully."""
+        # Setup mocks
+        with patch.object(
+            self.content_service, 
+            'create_content', 
+            return_value=self.mock_ui_theory_content
+        ) as mock_create_content:
+            
+            # Call the method
+            result = self.content_service.create_theory_content(
+                lesson_id=self.test_lesson_id,
+                title="Test Theory Content",
+                description="This is a test theory content",
+                text_content="Test content text",
+                images=[],
+                examples=[],
+                references=[],
+                order=1,
+                estimated_time=30
+            )
+            
+            # Verify the result
+            self.assertIsNotNone(result)
+            self.assertEqual(result.id, self.test_content_id)
+            self.assertEqual(result.title, "Test Theory Content")
+            
+            # Verify create_content was called with the right arguments
+            mock_create_content.assert_called_once_with(
+                content_type="theory",
+                lesson_id=self.test_lesson_id,
+                title="Test Theory Content",
+                description="This is a test theory content",
+                text_content="Test content text",
+                images=[],
+                examples=[],
+                references=[],
+                order=1,
+                estimated_time=30,
+                metadata=None
+            )
+    
+    def test_create_exercise_content_success(self):
+        """Test creating exercise content successfully."""
+        # Create mock exercise content
+        mock_exercise = ExerciseContent(
+            id=self.test_content_id,
+            title="Test Exercise Content",
+            content_type="exercise",
+            lesson_id=self.test_lesson_id,
+            order=1,
+            description="This is a test exercise content",
+            problem_statement="Test problem",
+            solution="Test solution",
+            difficulty="medium",
+            hints=["Hint 1", "Hint 2"]
+        )
+        
+        # Setup mocks
+        with patch.object(
+            self.content_service, 
+            'create_content', 
+            return_value=mock_exercise
+        ) as mock_create_content:
+            
+            # Call the method
+            result = self.content_service.create_exercise_content(
+                lesson_id=self.test_lesson_id,
+                title="Test Exercise Content",
+                description="This is a test exercise content",
+                problem_statement="Test problem",
+                solution="Test solution",
+                difficulty="medium",
+                hints=["Hint 1", "Hint 2"],
+                order=1,
+                estimated_time=30
+            )
+            
+            # Verify the result
+            self.assertIsNotNone(result)
+            self.assertEqual(result.id, self.test_content_id)
+            self.assertEqual(result.title, "Test Exercise Content")
+            self.assertEqual(result.problem_statement, "Test problem")
+            self.assertEqual(result.solution, "Test solution")
+            self.assertEqual(result.difficulty, "medium")
+            self.assertEqual(result.hints, ["Hint 1", "Hint 2"])
+            
+            # Verify create_content was called with the right arguments
+            mock_create_content.assert_called_once_with(
+                content_type="exercise",
+                lesson_id=self.test_lesson_id,
+                title="Test Exercise Content",
+                description="This is a test exercise content",
+                problem_statement="Test problem",
+                solution="Test solution",
+                difficulty="medium",
+                hints=["Hint 1", "Hint 2"],
+                order=1,
+                estimated_time=30,
+                metadata=None
+            )
+    
+    def test_create_assessment_content_success(self):
+        """Test creating assessment content successfully."""
+        # Create mock questions
+        questions = [
+            {
+                "id": "q1",
+                "text": "Test question 1",
+                "answers": [
+                    {"id": "a1", "text": "Answer 1", "is_correct": True},
+                    {"id": "a2", "text": "Answer 2", "is_correct": False}
+                ]
+            },
+            {
+                "id": "q2",
+                "text": "Test question 2",
+                "answers": [
+                    {"id": "a3", "text": "Answer 3", "is_correct": False},
+                    {"id": "a4", "text": "Answer 4", "is_correct": True}
+                ]
+            }
+        ]
+        
+        # Create mock assessment content
+        mock_assessment = AssessmentContent(
+            id=self.test_content_id,
+            title="Test Assessment Content",
+            content_type="assessment",
+            lesson_id=self.test_lesson_id,
+            order=1,
+            description="This is a test assessment content",
+            questions=questions,
+            passing_score=70,
+            time_limit=60,
+            attempts_allowed=3,
+            is_final=True
+        )
+        
+        # Setup mocks
+        with patch.object(
+            self.content_service,
+            'create_content',
+            return_value=mock_assessment
+        ) as mock_create_content:
+            
+            # Call the method
+            result = self.content_service.create_assessment_content(
+                lesson_id=self.test_lesson_id,
+                title="Test Assessment Content",
+                description="This is a test assessment content",
+                questions=questions,
+                passing_score=70,
+                time_limit=60,
+                attempts_allowed=3,
+                is_final=True
+            )
+            
+            # Verify the result
+            self.assertIsNotNone(result)
+            self.assertEqual(result.id, self.test_content_id)
+            self.assertEqual(result.title, "Test Assessment Content")
+            self.assertEqual(result.description, "This is a test assessment content")
+            self.assertEqual(result.questions, questions)
+            self.assertEqual(result.passing_score, 70)
+            self.assertEqual(result.time_limit, 60)
+            self.assertEqual(result.attempts_allowed, 3)
+            self.assertEqual(result.is_final, True)
+            
+            # Verify create_content was called with the right arguments
+            mock_create_content.assert_called_once_with(
+                content_type="assessment",
+                lesson_id=self.test_lesson_id,
+                title="Test Assessment Content",
+                description="This is a test assessment content",
+                questions=questions,
+                passing_score=70,
+                time_limit=60,
+                attempts_allowed=3,
+                is_final=True
+            )
+    
+    def test_get_content_types(self):
+        """Test getting available content types."""
+        # Mock registry's get_all_content_types
+        type_info1 = MagicMock()
+        type_info1.name = "theory"
+        type_info1.display_name = "Theory"
+        type_info1.description = "Theory content"
+        
+        type_info2 = MagicMock()
+        type_info2.name = "exercise"
+        type_info2.display_name = "Exercise"
+        type_info2.description = "Exercise content"
+        
+        expected_types = [type_info1, type_info2]
+        
+        with patch.object(
+            self.content_service.type_registry, 
+            'get_all_content_types', 
+            return_value=expected_types
+        ) as mock_get_types:
+            
+            # Call the method
+            result = self.content_service.get_content_types()
+            
+            # Verify the result
+            self.assertEqual(len(result), 2)
+            self.assertEqual(result[0]["type"], "theory")
+            self.assertEqual(result[0]["name"], "Theory")
+            
+            # Verify mock was called
+            mock_get_types.assert_called_once()

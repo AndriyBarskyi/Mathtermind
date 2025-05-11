@@ -4,7 +4,8 @@ Tests for the progress service.
 
 import pytest
 import uuid
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from src.core.error_handling.exceptions import ValidationError, ResourceNotFoundError, DatabaseError
@@ -29,90 +30,79 @@ from src.db.repositories import (
     CompletedCourseRepository,
     UserContentProgressRepository,
     LessonRepository,
-    CourseRepository
+    CourseRepository,
+    ContentRepository
 )
 from src.services.progress_service import ProgressService
 from src.tests.base_test_classes import BaseServiceTest
+
+logger = logging.getLogger(__name__)
 
 
 class TestProgressService(BaseServiceTest):
     """Tests for ProgressService"""
     
     def setUp(self):
-        """Set up test case."""
-        super().setUp()
+        """Set up the test environment before each test."""
+        self.user_id = str(uuid.uuid4())
+        self.course_id = str(uuid.uuid4())
+        self.lesson_id = str(uuid.uuid4())
+        self.content_id = str(uuid.uuid4())
+        self.progress_id = str(uuid.uuid4())
+        self.completed_lesson_id = str(uuid.uuid4())
         
-        # Mock all repositories used by ProgressService
+        # Create mocks for repositories
         self.progress_repo_mock = MagicMock(spec=ProgressRepository)
-        self.content_state_repo_mock = MagicMock(spec=ContentStateRepository)
         self.completed_lesson_repo_mock = MagicMock(spec=CompletedLessonRepository)
         self.completed_course_repo_mock = MagicMock(spec=CompletedCourseRepository)
         self.user_content_progress_repo_mock = MagicMock(spec=UserContentProgressRepository)
         self.lesson_repo_mock = MagicMock(spec=LessonRepository)
         self.course_repo_mock = MagicMock(spec=CourseRepository)
+        self.content_repo_mock = MagicMock(spec=ContentRepository)
         
-        # Patch all repository classes to return our mocks on instantiation
-        self.progress_repo_patcher = patch('src.services.progress_service.ProgressRepository')
-        self.content_state_repo_patcher = patch('src.services.progress_service.ContentStateRepository')
-        self.completed_lesson_repo_patcher = patch('src.services.progress_service.CompletedLessonRepository')
-        self.completed_course_repo_patcher = patch('src.services.progress_service.CompletedCourseRepository')
-        self.user_content_progress_repo_patcher = patch('src.services.progress_service.UserContentProgressRepository')
-        self.lesson_repo_patcher = patch('src.services.progress_service.LessonRepository')
-        self.course_repo_patcher = patch('src.services.progress_service.CourseRepository')
-        
-        # Start all patches
-        self.progress_repo_class_mock = self.progress_repo_patcher.start()
-        self.content_state_repo_class_mock = self.content_state_repo_patcher.start()
-        self.completed_lesson_repo_class_mock = self.completed_lesson_repo_patcher.start()
-        self.completed_course_repo_class_mock = self.completed_course_repo_patcher.start()
-        self.user_content_progress_repo_class_mock = self.user_content_progress_repo_patcher.start()
-        self.lesson_repo_class_mock = self.lesson_repo_patcher.start()
-        self.course_repo_class_mock = self.course_repo_patcher.start()
-        
-        # Set the mock returns
-        self.progress_repo_class_mock.return_value = self.progress_repo_mock
-        self.content_state_repo_class_mock.return_value = self.content_state_repo_mock
-        self.completed_lesson_repo_class_mock.return_value = self.completed_lesson_repo_mock
-        self.completed_course_repo_class_mock.return_value = self.completed_course_repo_mock
-        self.user_content_progress_repo_class_mock.return_value = self.user_content_progress_repo_mock
-        self.lesson_repo_class_mock.return_value = self.lesson_repo_mock
-        self.course_repo_class_mock.return_value = self.course_repo_mock
-        
-        # Now create the service which will use our mocked repos
+        # Create a real service with mocked repositories
         self.progress_service = ProgressService()
-        
-        # Assign mock repositories to the service
         self.progress_service.progress_repo = self.progress_repo_mock
-        self.progress_service.content_state_repo = self.content_state_repo_mock
         self.progress_service.completed_lesson_repo = self.completed_lesson_repo_mock
         self.progress_service.completed_course_repo = self.completed_course_repo_mock
         self.progress_service.user_content_progress_repo = self.user_content_progress_repo_mock
         self.progress_service.lesson_repo = self.lesson_repo_mock
         self.progress_service.course_repo = self.course_repo_mock
+        self.progress_service.content_repo = self.content_repo_mock
         
-        # Set up common test data
-        self.user_id = str(uuid.uuid4())
-        self.course_id = str(uuid.uuid4())
-        self.lesson_id = str(uuid.uuid4())
-        self.progress_id = str(uuid.uuid4())
-        self.content_id = str(uuid.uuid4())
+        # Create a mock session object
+        self.mock_db = MagicMock()
         
-        # Helper method for getting a transaction context manager
-        self._get_transaction_cm = lambda: MagicMock(
-            __enter__=MagicMock(return_value=self.mock_db),
-            __exit__=MagicMock(return_value=None)
-        )
+        # Configure the service to use the mock DB session
+        self.progress_service.db = self.mock_db
+        
+        # Set up common mock returns for data conversion
+        mock_ui_progress = MagicMock(spec=Progress)
+        self.progress_service._convert_db_progress_to_ui_progress = MagicMock(return_value=mock_ui_progress)
+        
+        # Set up common mocks for repositories to not check DB session object
+        # but just return the expected results when called with any db session
+        for repo_mock in [
+            self.progress_repo_mock,
+            self.completed_lesson_repo_mock,
+            self.completed_course_repo_mock,
+            self.user_content_progress_repo_mock,
+            self.lesson_repo_mock,
+            self.course_repo_mock,
+            self.content_repo_mock
+        ]:
+            # Configure each repository method to not validate the exact DB session
+            # but accept any DB session parameter
+            for method_name in dir(repo_mock):
+                if not method_name.startswith('_') and callable(getattr(repo_mock, method_name)):
+                    method = getattr(repo_mock, method_name)
+                    if isinstance(method, MagicMock):
+                        method.side_effect = None  # Clear any side effects
         
     def tearDown(self):
         """Clean up test case."""
-        super().tearDown()
-        self.progress_repo_patcher.stop()
-        self.content_state_repo_patcher.stop()
-        self.completed_lesson_repo_patcher.stop()
-        self.completed_course_repo_patcher.stop()
-        self.user_content_progress_repo_patcher.stop()
-        self.lesson_repo_patcher.stop()
-        self.course_repo_patcher.stop()
+        # Skip the BaseServiceTest tearDown since we're not using patchers
+        pass
         
     def test_get_user_progress_success(self):
         """Test getting user progress successfully."""
@@ -865,4 +855,438 @@ class TestProgressService(BaseServiceTest):
         self.completed_lesson_repo_mock.get_user_completed_lessons.assert_called_once_with(
             uuid.UUID(self.user_id)
         )
-        assert len(result) == 0 
+        assert len(result) == 0
+        
+    # Add tests for the new weighted progress calculation
+    
+    def test_calculate_weighted_course_progress_success(self):
+        """Test calculating weighted course progress successfully."""
+        # Create mock lesson objects
+        mock_lesson1 = MagicMock()
+        mock_lesson1.id = uuid.uuid4()
+        mock_lesson1.lesson_order = 1
+        mock_lesson1.difficulty_level.value = 2  # Assuming DifficultyLevel.BEGINNER
+        
+        mock_lesson2 = MagicMock()
+        mock_lesson2.id = uuid.uuid4()
+        mock_lesson2.lesson_order = 2
+        mock_lesson2.difficulty_level.value = 3  # Assuming DifficultyLevel.INTERMEDIATE
+        
+        # Create mock content items
+        mock_content1 = MagicMock()
+        mock_content1.id = uuid.uuid4()
+        mock_content1.content_type = "theory"
+        mock_content1.lesson_id = mock_lesson1.id
+        mock_content1.metadata = {"importance": 1.0, "points": 1.0}
+        
+        mock_content2 = MagicMock()
+        mock_content2.id = uuid.uuid4()
+        mock_content2.content_type = "exercise"
+        mock_content2.lesson_id = mock_lesson1.id
+        mock_content2.metadata = {"importance": 1.5, "points": 1.0}
+        
+        mock_content3 = MagicMock()
+        mock_content3.id = uuid.uuid4()
+        mock_content3.content_type = "quiz"
+        mock_content3.lesson_id = mock_lesson2.id
+        mock_content3.metadata = {"importance": 2.0, "points": 2.0}
+        
+        # Create mock progress records
+        mock_content_progress1 = MagicMock()
+        mock_content_progress1.status = "completed"
+        
+        mock_content_progress2 = MagicMock()
+        mock_content_progress2.status = "in_progress"
+        mock_content_progress2.percentage = 50
+        
+        mock_content_progress3 = MagicMock()
+        mock_content_progress3.status = "not_started"
+        mock_content_progress3.score = None
+        
+        # Create mock progress record
+        mock_progress = MagicMock(spec=DBProgress)
+        mock_progress.id = uuid.uuid4()
+        
+        # Set up repository mock returns
+        self.lesson_repo_mock.get_lessons_by_course_id.return_value = [mock_lesson1, mock_lesson2]
+        self.lesson_repo_mock.get_lesson_with_content.side_effect = lambda db, lesson_id: {
+            mock_lesson1.id: (mock_lesson1, [mock_content1, mock_content2]),
+            mock_lesson2.id: (mock_lesson2, [mock_content3])
+        }.get(lesson_id, (None, []))
+        
+        self.user_content_progress_repo_mock.get_progress.side_effect = lambda db, user_id, content_id: {
+            mock_content1.id: mock_content_progress1,
+            mock_content2.id: mock_content_progress2,
+            mock_content3.id: mock_content_progress3
+        }.get(content_id, None)
+        
+        self.progress_repo_mock.get_course_progress.return_value = mock_progress
+        
+        # Call the method
+        weighted_percentage, details = self.progress_service.calculate_weighted_course_progress(
+            self.user_id, self.course_id
+        )
+        
+        # Verify method calls
+        self.lesson_repo_mock.get_lessons_by_course_id.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.course_id)
+        )
+        # Should call get_lesson_with_content twice
+        assert self.lesson_repo_mock.get_lesson_with_content.call_count == 2
+        assert self.user_content_progress_repo_mock.get_progress.call_count == 3
+        
+        # Verify update calls
+        self.progress_repo_mock.update_progress_percentage.assert_called_once()
+        self.progress_repo_mock.update_progress_data.assert_called_once()
+        
+        # Verify result
+        assert isinstance(weighted_percentage, float)
+        assert 0 <= weighted_percentage <= 100.0
+        assert details["status"] == "success"
+        assert "details" in details
+        assert "completed_count" in details["details"]
+        assert "total_count" in details["details"]
+        assert "completion_ratio" in details["details"]
+        assert "content_weights" in details["details"]
+        assert "lesson_weights" in details["details"]
+        
+    def test_calculate_weighted_course_progress_no_lessons(self):
+        """Test calculating weighted course progress when there are no lessons."""
+        # Mock repository returns
+        self.lesson_repo_mock.get_lessons_by_course_id.return_value = []
+        
+        # Call the method
+        weighted_percentage, details = self.progress_service.calculate_weighted_course_progress(
+            self.user_id, self.course_id
+        )
+        
+        # Verify method calls
+        self.lesson_repo_mock.get_lessons_by_course_id.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.course_id)
+        )
+        
+        # Verify no other calls were made
+        self.lesson_repo_mock.get_lesson_with_content.assert_not_called()
+        self.user_content_progress_repo_mock.get_progress.assert_not_called()
+        self.progress_repo_mock.update_progress_percentage.assert_not_called()
+        self.progress_repo_mock.update_progress_data.assert_not_called()
+        
+        # Verify result
+        assert weighted_percentage == 0.0
+        assert details["status"] == "no_lessons"
+        
+    def test_calculate_weighted_course_progress_no_content(self):
+        """Test calculating weighted progress when there is no content in lessons."""
+        # Create mock lesson
+        mock_lesson = MagicMock()
+        mock_lesson.id = uuid.uuid4()
+        
+        # Set up repository mock returns
+        self.lesson_repo_mock.get_lessons_by_course_id.return_value = [mock_lesson]
+        self.lesson_repo_mock.get_lesson_with_content.return_value = (mock_lesson, [])
+        
+        # Call the method
+        weighted_percentage, details = self.progress_service.calculate_weighted_course_progress(
+            self.user_id, self.course_id
+        )
+        
+        # Verify method calls
+        self.lesson_repo_mock.get_lessons_by_course_id.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.course_id)
+        )
+        self.lesson_repo_mock.get_lesson_with_content.assert_called_once_with(
+            self.mock_db, mock_lesson.id
+        )
+        
+        # Verify no other calls were made
+        self.user_content_progress_repo_mock.get_progress.assert_not_called()
+        
+        # Verify result
+        assert weighted_percentage == 0.0
+        assert details["status"] == "no_content"
+        
+    def test_calculate_weighted_course_progress_exception(self):
+        """Test calculating weighted progress when an exception occurs."""
+        # Mock repository to raise an exception
+        self.lesson_repo_mock.get_lessons_by_course_id.side_effect = Exception("Database error")
+        
+        # Call the method
+        weighted_percentage, details = self.progress_service.calculate_weighted_course_progress(
+            self.user_id, self.course_id
+        )
+        
+        # Verify method calls
+        self.lesson_repo_mock.get_lessons_by_course_id.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.course_id)
+        )
+        
+        # Verify result
+        assert weighted_percentage == 0.0
+        assert details["status"] == "error"
+        assert "message" in details
+        
+    def test_update_course_progress_with_weighting_success(self):
+        """Test updating course progress with weighting successfully."""
+        # Create mock progress
+        mock_progress = MagicMock(spec=DBProgress)
+        mock_progress.id = uuid.UUID(self.progress_id)
+        
+        # Create mock updated progress
+        mock_updated_progress = MagicMock(spec=DBProgress)
+        mock_updated_progress.id = uuid.UUID(self.progress_id)
+        
+        # Create mock UI progress
+        mock_ui_progress = MagicMock(spec=Progress)
+        
+        # Set up mocks
+        self.progress_repo_mock.get_course_progress.side_effect = [mock_progress, mock_updated_progress]
+        self.progress_service.calculate_weighted_course_progress = MagicMock(
+            return_value=(75.5, {"status": "success", "details": {}})
+        )
+        self.progress_service._convert_db_progress_to_ui_progress = MagicMock(return_value=mock_ui_progress)
+        
+        # Call the method
+        result = self.progress_service.update_course_progress_with_weighting(self.user_id, self.course_id)
+        
+        # Verify method calls
+        assert self.progress_repo_mock.get_course_progress.call_count == 2
+        self.progress_service.calculate_weighted_course_progress.assert_called_once_with(
+            self.user_id, self.course_id
+        )
+        self.progress_service._convert_db_progress_to_ui_progress.assert_called_once_with(mock_updated_progress)
+        
+        # Verify result
+        assert result == mock_ui_progress
+        
+    def test_update_course_progress_with_weighting_create_new(self):
+        """Test updating course progress with weighting when no progress record exists."""
+        # Set up repository mock returns
+        self.progress_repo_mock.get_course_progress.return_value = None
+        
+        # Create mock progress from create_course_progress
+        mock_created_progress = MagicMock(spec=Progress)
+        self.progress_service.create_course_progress = MagicMock(return_value=mock_created_progress)
+        
+        # Calculation returns failure
+        self.progress_service.calculate_weighted_course_progress = MagicMock(
+            return_value=(0.0, {"status": "no_lessons", "details": {}})
+        )
+        
+        # Call the method
+        result = self.progress_service.update_course_progress_with_weighting(self.user_id, self.course_id)
+        
+        # Verify method calls
+        self.progress_repo_mock.get_course_progress.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.user_id), uuid.UUID(self.course_id)
+        )
+        self.progress_service.create_course_progress.assert_called_once_with(
+            self.user_id, self.course_id
+        )
+        self.progress_service.calculate_weighted_course_progress.assert_called_once_with(
+            self.user_id, self.course_id
+        )
+        
+        # Verify result
+        assert result is None
+        
+    def test_update_course_progress_with_weighting_exception(self):
+        """Test updating course progress with weighting when an exception occurs."""
+        # Mock repository to raise an exception
+        self.progress_repo_mock.get_course_progress.side_effect = Exception("Database error")
+        
+        # Call the method
+        result = self.progress_service.update_course_progress_with_weighting(self.user_id, self.course_id)
+        
+        # Verify method calls
+        self.progress_repo_mock.get_course_progress.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.user_id), uuid.UUID(self.course_id)
+        )
+        
+        # Verify result
+        assert result is None
+        
+    def test_sync_progress_data_success(self):
+        """Test synchronizing progress data successfully."""
+        # Create mock progress
+        mock_progress = MagicMock(spec=DBProgress)
+        mock_progress.id = uuid.UUID(self.progress_id)
+        mock_progress.is_completed = False
+        
+        # Create mock lessons
+        mock_lesson1 = MagicMock()
+        mock_lesson1.id = uuid.uuid4()
+        
+        mock_lesson2 = MagicMock()
+        mock_lesson2.id = uuid.uuid4()
+        
+        # Create mock completed lessons
+        mock_completed_lesson = MagicMock(spec=DBCompletedLesson)
+        mock_completed_lesson.lesson_id = mock_lesson1.id
+        
+        # Create mock content items
+        mock_content1 = MagicMock()
+        mock_content1.id = uuid.uuid4()
+        
+        mock_content2 = MagicMock()
+        mock_content2.id = uuid.uuid4()
+        
+        # Create mock content progress
+        mock_content_progress1 = MagicMock(spec=DBUserContentProgress)
+        mock_content_progress1.time_spent = 30
+        mock_content_progress1.score = 80
+        
+        mock_content_progress2 = MagicMock(spec=DBUserContentProgress)
+        mock_content_progress2.time_spent = 45
+        mock_content_progress2.score = 90
+        
+        # Set up repository mock returns
+        self.progress_repo_mock.get_course_progress.return_value = mock_progress
+        self.lesson_repo_mock.get_lessons_by_course_id.return_value = [mock_lesson1, mock_lesson2]
+        self.completed_lesson_repo_mock.get_course_completed_lessons.return_value = [mock_completed_lesson]
+        self.completed_course_repo_mock.get_course_completion.return_value = None
+        
+        # Set up lesson content
+        self.lesson_repo_mock.get_lesson_with_content.side_effect = lambda db, lesson_id: {
+            mock_lesson1.id: (mock_lesson1, [mock_content1]),
+            mock_lesson2.id: (mock_lesson2, [mock_content2])
+        }.get(lesson_id, (None, []))
+        
+        # Set up content progress
+        self.user_content_progress_repo_mock.get_progress.side_effect = lambda db, user_id, content_id: {
+            mock_content1.id: mock_content_progress1,
+            mock_content2.id: mock_content_progress2
+        }.get(content_id, None)
+        
+        # Set up total time calculation
+        self.progress_service.calculate_total_time_spent = MagicMock(return_value=75)
+        
+        # Set up weighted progress calculation
+        self.progress_service.calculate_weighted_course_progress = MagicMock(
+            return_value=(50.0, {"status": "success", "details": {}})
+        )
+        
+        # Call the method
+        result = self.progress_service.sync_progress_data(self.user_id, self.course_id)
+        
+        # Verify method calls
+        self.progress_repo_mock.get_course_progress.assert_called_once()
+        self.lesson_repo_mock.get_lessons_by_course_id.assert_called_once()
+        self.completed_lesson_repo_mock.get_course_completed_lessons.assert_called_once()
+        assert self.lesson_repo_mock.get_lesson_with_content.call_count == 2
+        assert self.user_content_progress_repo_mock.get_progress.call_count >= 2
+        
+        # Verify update calls
+        assert self.progress_repo_mock.update_progress_data.call_count >= 1
+        self.completed_course_repo_mock.get_course_completion.assert_called_once()
+        
+        # Verify result
+        assert result is True
+        
+    def test_sync_progress_data_course_completed(self):
+        """Test synchronizing progress data when all lessons are completed."""
+        # Create mock progress
+        mock_progress = MagicMock(spec=DBProgress)
+        mock_progress.id = uuid.UUID(self.progress_id)
+        mock_progress.is_completed = False
+        
+        # Create mock lessons
+        mock_lesson = MagicMock()
+        mock_lesson.id = uuid.uuid4()
+        
+        # Create mock completed lessons (same as total lessons)
+        mock_completed_lesson = MagicMock(spec=DBCompletedLesson)
+        mock_completed_lesson.lesson_id = mock_lesson.id
+        
+        # Set up repository mock returns
+        self.progress_repo_mock.get_course_progress.return_value = mock_progress
+        self.lesson_repo_mock.get_lessons_by_course_id.return_value = [mock_lesson]
+        self.completed_lesson_repo_mock.get_course_completed_lessons.return_value = [mock_completed_lesson]
+        self.completed_course_repo_mock.get_course_completion.return_value = None
+        self.lesson_repo_mock.get_lesson_with_content.return_value = (mock_lesson, [])
+        
+        # Make sure update_progress_data returns something (not None) so the test passes
+        self.progress_repo_mock.update_progress_data.return_value = mock_progress
+        
+        # Add the complete_progress method to the mock
+        self.progress_repo_mock.complete_progress = MagicMock()
+        
+        # Set up weighted progress calculation
+        self.progress_service.calculate_weighted_course_progress = MagicMock(
+            return_value=(100.0, {"status": "success", "details": {}})
+        )
+        
+        # Call the method
+        result = self.progress_service.sync_progress_data(self.user_id, self.course_id)
+        
+        # Verify method calls
+        self.progress_repo_mock.get_course_progress.assert_called_once()
+        self.lesson_repo_mock.get_lessons_by_course_id.assert_called_once()
+        self.completed_lesson_repo_mock.get_course_completed_lessons.assert_called_once()
+        
+        # Verify update calls
+        self.progress_repo_mock.update_progress_data.assert_called()
+        self.progress_repo_mock.complete_progress.assert_called_once()
+        
+        # Verify result
+        assert result is True
+        
+    def test_sync_progress_data_no_progress(self):
+        """Test synchronizing progress data when there is no progress record."""
+        # Set up repository mock returns
+        self.progress_repo_mock.get_course_progress.return_value = None
+        
+        # Call the method
+        result = self.progress_service.sync_progress_data(self.user_id, self.course_id)
+        
+        # Verify method calls
+        self.progress_repo_mock.get_course_progress.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.user_id), uuid.UUID(self.course_id)
+        )
+        
+        # Verify no other calls
+        self.lesson_repo_mock.get_lessons_by_course_id.assert_not_called()
+        
+        # Verify result
+        assert result is False
+        
+    def test_sync_progress_data_no_lessons(self):
+        """Test synchronizing progress data when there are no lessons."""
+        # Create mock progress
+        mock_progress = MagicMock(spec=DBProgress)
+        
+        # Set up repository mock returns
+        self.progress_repo_mock.get_course_progress.return_value = mock_progress
+        self.lesson_repo_mock.get_lessons_by_course_id.return_value = []
+        
+        # Call the method
+        result = self.progress_service.sync_progress_data(self.user_id, self.course_id)
+        
+        # Verify method calls
+        self.progress_repo_mock.get_course_progress.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.user_id), uuid.UUID(self.course_id)
+        )
+        self.lesson_repo_mock.get_lessons_by_course_id.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.course_id)
+        )
+        
+        # Verify result
+        assert result is False
+        
+    def test_sync_progress_data_exception(self):
+        """Test synchronizing progress data when an exception occurs."""
+        # Mock repository to raise an exception
+        self.progress_repo_mock.get_course_progress.side_effect = Exception("Database error")
+        
+        # Call the method
+        result = self.progress_service.sync_progress_data(self.user_id, self.course_id)
+        
+        # Verify method calls
+        self.progress_repo_mock.get_course_progress.assert_called_once_with(
+            self.mock_db, uuid.UUID(self.user_id), uuid.UUID(self.course_id)
+        )
+        
+        # Verify DB rollback was called
+        self.mock_db.rollback.assert_called_once()
+        
+        # Verify result
+        assert result is False 
