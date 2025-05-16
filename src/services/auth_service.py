@@ -110,7 +110,7 @@ class AuthService(BaseService):
                 'id': str(user.id),
                 'username': user.username,
                 'email': user.email,
-                'is_admin': user.is_admin,
+                # Remove is_admin field
                 # Add role if available, otherwise default to student
                 'role': getattr(user, 'role', Role.STUDENT.value),
                 'last_login': datetime.now().isoformat()
