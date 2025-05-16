@@ -155,7 +155,7 @@ class AchievementService:
                 achievement_uuid, 
                 progress_data or {}
             )
-            
+           
             if not db_user_achievement:
                 return None
             

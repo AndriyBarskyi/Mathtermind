@@ -19,6 +19,31 @@ class CourseRepository(BaseRepository[Course]):
         """Initialize the repository with the Course model."""
         super().__init__(Course)
     
+    def get_all_courses(self, db: Session) -> List[Course]:
+        """
+        Get all courses.
+        
+        Args:
+            db: Database session
+            
+        Returns:
+            List of all courses
+        """
+        return db.query(Course).all()
+    
+    def get_course(self, db: Session, course_id: uuid.UUID) -> Optional[Course]:
+        """
+        Get a course by ID.
+        
+        Args:
+            db: Database session
+            course_id: Course ID
+            
+        Returns:
+            Course if found, None otherwise
+        """
+        return self.get_by_id(db, course_id)
+    
     def create_course(self, db: Session, 
                     topic: str,
                     name: str, 

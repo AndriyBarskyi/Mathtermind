@@ -107,8 +107,8 @@ class UserContentProgress(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     content: Mapped["Content"] = relationship("Content", back_populates="user_progress")
     content_states: Mapped[List["ContentState"]] = relationship(
         "ContentState",
-        primaryjoin="and_(UserContentProgress.user_id==ContentState.user_id, "
-                   "UserContentProgress.content_id==ContentState.content_id)",
+        primaryjoin="and_(foreign(UserContentProgress.user_id)==ContentState.user_id, "
+                   "foreign(UserContentProgress.content_id)==ContentState.content_id)",
         viewonly=True
     )
 

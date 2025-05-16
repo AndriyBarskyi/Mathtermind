@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from abc import ABC
@@ -33,25 +33,39 @@ class LearningTool(ABC):
 @dataclass
 class MathTool(LearningTool):
     """Data model representing a mathematical tool"""
-    math_tool_type: str  # Calculator, Graphing, Geometry, etc.
-    capabilities: Dict[str, Any]
-    default_config: Dict[str, Any]
+    math_tool_type: str = ""  # Calculator, Graphing, Geometry, etc.
+    capabilities: Dict[str, Any] = field(default_factory=dict)
+    default_config: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
         if self.tool_category != "Math":
             self.tool_category = "Math"
+        # Validate required fields
+        if not self.math_tool_type:
+            raise ValueError("Math tool type cannot be empty for MathTool")
+        if self.capabilities is None:
+            self.capabilities = {}
+        if self.default_config is None:
+            self.default_config = {}
 
 
 @dataclass
 class InformaticsTool(LearningTool):
     """Data model representing an informatics tool"""
-    informatics_tool_type: str  # Code Editor, Algorithm Visualizer, etc.
-    capabilities: Dict[str, Any]
-    default_config: Dict[str, Any]
+    informatics_tool_type: str = ""  # Code Editor, Algorithm Visualizer, etc.
+    capabilities: Dict[str, Any] = field(default_factory=dict)
+    default_config: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
         if self.tool_category != "Informatics":
             self.tool_category = "Informatics"
+        # Validate required fields
+        if not self.informatics_tool_type:
+            raise ValueError("Informatics tool type cannot be empty for InformaticsTool")
+        if self.capabilities is None:
+            self.capabilities = {}
+        if self.default_config is None:
+            self.default_config = {}
 
 
 @dataclass
@@ -61,16 +75,14 @@ class UserToolUsage:
     user_id: str
     tool_id: str
     content_id: Optional[str] = None
-    start_time: datetime = None
+    start_time: datetime = field(default_factory=datetime.now)
     end_time: Optional[datetime] = None
     duration: Optional[int] = None  # in seconds
-    usage_data: Dict[str, Any] = None
+    usage_data: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
         if self.usage_data is None:
             self.usage_data = {}
-        if self.start_time is None:
-            self.start_time = datetime.now()
     
     @property
     def formatted_start_time(self) -> str:

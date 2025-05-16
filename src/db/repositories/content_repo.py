@@ -11,8 +11,7 @@ from sqlalchemy import desc
 from src.db.models import (
     Content, 
     TheoryContent, 
-    ExerciseContent, 
-    QuizContent,
+    ExerciseContent,
     AssessmentContent,
     InteractiveContent,
     ResourceContent
@@ -115,46 +114,6 @@ class ContentRepository(BaseRepository[Content]):
         db.commit()
         db.refresh(exercise_content)
         return exercise_content
-    
-    def create_quiz_content(self, db: Session, 
-                          lesson_id: uuid.UUID,
-                          title: str,
-                          questions: List[Dict[str, Any]],
-                          order: int,
-                          passing_score: float = 70.0,
-                          estimated_time: int = 0,
-                          metadata: Optional[Dict[str, Any]] = None) -> QuizContent:
-        """
-        Create a new quiz content item.
-        
-        Args:
-            db: Database session
-            lesson_id: Lesson ID
-            title: Content title
-            questions: List of question objects
-            order: Display order in the lesson
-            passing_score: Score required to pass the quiz
-            estimated_time: Estimated time to complete in minutes
-            metadata: Additional metadata
-            
-        Returns:
-            Created quiz content
-        """
-        quiz_content = QuizContent(
-            lesson_id=lesson_id,
-            title=title,
-            content_type="quiz",
-            questions=questions,
-            order=order,
-            passing_score=passing_score,
-            estimated_time=estimated_time,
-            metadata=metadata or {}
-        )
-        
-        db.add(quiz_content)
-        db.commit()
-        db.refresh(quiz_content)
-        return quiz_content
     
     def create_assessment_content(self, db: Session, 
                                 lesson_id: uuid.UUID,
@@ -313,40 +272,40 @@ class ContentRepository(BaseRepository[Content]):
                           content_id: uuid.UUID) -> Optional[Union[
                               TheoryContent,
                               ExerciseContent,
-                              QuizContent,
                               AssessmentContent,
                               InteractiveContent,
                               ResourceContent
                           ]]:
         """
-        Get a content item by ID and return the appropriate specialized type.
+        Get content by ID, returning the appropriate subclass of Content.
         
         Args:
             db: Database session
-            content_id: Content ID
+            content_id: ID of the content
             
         Returns:
-            Content item with its specialized type or None if not found
+            The content object cast to its specific type
         """
-        base_content = db.query(Content).filter(Content.id == content_id).first()
-        
-        if not base_content:
+        content = self.get_by_id(db, content_id)
+        if not content:
             return None
             
-        content_type_map = {
+        # Map content_type to the appropriate model
+        type_map = {
             "theory": TheoryContent,
             "exercise": ExerciseContent,
-            "quiz": QuizContent,
             "assessment": AssessmentContent,
             "interactive": InteractiveContent,
             "resource": ResourceContent
         }
         
-        if base_content.content_type in content_type_map:
-            model_class = content_type_map[base_content.content_type]
-            return db.query(model_class).filter(model_class.id == content_id).first()
+        # Get the appropriate model class
+        model_class = type_map.get(content.content_type.value)
+        if not model_class:
+            return content
             
-        return base_content
+        # Query for the content with the appropriate model
+        return db.query(model_class).filter(model_class.id == content_id).first()
     
     def update_content_order(self, db: Session, 
                            content_id: uuid.UUID, 

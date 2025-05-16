@@ -19,7 +19,7 @@ from .enums import (
     ThemeType,
     Topic
 )
-from src.db.models.user import User, UserSetting, UserNotification
+from src.db.models.user import User, UserSetting, UserNotification, UserAnswer, Setting
 from src.db.models.content import (
     Course, Lesson, Content, TheoryContent, ExerciseContent, 
     AssessmentContent, InteractiveContent, ResourceContent, Tag, CourseTag
@@ -39,7 +39,7 @@ __all__ = [
     'TimestampMixin',
     'UUIDPrimaryKeyMixin',
     # Models
-    'User', 'UserSetting', 'UserNotification',
+    'User', 'UserSetting', 'UserNotification', 'UserAnswer', 'Setting',
     'Achievement', 'UserAchievement',
     'Course', 'CourseTag', 'Lesson', 'Content', 'TheoryContent', 'ExerciseContent', 
     'AssessmentContent', 'InteractiveContent', 'ResourceContent', 'Tag',

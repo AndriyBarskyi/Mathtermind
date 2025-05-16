@@ -71,6 +71,9 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     completed_courses: Mapped[List["CompletedCourse"]] = relationship(
         "CompletedCourse", back_populates="user", cascade="all, delete-orphan"
     )
+    answers: Mapped[List["UserAnswer"]] = relationship(
+        "UserAnswer", back_populates="user", cascade="all, delete-orphan"
+    )
 
     # Indexes
     __table_args__ = (
@@ -130,6 +133,23 @@ class UserSetting(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (Index("idx_user_setting_user_id", "user_id"),)
 
 
+class Setting(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Application-wide settings."""
+
+    __tablename__ = "settings"
+
+    key: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_protected: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    
+    # Indexes
+    __table_args__ = (
+        Index("idx_setting_key", "key"),
+        Index("idx_setting_is_protected", "is_protected"),
+    )
+
+
 class UserNotification(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """User notifications for various events."""
 
@@ -162,5 +182,34 @@ class UserNotification(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Index("idx_user_notification_type", "type"),
         Index("idx_user_notification_is_read", "is_read"),
         Index("idx_user_notification_created_at", "created_at"),
+    )
+
+
+class UserAnswer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Records of user answers to questions."""
+
+    __tablename__ = "user_answers"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=False,
+    )
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    is_correct: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    points_earned: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="answers")
+    
+    # Indexes
+    __table_args__ = (
+        Index("idx_user_answer_user_id", "user_id"),
+        Index("idx_user_answer_question_id", "question_id"),
+        Index("idx_user_answer_is_correct", "is_correct"),
     )
 
