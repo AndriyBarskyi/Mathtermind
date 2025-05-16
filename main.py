@@ -1,129 +1,76 @@
-#!/usr/bin/env python3
-"""
-Mathtermind - A self-paced learning platform for mathematics and informatics
-
-This is the main entry point for the Mathtermind application.
-"""
-
+from PyQt5 import QtWidgets, QtCore, QtGui
+from ui import Ui_MainWindow
+from account_login import*
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QMenu, QAction
 import sys
-import logging
-from pathlib import Path
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QMenu, QAction
-from sqlalchemy import text
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-# Add project root to path if needed
-project_root = Path(__file__).parent.absolute()
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-
-# Import application modules
-from src.ui.ui import MainWindowUI
-from src.db import get_db
-from src.config import DATABASE_URL, DEBUG_MODE
+from ui_wrapper import *
+from account_login import LoginPage
+from register_page import RegisterPage
 
 
-class MathtermindApp(QtWidgets.QMainWindow):
-    """Main application window for Mathtermind."""
-    
+class MainApp(QtWidgets.QMainWindow):
     def __init__(self):
-        """Initialize the application window and UI components."""
         super().__init__()
-        
-        # Set up the UI
-        self.ui = MainWindowUI()
-        self.ui.setupUi(self)
         self.setWindowTitle("Mathtermind")
-        
-        # Connect signals to slots
-        self._connect_signals()
-        
-        # Verify database connection
-        self._check_database_connection()
-        
-        logger.info("Application initialized successfully")
-    
-    def _connect_signals(self):
-        """Connect UI signals to their respective slots."""
-        self.ui.userButton.clicked.connect(self.show_user_menu)
-    
-    def _check_database_connection(self):
-        """Check database connection and log status."""
-        try:
-            db = next(get_db())
-            # Check if we can query the database
-            course_count = db.execute(text("SELECT COUNT(*) FROM courses")).scalar()
-            logger.info(f"Database connection successful. Found {course_count} courses.")
-        except Exception as e:
-            logger.error(f"Database connection error: {e}")
-            print("Database connection error. Please run 'python db_manage.py init' and "
-                  "'python db_manage.py seed' to set up the database.")
+        self.resize(1400, 900)
 
-    def show_user_menu(self):
-        """Display the user menu when the user button is clicked."""
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("icon/logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.setWindowIcon(icon)
+
+        self.main_stack = QtWidgets.QStackedWidget()
+        self.setCentralWidget(self.main_stack)
+        
+        # Логін
+        self.login_page = LoginPage()
+        self.login_page.login_successful.connect(self.show_main_interface)
+        self.login_page.goto_register.connect(self.show_register)
+        self.main_stack.addWidget(self.login_page)
+
+        # Реєстрація
+        self.register_page = RegisterPage()
+        self.register_page.back_to_login.connect(self.show_login)
+        self.main_stack.addWidget(self.register_page)
+
+        # Головна частина
+        self.ui_wrapper = UiWrapper()
+        self.ui_page = self.ui_wrapper.centralWidget()
+        self.main_stack.addWidget(self.ui_page)
+
+        self.main_stack.setCurrentWidget(self.login_page)
+        self.ui_wrapper.ui.btn_user.clicked.connect(self.show_menu)
+
+    def show_main_interface(self):
+        self.main_stack.setCurrentWidget(self.ui_page)
+
+    def show_register(self):
+        self.main_stack.setCurrentWidget(self.register_page)
+
+    def show_login(self):
+        self.main_stack.setCurrentWidget(self.login_page)
+
+    def show_menu(self):
         menu = QMenu(self)
+        action1 = QAction("Змінити користувача", self)
+        action2 = QAction("Вихід", self)
+        action1.triggered.connect(self.action1_triggered)
+        action2.triggered.connect(self.action2_triggered)
+        menu.addAction(action1)
+        menu.addAction(action2)
+        menu.exec_(self.ui_wrapper.ui.btn_user.mapToGlobal(self.ui_wrapper.ui.btn_user.rect().bottomLeft()))
+
+    def action1_triggered(self):
+        print("Вибрана дія 1")
         
-        # Create menu actions
-        change_user_action = QAction("Змінити користувача", self)
-        exit_action = QAction("Вихід", self)
+    def action2_triggered(self):
+        self.main_stack.setCurrentWidget(self.login_page)
         
-        # Connect actions to slots
-        change_user_action.triggered.connect(self.on_change_user)
-        exit_action.triggered.connect(self.on_exit)
-        
-        # Add actions to menu
-        menu.addAction(change_user_action)
-        menu.addAction(exit_action)
-        
-        # Show menu at the appropriate position
-        menu.exec_(self.ui.userButton.mapToGlobal(self.ui.userButton.rect().bottomLeft()))
-
-    def on_change_user(self):
-        """Handle the change user action."""
-        logger.info("Change user action triggered")
-        print("Вибрана дія: Змінити користувача")
-        
-    def on_exit(self):
-        """Handle the exit action."""
-        logger.info("Exit action triggered")
-        QApplication.quit()
-
-
-def load_stylesheet():
-    """Load the application stylesheet."""
-    try:
-        stylesheet_path = Path("src/ui/style.qss")
-        with open(stylesheet_path, "r") as file:
-            return file.read()
-    except FileNotFoundError:
-        logger.warning("Style file not found: src/ui/style.qss")
-        return ""
-
-
-def main():
-    """Main entry point for the application."""
-    # Create the application
-    app = QApplication(sys.argv)
-    
-    # Set application stylesheet
-    stylesheet = load_stylesheet()
-    if stylesheet:
-        app.setStyleSheet(stylesheet)
-    
-    # Create and show the main window
-    window = MathtermindApp()
-    window.show()
-    
-    # Start the event loop
-    return app.exec_()
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    app = QtWidgets.QApplication(sys.argv)
+    with open("style.qss", "r") as file:
+        style_sheet = file.read()
+    app.setStyleSheet(style_sheet)
+   
+    window = MainApp()
+    window.show()
+    sys.exit(app.exec_())
