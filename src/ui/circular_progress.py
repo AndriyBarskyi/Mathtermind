@@ -40,6 +40,6 @@ class CircularProgress(QWidget):
 
 
         painter.setPen(Qt.black)
-        painter.setFont(QFont("Arial", 16, QFont.Bold))
+        painter.setFont(QFont("MS Shell Dlg 2", 16, QFont.Bold))
         text = f"{self.value}%"
         painter.drawText(self.rect(), Qt.AlignCenter, text)
