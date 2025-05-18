@@ -1,8 +1,11 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import Qt
 from slider import RangeSlider
 from lessons_list_win import Lessons_page
-from main_page import *
+from src.services.course_service import CourseService
+from src.services.progress_service import ProgressService
+from src.db.models.enums import Topic, DifficultyLevel
 
 
 class Course_page(QWidget):
@@ -12,6 +15,10 @@ class Course_page(QWidget):
         self.pg_lessons = None
         self.stack = stack
         self.pg_lessons = lessons_page
+        
+        # Initialize services
+        self.course_service = CourseService()
+        self.progress_service = ProgressService()
 
         self.pg_courses = QtWidgets.QWidget()
         self.pg_courses.setObjectName("pg_courses")
@@ -161,8 +168,15 @@ class Course_page(QWidget):
         self.scroll_area_content = QtWidgets.QWidget()
         self.scroll_area_content.setGeometry(QtCore.QRect(-111, -476, 1110, 1066))
         self.scroll_area_content.setObjectName("scroll_area_content")
+        
+        # Use a grid layout with proper spacing and set column count
         self.course_cards_layout = QtWidgets.QGridLayout(self.scroll_area_content)
-        self.course_cards_layout.setObjectName("course_cards_layout")        
+        self.course_cards_layout.setObjectName("course_cards_layout")
+        self.course_cards_layout.setSpacing(8)  # Reduced spacing between cards
+        self.course_cards_layout.setContentsMargins(5, 5, 5, 5)  # Reduced margins
+        self.course_cards_layout.setColumnStretch(0, 1)
+        self.course_cards_layout.setColumnStretch(1, 1)
+        self.course_cards_layout.setColumnStretch(2, 1)
 
         self.courses_scroll_area.setWidget(self.scroll_area_content)
         self.main_courses_layout.addWidget(self.courses_scroll_area, 2, 0, 1, 1)
@@ -176,19 +190,9 @@ class Course_page(QWidget):
         self.main_courses_layout.addWidget(self.lb_courses, 0, 0, 1, 1)
         self.setLayout(self.main_courses_layout)
         
-        #Перелік курсів
+        # Load courses from database
         self.course_widgets_complete = []  # список для збереження карток
-        self.add_course_widget("Python Basics", "Introduction to Python", "Математика", "Базовий", 10,8)
-        self.add_course_widget("Data Science", "Learn Data Analysis", "Математика", "Середній", 15,10)
-        self.add_course_widget("Web Development", "HTML, CSS, JavaScript", "Математика", "Високий", 20,20)
-        self.add_course_widget("Python Basics", "Introduction to Python", "Інформатика", "Базовий", 10,7)
-        self.add_course_widget("Data Science", "Learn Data Analysis", "Математика", "Базовий", 15,10)
-        self.add_course_widget("Web Development", "HTML, CSS, JavaScript", "Інформатика", "Середній", 20,10)
-        self.add_course_widget("Python Basics", "Introduction to Python", "Математика", "Базовий", 10,3)
-        self.add_course_widget("Data Science", "Learn Data Analysis", "Інформатика", "Середній", 15,5)
-        self.add_course_widget("Web Development", "HTML, CSS, JavaScript", "Інформатика", "Середній", 20,19)
-        self.add_course_widget("Data Science", "Learn Data Analysis", "Інформатика", "Високий", 15,15)
-        self.add_course_widget("Web Development", "HTML, CSS, JavaScript", "Інформатика", "Високий", 20,15)
+        self.load_courses_from_db()
         
         self.btn_completed.clicked.connect(self.show_completed_courses)
         self.btn_all.clicked.connect(self.show_all_courses)
@@ -196,226 +200,502 @@ class Course_page(QWidget):
         self.btn_apply.clicked.connect(self.apply_filters)
         self.btn_clear.clicked.connect(self.clear_filters)
 
-    def add_course_widget(self, name, description, subject, level, lessons, complete_lessons=0):
+    def load_courses_from_db(self):
+        """Load courses from the database and display them"""
+        try:
+            # Clear existing courses
+            self.clear_courses()
+            
+            # Get all courses from the database
+            courses = self.course_service.get_all_courses()
+            
+            # Display each course
+            for course in courses:
+                # Map difficulty level to UI text
+                difficulty_text = "Базовий"
+                if course.difficulty_level == DifficultyLevel.INTERMEDIATE:
+                    difficulty_text = "Середній"
+                elif course.difficulty_level == DifficultyLevel.ADVANCED:
+                    difficulty_text = "Високий"
+                
+                # Map topic to UI text
+                subject_text = "Математика" if course.topic == Topic.MATHEMATICS else "Інформатика"
+                
+                # Get number of lessons (placeholder)
+                num_lessons = len(course.lessons) if hasattr(course, 'lessons') and course.lessons else 5
+                
+                # Add course widget
+                self.add_course_widget(
+                    course.name, 
+                    course.description, 
+                    subject_text, 
+                    difficulty_text, 
+                    num_lessons,
+                    0,  # For now, set completed_lessons to 0
+                    course.id  # Pass the course ID
+                )
+        except Exception as e:
+            print(f"Error loading courses: {str(e)}")
+
+    def clear_courses(self):
+        """Clear all course widgets from the layout"""
+        # Remove all widgets from the course cards layout
+        while self.course_cards_layout.count():
+            item = self.course_cards_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+        
+        # Clear the list of course widgets
+        self.course_widgets_complete = []
+        
+    def add_course_widget(self, name, description, subject, level, lessons, complete_lessons=0, course_id=None):
         course_card_widget = QtWidgets.QWidget(self.scroll_area_content)
-        course_card_widget.setMinimumSize(QtCore.QSize(360, 330))
+        course_card_widget.setFixedSize(QtCore.QSize(320, 280))
         course_card_widget.setProperty("type", "card")
         
-        card_grid_layout = QtWidgets.QGridLayout(course_card_widget) 
-        card_grid_layout.setContentsMargins(10, 10, 10, 10)  
-
-        lb_name = QtWidgets.QLabel(course_card_widget)
-        lb_name.setText(name)
-        lb_name.setProperty("type", "card")
-        lb_name.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        card_grid_layout.addWidget(lb_name, 0, 0, 1, 1)
-
-        lb_description = QtWidgets.QLabel(course_card_widget)
-        lb_description.setText(description)
-        lb_description.setProperty("type", "lb_description")
-        lb_description.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        card_grid_layout.addWidget(lb_description, 1, 0, 1, 1)
-
-        widget_info = QtWidgets.QWidget(course_card_widget)
-        widget_info.setMinimumSize(QtCore.QSize(335, 50))
-        widget_info.setMaximumSize(QtCore.QSize(16666, 50))
-        layout_info = QtWidgets.QHBoxLayout(widget_info)
-        layout_info.setContentsMargins(0, 0, 0, 0)
-        widget_info.setProperty("type", "w_pg") 
+        # Store course_id as a property on the widget
+        if course_id:
+            course_card_widget.setProperty("course_id", course_id)
         
-        lb_subject = QtWidgets.QLabel(widget_info)
-        lb_subject.setText(subject)
-        lb_subject.setProperty("type","lb_name_course")
-        lb_subject.setMinimumSize(QtCore.QSize(165, 40))
-        lb_subject.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        layout_info.addWidget(lb_subject)
-
-        lb_level = QtWidgets.QLabel(widget_info)
-        lb_level.setText(level)
-        lb_level.setProperty("type","lb_name_course")
-        lb_level.setMinimumSize(QtCore.QSize(165, 40))
-        lb_level.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        layout_info.addWidget(lb_level)
-
-        card_grid_layout.addWidget(widget_info, 2, 0, 1, 1)
-
-        lb_lessons = QtWidgets.QLabel(course_card_widget)
-        lb_lessons.setText(f"Lessons: {lessons}")
-        lb_lessons.setMinimumSize(QtCore.QSize(0,25))
-        lb_lessons.setMaximumSize(QtCore.QSize(1666666,25))
-        lb_lessons.setProperty("type","lb_small")
-        card_grid_layout.addWidget(lb_lessons, 3, 0, 1, 1)
-
-        course_action_stack = QtWidgets.QStackedWidget(course_card_widget)
-        course_action_stack.setMaximumSize(QtCore.QSize(16777215, 75))
-        course_action_stack.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        card_layout = QtWidgets.QVBoxLayout(course_card_widget)
+        card_layout.setContentsMargins(10, 10, 10, 10)
         
+        # Course title
+        title = QtWidgets.QLabel(name)
+        title.setProperty("type", "lb_name_lesson")
+        title.setStyleSheet("font-size: 14pt; font-weight: bold;")
+        title.setWordWrap(True)
+        title.setMaximumHeight(50)
+        
+        # Create a horizontal layout for tags directly in the card layout
+        tags_layout = QtWidgets.QHBoxLayout()
+        tags_layout.setSpacing(10)
+        tags_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Subject tag with color
+        lb_subject = QtWidgets.QLabel(subject)
+        lb_subject.setProperty("type", "tag")
+        lb_subject.setMaximumSize(QtCore.QSize(120, 25))
+        lb_subject.setMinimumSize(QtCore.QSize(70, 25))
+        lb_subject.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        lb_subject.setAlignment(QtCore.Qt.AlignCenter)
+        lb_subject.setStyleSheet("""
+            background-color: #e6f2ff; 
+            border-radius: 12px; 
+            padding: 3px;
+            font-size: 9pt;
+        """)
+        tags_layout.addWidget(lb_subject)
+        
+        # Level tag with color
+        lb_level = QtWidgets.QLabel(level)
+        lb_level.setProperty("type", "tag")
+        lb_level.setMaximumSize(QtCore.QSize(120, 25))
+        lb_level.setMinimumSize(QtCore.QSize(70, 25))
+        lb_level.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        lb_level.setAlignment(QtCore.Qt.AlignCenter)
+        lb_level.setStyleSheet("""
+            background-color: #fff0e6; 
+            border-radius: 12px; 
+            padding: 3px;
+            font-size: 9pt;
+        """)
+        tags_layout.addWidget(lb_level)
+        
+        tags_layout.addStretch()  # Push tags to the left
+        
+        # Description label
+        description_widget = QtWidgets.QLabel(description)
+        description_widget.setProperty("type", "lb_description")
+        description_widget.setStyleSheet("background-color: transparent; border: none; padding: 0; font-size: 10pt;")
+        description_widget.setWordWrap(True)
+        description_widget.setMaximumHeight(50)
+        
+        # Add course info
+        course_info = QtWidgets.QLabel(f"Уроків: {lessons}")
+        course_info.setProperty("type", "lb_small")
+        course_info.setStyleSheet("font-size: 9pt;")
+        
+        # Stacked widget for buttons
+        stacked_widget = QtWidgets.QStackedWidget()
+        stacked_widget.setMaximumSize(QtCore.QSize(16777215, 60))
+        stacked_widget.setProperty("type", "w_pg")
+        
+        # Start button page
         page_start = QtWidgets.QWidget()
-        page_start.setProperty("type","w_pg")
+        page_start.setProperty("type", "w_pg")
         layout_start = QtWidgets.QGridLayout(page_start)
+        layout_start.setContentsMargins(0, 0, 0, 0)
         
-        btn_start = QtWidgets.QPushButton(page_start)
-        btn_start.setText("Start Course")
-        btn_start.setMinimumSize(QtCore.QSize(310, 50))
-        btn_start.setMaximumSize(QtCore.QSize(310, 50))
-        btn_start.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        btn_start.setProperty("type","start_continue")
+        btn_start = QtWidgets.QPushButton("Розпочати")
+        btn_start.setMinimumSize(QtCore.QSize(0, 35))
+        btn_start.setMaximumSize(QtCore.QSize(16777215, 35))
+        btn_start.setProperty("type", "start_continue")
+        btn_start.setStyleSheet("""
+            QPushButton {
+                border-radius: 10px;
+                padding: 5px;
+                font-size: 11pt;
+            }
+        """)
+        
         layout_start.addWidget(btn_start, 0, 0, 1, 1)
         page_start.setLayout(layout_start)
-
+        
+        # Continue button page
         page_continue = QtWidgets.QWidget()
-        page_continue.setProperty("type","w_pg")
-        layout_continue = QtWidgets.QGridLayout(page_continue)  
+        layout_continue = QtWidgets.QGridLayout(page_continue)
         layout_continue.setContentsMargins(0, 0, 0, 0)
         
-        btn_continue = QtWidgets.QPushButton(page_continue)
-        btn_continue.setText("Continue")
-        btn_continue.setMinimumSize(QtCore.QSize(310, 50))
-        btn_continue.setMaximumSize(QtCore.QSize(310, 50))
-        btn_continue.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        btn_continue.setProperty("type","start_continue")
-
-        progress_bar = QtWidgets.QProgressBar(page_continue)
-        progress_bar.setMinimumSize(QtCore.QSize(310, 20))
-        progress_bar.setMaximumSize(QtCore.QSize(310, 20))
-        progress_bar.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        btn_continue = QtWidgets.QPushButton("Continue")
+        btn_continue.setMinimumSize(QtCore.QSize(0, 35))
+        btn_continue.setMaximumSize(QtCore.QSize(16777215, 35))
+        btn_continue.setProperty("type", "start_continue")
+        btn_continue.setStyleSheet("""
+            QPushButton {
+                border-radius: 10px;
+                padding: 5px;
+                font-size: 11pt;
+            }
+        """)
         
-        progress_bar.setMaximum(lessons)
-        progress_bar.setValue(complete_lessons)  
+        # Progress bar for courses
+        course_progress_bar = QtWidgets.QProgressBar()
+        course_progress_bar.setMinimumSize(QtCore.QSize(0, 15))
+        course_progress_bar.setMaximumSize(QtCore.QSize(16777215, 15))
+        course_progress_bar.setMaximum(100)
+        course_progress_bar.setTextVisible(True)
+        course_progress_bar.setFormat("%p%%")
+        course_progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                text-align: center;
+                margin-top: 3px;
+                font-size: 8pt;
+            }
+            QProgressBar::chunk {
+                background-color: #4CAF50;
+                width: 5px;
+                margin: 0.5px;
+            }
+        """)
         
-        layout_continue.addWidget(btn_continue, 0, 0, 1, 1)  
-        layout_continue.addWidget(progress_bar, 1, 0, 1, 1)  
-
+        # Calculate progress
+        course_progress_percentage = 0
+        if lessons > 0 and complete_lessons > 0:
+            course_progress_percentage = min(int((complete_lessons / lessons) * 100), 100)
+        
+        course_progress_bar.setValue(int(course_progress_percentage))
+        
+        layout_continue.addWidget(btn_continue, 0, 0, 1, 1)
+        layout_continue.addWidget(course_progress_bar, 1, 0, 1, 1)
+        
         page_continue.setLayout(layout_continue)
-
-        course_action_stack.addWidget(page_start)
-        course_action_stack.addWidget(page_continue)
-        self.course_widgets_complete.append((course_card_widget, progress_bar, lessons))
-        course_card_widget.subject = subject
-        course_card_widget.level = level
-
-        def switch_to_continue():
-            course_action_stack.setCurrentWidget(page_continue)
-
-        btn_start.clicked.connect(switch_to_continue)
-        def open_lessons_page():
-            print(f"Клік по уроці: {name}")
-            self.pg_lessons.set_lesson_tab_by_name(name)
-            self.stack.setCurrentWidget(self.pg_lessons)
-           
-        btn_continue.clicked.connect(open_lessons_page)
-
-        card_grid_layout.addWidget(course_action_stack, 4, 0, 1, 1)  
-        total_course_cards = self.course_cards_layout.count()
-        columns = 3
-        row = total_course_cards // columns
-        col = total_course_cards % columns
-        self.course_cards_layout.addWidget(course_card_widget, row, col, 1, 1)
-        self.course_cards_layout.setColumnStretch(col, 1)
-        self.course_cards_layout.setRowStretch(row, 1)
-
+        page_continue.setProperty("type", "w_pg")
         
+        stacked_widget.addWidget(page_start)
+        stacked_widget.addWidget(page_continue)
+        
+        # Add everything to the card layout
+        card_layout.addWidget(title)
+        card_layout.addLayout(tags_layout)
+        card_layout.addWidget(description_widget)
+        card_layout.addWidget(course_info)
+        card_layout.addWidget(stacked_widget)
+        
+        # Show the appropriate button based on course status
+        if complete_lessons > 0:
+            stacked_widget.setCurrentWidget(page_continue)
+        else:
+            stacked_widget.setCurrentWidget(page_start)
+            
+        # Store the course_id on the buttons for reference
+        if course_id:
+            btn_start.setProperty("course_id", course_id)
+            btn_continue.setProperty("course_id", course_id)
+        
+        # Connect button signals
+        def switch_to_continue():
+            try:
+                # Get the course_id from the button
+                sender = self.sender()
+                course_id = sender.property("course_id")
+                
+                if course_id:
+                    # Get user data
+                    from src.services.session_manager import SessionManager
+                    session_manager = SessionManager()
+                    user_data = session_manager.get_current_user_data()
+                    
+                    if user_data and 'id' in user_data:
+                        user_id = user_data['id']
+                        
+                        # Create or update progress for this course
+                        progress = self.progress_service.get_course_progress(user_id, str(course_id))
+                        if not progress:
+                            # Create new progress
+                            progress = self.progress_service.create_course_progress(user_id, str(course_id))
+                            print(f"Created new progress for course {course_id}")
+                        
+                        # Switch to continue button
+                        stacked_widget.setCurrentWidget(page_continue)
+                        
+                        # Open lessons page
+                        open_lessons_page()
+            except Exception as e:
+                print(f"Error starting course: {str(e)}")
+        
+        def open_lessons_page():
+            try:
+                # Get the course_id from the sender
+                sender = self.sender()
+                course_id = sender.property("course_id")
+                
+                if course_id and self.stack and self.pg_lessons:
+                    # Set the course ID in lessons page and switch to it
+                    self.pg_lessons.set_current_course_id(course_id)
+                    self.stack.setCurrentWidget(self.pg_lessons)
+            except Exception as e:
+                print(f"Error opening lessons page: {str(e)}")
+        
+        # Connect signals
+        btn_start.clicked.connect(switch_to_continue)
+        btn_continue.clicked.connect(open_lessons_page)
+        
+        # Add to layout with proper grid positioning
+        # Find the next available position in the grid
+        count = self.course_cards_layout.count()
+        row = count // 3  # Max 3 cards per row
+        col = count % 3
+        self.course_cards_layout.addWidget(course_card_widget, row, col, 1, 1)
+        self.course_widgets_complete.append(course_card_widget)
+        
+        return course_card_widget
+
     def show_completed_courses(self):
-        # Очистити всі курси
-        for i in reversed(range(self.course_cards_layout.count())):
-            item = self.course_cards_layout.itemAt(i)
-            if item:
-                widget = item.widget()
-                if widget:
-                    self.course_cards_layout.removeWidget(widget)
-                    widget.setParent(None)
-        # Додати завершені
-        visible_index = 0
-        columns = 3
-        for course_card_widget, progress_bar, total_lessons in self.course_widgets_complete:
-            if progress_bar.value() == total_lessons:
-                row = visible_index // columns
-                col = visible_index % columns
-                self.course_cards_layout.addWidget(course_card_widget, row, col, 1, 1)
-                visible_index += 1
+        """Show only completed courses"""
+        # Clear existing courses
+        self.clear_courses()
+        
+        # Get all courses and filter for completed ones
+        courses = self.course_service.get_all_courses()
+        completed_courses = []
+        
+        try:
+            # Get user data
+            from src.services.session_manager import SessionManager
+            session_manager = SessionManager()
+            user_data = session_manager.get_current_user_data()
+            
+            if user_data and 'id' in user_data:
+                user_id = user_data['id']
+                
+                # Display each completed course
+                for course in courses:
+                    # Check if course is completed
+                    course_id = str(course.id)
+                    progress = self.progress_service.get_course_progress(user_id, course_id)
+                    
+                    if progress and progress.is_completed:
+                        completed_courses.append(course)
+                
+                # If no completed courses, show a message
+                if not completed_courses:
+                    print("No completed courses found")
+                    # You could add a label to the UI here to show "No completed courses found"
+                
+                # Display completed courses
+                for course in completed_courses:
+                    # Map difficulty level to UI text
+                    difficulty_text = "Базовий"
+                    if course.difficulty_level == DifficultyLevel.INTERMEDIATE:
+                        difficulty_text = "Середній"
+                    elif course.difficulty_level == DifficultyLevel.ADVANCED:
+                        difficulty_text = "Високий"
+                    
+                    # Map topic to UI text
+                    subject_text = "Математика" if course.topic == Topic.MATHEMATICS else "Інформатика"
+                    
+                    # Get number of lessons
+                    num_lessons = len(course.lessons) if hasattr(course, 'lessons') and course.lessons else 5
+                    
+                    # Add course widget
+                    self.add_course_widget(
+                        course.name, 
+                        course.description, 
+                        subject_text, 
+                        difficulty_text, 
+                        num_lessons,
+                        0,  # For now, set completed_lessons to 0
+                        course.id  # Pass the course ID
+                    )
+            else:
+                print("No user data available")
+                self.load_courses_from_db()  # Fallback to showing all courses
+        except Exception as e:
+            print(f"Error filtering completed courses: {str(e)}")
+            self.load_courses_from_db()  # Fallback to showing all courses
 
     def show_all_courses(self):
-        for i in reversed(range(self.course_cards_layout.count())):
-            item = self.course_cards_layout.itemAt(i)
-            if item:
-                widget = item.widget()
-                if widget:
-                    self.course_cards_layout.removeWidget(widget)
-                    widget.setParent(None)
-        # Додати всі курси
-        for i, (course_card_widget, _, _) in enumerate(self.course_widgets_complete):
-            row = i // 3
-            col = i % 3
-            self.course_cards_layout.addWidget(course_card_widget, row, col, 1, 1)
-
+        """Show all courses regardless of progress"""
+        # Reload all courses from the database
+        self.load_courses_from_db()
 
     def show_started_courses(self):
-        for i in reversed(range(self.course_cards_layout.count())):
-            item = self.course_cards_layout.itemAt(i)
-            if item:
-                widget = item.widget()
-                if widget:
-                    self.course_cards_layout.removeWidget(widget)
-                    widget.setParent(None)
-        # Додати завершені
-        visible_index = 0
-        columns = 3
-        for course_card_widget, progress_bar, total_lessons in self.course_widgets_complete:
-            if progress_bar.value() != total_lessons:
-                row = visible_index // columns
-                col = visible_index % columns
-                self.course_cards_layout.addWidget(course_card_widget, row, col, 1, 1)
-                visible_index += 1
+        """Show only courses that have been started but not yet completed"""
+        # Clear existing courses
+        self.clear_courses()
+        
+        # Get all courses and filter for started ones
+        courses = self.course_service.get_all_courses()
+        started_courses = []
+        
+        try:
+            # Get user data
+            from src.services.session_manager import SessionManager
+            session_manager = SessionManager()
+            user_data = session_manager.get_current_user_data()
+            
+            print(f"User data in show_started_courses: {user_data}")
+            
+            if user_data and 'id' in user_data:
+                user_id = user_data['id']
+                
+                # Display each started but not completed course
+                for course in courses:
+                    # Check if course is started but not completed
+                    course_id = str(course.id)
+                    progress = self.progress_service.get_course_progress(user_id, course_id)
+                    
+                    print(f"Course {course.name} (ID: {course_id}) progress: {progress}")
+                    
+                    # Consider a course started if it has any progress at all
+                    if progress:
+                        started_courses.append((course, progress.progress_percentage))
+                
+                # If no started courses, show a message
+                if not started_courses:
+                    print("No started courses found")
+                    # Create a message to show in the UI
+                    message_widget = QtWidgets.QLabel("No courses in progress")
+                    message_widget.setAlignment(Qt.AlignCenter)
+                    message_widget.setStyleSheet("font-size: 18px; color: #888;")
+                    self.course_cards_layout.addWidget(message_widget, 0, 0, 1, 1)
+                else:
+                    print(f"Found {len(started_courses)} started courses")
+                    
+                    # Display started courses
+                    for course, percentage in started_courses:
+                        # Map difficulty level to UI text
+                        difficulty_text = "Базовий"
+                        if course.difficulty_level == DifficultyLevel.INTERMEDIATE:
+                            difficulty_text = "Середній"
+                        elif course.difficulty_level == DifficultyLevel.ADVANCED:
+                            difficulty_text = "Високий"
+                        
+                        # Map topic to UI text
+                        subject_text = "Математика" if course.topic == Topic.MATHEMATICS else "Інформатика"
+                        
+                        # Get number of lessons
+                        num_lessons = len(course.lessons) if hasattr(course, 'lessons') and course.lessons else 5
+                        
+                        # Calculate completed lessons based on percentage
+                        completed_lessons = int((percentage / 100) * num_lessons)
+                        
+                        # Add course widget - the layout is handled in add_course_widget
+                        self.add_course_widget(
+                            course.name, 
+                            course.description, 
+                            subject_text, 
+                            difficulty_text, 
+                            num_lessons,
+                            completed_lessons,  # Show actual completed lessons
+                            course.id  # Pass the course ID
+                        )
+                        
+            else:
+                print("No user data available")
+                self.load_courses_from_db()  # Fallback to showing all courses
+        except Exception as e:
+            print(f"Error filtering started courses: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            self.load_courses_from_db()  # Fallback to showing all courses
 
     def apply_filters(self):
-        selected_subjects = []
-        if self.cb_subject1.isChecked():
-            selected_subjects.append("Математика")
-        if self.cb_subject2.isChecked():
-            selected_subjects.append("Інформатика")
-
-        selected_level = None
-        if self.rb_level1.isChecked():
-            selected_level = "Базовий"
-        elif self.rb_level2.isChecked():
-            selected_level = "Середній"
-        elif self.rb_level3.isChecked():
-            selected_level = "Високий"
-        
-        for i in reversed(range(self.course_cards_layout.count())):
-            item = self.course_cards_layout.itemAt(i)
-            if item:
-                widget = item.widget()
-                if widget:
-                    self.course_cards_layout.removeWidget(widget)
-                    widget.setParent(None)
-
-        # Додати курси
-        visible_index = 0
-        for card_widget, _, _ in self.course_widgets_complete:
-            subject_match = not selected_subjects or card_widget.subject in selected_subjects
-            level_match = not selected_level or card_widget.level == selected_level
-
-            if subject_match and level_match:
-                row = visible_index // 3
-                col = visible_index % 3
-                self.course_cards_layout.addWidget(card_widget, row, col, 1, 1)
-                visible_index += 1
-
+        try:
+            # Clear existing courses
+            self.clear_courses()
+            
+            # Build filter criteria
+            filters = {}
+            
+            # Topic/subject filters
+            topics = []
+            if self.cb_subject1.isChecked():  # Математика
+                topics.append(Topic.MATHEMATICS)
+            if self.cb_subject2.isChecked():  # Інформатика
+                topics.append(Topic.INFORMATICS)
+            
+            if topics:
+                filters["topics"] = topics
+            
+            # Difficulty level filter
+            if self.rb_level1.isChecked():  # Базовий
+                filters["difficulty_level"] = DifficultyLevel.BEGINNER
+            elif self.rb_level2.isChecked():  # Середній
+                filters["difficulty_level"] = DifficultyLevel.INTERMEDIATE
+            elif self.rb_level3.isChecked():  # Високий
+                filters["difficulty_level"] = DifficultyLevel.ADVANCED
+            
+            # Get filtered courses
+            filtered_courses = self.course_service.filter_courses(filters)
+            
+            # Display filtered courses
+            for course in filtered_courses:
+                # Map difficulty level to UI text
+                difficulty_text = "Базовий"
+                if course.difficulty_level == DifficultyLevel.INTERMEDIATE:
+                    difficulty_text = "Середній"
+                elif course.difficulty_level == DifficultyLevel.ADVANCED:
+                    difficulty_text = "Високий"
+                
+                # Map topic to UI text
+                subject_text = "Математика" if course.topic == Topic.MATHEMATICS else "Інформатика"
+                
+                # Get number of lessons
+                num_lessons = len(course.lessons) if hasattr(course, 'lessons') and course.lessons else 5
+                
+                # Add course widget
+                self.add_course_widget(
+                    course.name, 
+                    course.description, 
+                    subject_text, 
+                    difficulty_text, 
+                    num_lessons,
+                    0,  # For now, set completed_lessons to 0
+                    course.id  # Pass the course ID
+                )
+                
+        except Exception as e:
+            print(f"Error applying filters: {str(e)}")
 
     def clear_filters(self):
+        # Uncheck all checkboxes and radio buttons
         self.cb_subject1.setChecked(False)
         self.cb_subject2.setChecked(False)
-        self.rb_level1.setAutoExclusive(False)
-        self.rb_level2.setAutoExclusive(False)
-        self.rb_level3.setAutoExclusive(False)
         self.rb_level1.setChecked(False)
         self.rb_level2.setChecked(False)
         self.rb_level3.setChecked(False)
-        self.rb_level1.setAutoExclusive(True)
-        self.rb_level2.setAutoExclusive(True)
-        self.rb_level3.setAutoExclusive(True)
-        self.show_all_courses()
+        
+        # Reset slider
+        self.range_slider.setLowerValue(50)
+        self.range_slider.setUpperValue(250)
+        
+        # Load all courses
+        self.load_courses_from_db()
 
 
 

@@ -29,15 +29,7 @@ class Settings_page(QWidget):
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.main_layout)
         
-        # Initialize mock data for testing
-        self.mock_data = {
-            "full_name": "Test User",
-            "email": "test@example.com",
-            "phone": "+380991234567",
-            "birthday": "01.01.2000"
-        }
-        
-        # Try to get real user data
+        # Get real user data
         self.user_data = get_current_user()
         
         # Debug user data to console
@@ -53,7 +45,32 @@ class Settings_page(QWidget):
         else:
             print("No user data available")
         print("--------------------------\n")
+        
+        # Extract initial data
+        name = ""
+        email = ""
+        phone = ""
+        birthday = ""
+        
+        if self.user_data and isinstance(self.user_data, dict):
+            email = self.user_data.get("email", "")
+            username = self.user_data.get("username", "")
+            name = username  # Default to username
             
+            # Try to build full name
+            if "first_name" in self.user_data or "last_name" in self.user_data:
+                first_name = self.user_data.get("first_name", "")
+                last_name = self.user_data.get("last_name", "")
+                if first_name and last_name:
+                    name = f"{first_name} {last_name}"
+                elif first_name:
+                    name = first_name
+                elif last_name:
+                    name = last_name
+                    
+            print(f"Extracted data: name={name}, email={email}")
+
+        # Continue with UI setup
         self.pg_settings = QWidget(self)
         self.pg_settings.setObjectName("pg_settings")
         self.main_layout.addWidget(self.pg_settings)
@@ -111,10 +128,10 @@ class Settings_page(QWidget):
         self.layout_settings_form.addRow(personal_info_label)
         
         # Create form fields but store them as instance variables so we can update them
-        self.name_field = self.add_form_field("Повне ім'я", self.mock_data["full_name"], "le_name")
-        self.email_field = self.add_form_field("Електронна адреса", self.mock_data["email"], "le_email")
-        self.phone_field = self.add_form_field("Телефон", self.mock_data["phone"], "le_phone")
-        self.birthday_field = self.add_form_field("Дата народження", self.mock_data["birthday"], "le_birthday")
+        self.name_field = self.add_form_field_with_placeholder("Повне ім'я", name, "Введіть ваше повне ім'я", "le_name")
+        self.email_field = self.add_form_field_with_placeholder("Електронна адреса", email, "Введіть вашу електронну адресу", "le_email")
+        self.phone_field = self.add_form_field_with_placeholder("Телефон", phone, "Введіть ваш номер телефону", "le_phone")
+        self.birthday_field = self.add_form_field_with_placeholder("Дата народження", birthday, "дд.мм.рррр", "le_birthday")
         
         # Add another separator
         separator2 = QFrame(self.widget_settings_content)
@@ -219,16 +236,18 @@ class Settings_page(QWidget):
         display_name = "користувач"
         
         # Try to get a better name if possible
-        if self.user_data:
-            if isinstance(self.user_data, dict):
-                # Try different fields
-                first_name = self.user_data.get("first_name", "")
-                if first_name:
-                    display_name = first_name
-                else:
-                    username = self.user_data.get("username", "")
-                    if username:
-                        display_name = username
+        if self.user_data and isinstance(self.user_data, dict):
+            # Try username first
+            username = self.user_data.get("username", "")
+            if username:
+                display_name = username
+                
+            # Try first name if available (preferred)
+            first_name = self.user_data.get("first_name", "")
+            if first_name:
+                display_name = first_name
+                
+            print(f"User greeting will display: {display_name}")
         
         # Store the label so we can update it
         self.username_label = QLabel(display_name, widget_user_greeting)
@@ -240,14 +259,20 @@ class Settings_page(QWidget):
 
         self.layout_settings_form.addRow(widget_user_greeting)
 
-    def add_form_field(self, label_text, placeholder_text, obj_name):
+    def add_form_field_with_placeholder(self, label_text, text_value, placeholder_text, obj_name):
         label = QLabel(label_text, self.widget_settings_content)
         label.setProperty("type", "page_section")
         label.setFixedHeight(20)
         self.layout_settings_form.addRow(label)
 
         input_field = QLineEdit(self.widget_settings_content)
-        input_field.setText(placeholder_text)  # Set text instead of placeholder
+        
+        # Set text if available, otherwise use placeholder
+        if text_value:
+            input_field.setText(text_value)
+        else:
+            input_field.setPlaceholderText(placeholder_text)
+            
         input_field.setFixedHeight(28)
         input_field.setObjectName(obj_name)
         input_field.setProperty("type", "settings")
@@ -314,66 +339,75 @@ class Settings_page(QWidget):
         print("\n----- REFRESHING USER DATA -----")
         print(f"Fresh user data: {self.user_data}")
         
-        # Extract data from user_data or use mock data as fallback
-        name = self.mock_data["full_name"]
-        email = self.mock_data["email"]
-        phone = self.mock_data["phone"]
-        birthday = self.mock_data["birthday"]
-        display_name = "користувач"
-        
-        # Try to extract real data if available
         if fresh_user_data and isinstance(fresh_user_data, dict):
-            # For email - try direct access, then check mock data
-            if "email" in fresh_user_data:
+            # Extract and update email
+            if "email" in fresh_user_data and fresh_user_data["email"]:
                 email = fresh_user_data["email"]
+                self.email_field.setText(email)
+                self.email_field.setPlaceholderText("")
+            else:
+                self.email_field.setText("")
+                self.email_field.setPlaceholderText("Електронна адреса не вказана")
             
-            # For name - try to build from first/last name or use username
+            # Extract name components
+            name = ""
             first_name = fresh_user_data.get("first_name", "")
             last_name = fresh_user_data.get("last_name", "")
             username = fresh_user_data.get("username", "")
             
+            # Set display name (prefer first name, then username)
+            display_name = first_name if first_name else (username if username else "користувач")
+            
+            # Build full name
             if first_name and last_name:
                 name = f"{first_name} {last_name}"
-                display_name = first_name
             elif first_name:
                 name = first_name
-                display_name = first_name
             elif last_name:
                 name = last_name
-                display_name = last_name
             elif username:
                 name = username
-                display_name = username
+                
+            # Update name field
+            if name:
+                self.name_field.setText(name)
+                self.name_field.setPlaceholderText("")
+            else:
+                self.name_field.setText("")
+                self.name_field.setPlaceholderText("Ім'я не вказано")
             
-            # For test login data
-            if "test_user" in str(self.user_data) or "test@example.com" in str(self.user_data):
-                print("Test login detected - using mock data")
-            
-            # For phone and birthday - try metadata
-            metadata = fresh_user_data.get("metadata", {})
-            if isinstance(metadata, dict):
-                if "phone" in metadata:
-                    phone = metadata["phone"]
-                if "birthday" in metadata:
-                    birthday = metadata["birthday"]
+            # Update username label
+            if hasattr(self, 'username_label') and display_name != "користувач":
+                self.username_label.setText(display_name)
+                
+            # Clear placeholders for empty fields
+            self.phone_field.setPlaceholderText("Введіть номер телефону")
+            self.birthday_field.setPlaceholderText("дд.мм.рррр")
+                
+            # Add debug information
+            print(f"Updated fields - name: '{name}', email: '{fresh_user_data.get('email', '')}', display_name: '{display_name}'")
+            print(f"Name field text: '{self.name_field.text()}'")
+            print(f"Email field text: '{self.email_field.text()}'")
+        else:
+            print("WARNING: No user data available for refresh")
+            # Set appropriate placeholders
+            self.name_field.setText("")
+            self.name_field.setPlaceholderText("Ім'я не вказано")
+            self.email_field.setText("")
+            self.email_field.setPlaceholderText("Електронна адреса не вказана")
+            self.phone_field.setText("")
+            self.phone_field.setPlaceholderText("Введіть номер телефону")
+            self.birthday_field.setText("")
+            self.birthday_field.setPlaceholderText("дд.мм.рррр")
+            if hasattr(self, 'username_label'):
+                self.username_label.setText("користувач")
+                
+        print("--------------------------\n")
         
-        print(f"Updating fields to: Name='{name}', Email='{email}', Phone='{phone}', Birthday='{birthday}'")
-        
-        # Update field values
-        self.name_field.setText(name)
-        self.email_field.setText(email)
-        self.phone_field.setText(phone)
-        self.birthday_field.setText(birthday)
-        self.username_label.setText(display_name)
-        
-        # Show a status message
-        self.status_label.setText("Дані оновлено!")
-        self.status_label.setStyleSheet("color: #32CD32; font-weight: bold;")
-        self.status_label.setVisible(True)
-        
-        # Hide the status message after 2 seconds
-        QtCore.QTimer.singleShot(2000, lambda: self.status_label.setVisible(False))
-        
+        # No status message for initial load
+        if hasattr(self, 'status_label'):
+            self.status_label.setVisible(False)
+
     def save_settings(self):
         # Get values from form fields
         name = self.name_field.text()
@@ -414,3 +448,22 @@ class Settings_page(QWidget):
             
             # Hide the status message after 3 seconds
             QtCore.QTimer.singleShot(3000, lambda: self.status_label.setVisible(False))
+
+    def showEvent(self, event):
+        """Override showEvent to force refresh user data when the page is shown"""
+        super().showEvent(event)
+        print("Settings page is now visible - refreshing user data")
+        
+        # Always refresh user data when the settings page is shown
+        old_user_data = self.user_data
+        self.refresh_user_data()
+        
+        # Only show a status message if data actually changed
+        if old_user_data != self.user_data and self.user_data:
+            # Display status only when user data has changed and exists
+            self.status_label.setText("Дані оновлено")
+            self.status_label.setStyleSheet("color: #32CD32; font-weight: bold;")
+            self.status_label.setVisible(True)
+            
+            # Hide the status message after 2 seconds
+            QtCore.QTimer.singleShot(2000, lambda: self.status_label.setVisible(False))

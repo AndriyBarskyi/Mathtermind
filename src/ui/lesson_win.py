@@ -57,83 +57,19 @@ class LessonItem(QWidget):
 
 class Lesson_page(QWidget):
     def __init__(self):
-        self.lesson_data = {  # Приклад даних уроків
-            "Вступ до Python": {
-                "theory": "Основи Python. Змінні, типи даних...",
-                "test_question": "Що таке змінна в Python?",
-                "test_options": ["Область пам'яті для зберігання даних", "Функція", "Клас"],
-                "test_answer": "Область пам'яті для зберігання даних",
-                "true_false_question": "Python - компілюється.",
-                "true_false_answer": False,
-                "input_question": "Обчисліть: 2 + 2 = ?",
-                "input_answer": "4",
-                "blank_question": " Заповніть пропуск, щоб вираз був істинним: x _ 5",
-                "blank_question_part2": "= 10",
-                "blank_answer": "+",
-                "code_question": "Використовуючи надані фрагменти коду, напишіть програму, яка виводить на екран числа від 0 до 4.",
-                "code_snippets": ["print()", "for i in range():"],
-                "code_required": ["print()"],
-                "formula_question": "Вкажіть степінь, до якої потрібно піднести x, щоб отримати y: y = x ** ?",
-                "fix_error_question": "Виправте помилку в коді:",
-                "fix_error_code": "prin('Hello')",
-                "fix_error_fixes": ["print("],
-                "drag_and_drop_question": "З'єднайте визначення з терміном:",
-                "drag_and_drop_descriptions": ["Зберігання даних", "Послідовність команд", "Шаблон для об'єктів"],
-                "drag_and_drop_words": ["Змінна", "Програма", "Клас"],
-                "drag_and_drop_answers": ["Змінна", "Програма", "Клас"],
-            },
-            "Умовні оператори": {
-                "theory": "Умовні оператори (if, elif, else) використовуються для виконання коду залежно від умови.",
-                "test_question": "Який оператор використовується для перевірки умови?",
-                "test_options": ["for", "while", "if"],
-                "test_answer": "if",
-                "true_false_question": "Блок 'else' завжди виконується.",
-                "true_false_answer": False,
-                "input_question": "Яке ключове слово використовується для альтернативної умови?",
-                "input_answer": "elif",
-                "blank_question": "if x _ 0:",
-                "blank_question_part2": "",
-                "blank_answer": ">",
-                "code_question": "Використовуючи надані фрагменти коду, напишіть програму, яка виводить на екран числа від 0 до 4.",
-                "code_snippets": ["if:", "else:", "elif:", "print()"],
-                "code_required": ["if:", "else:", "print()"],
-                "formula_question": "Немає", 
-                "fix_error_question": "Виправте:",
-                "fix_error_code": "if x = 5:\n    print('Ok')",
-                "fix_error_fixes": ["if x == 5:"],
-                "drag_and_drop_question": "З'єднайте оператор з описом:",
-                "drag_and_drop_descriptions": ["Якщо умова істинна", "Інакше", "Інакше якщо"],
-                "drag_and_drop_words": ["if", "else", "elif"],
-                "drag_and_drop_answers": ["if", "else", "elif"],
-            },
-            "Цикли for та while": {
-                "theory": "Цикли for і while використовуються для повторення блоку коду.",
-                "test_question": "Який цикл використовується для ітерації по послідовності?",
-                "test_options": ["if", "for", "while"],
-                "test_answer": "for",
-                "true_false_question": "Цикл 'while' завжди виконується хоча б один раз.",
-                "true_false_answer": False,
-                "input_question": "Яке ключове слово використовується для виходу з циклу?",
-                "input_answer": "break",
-                "blank_question": "for i in _(5):",
-                "blank_question_part2": "",
-                "blank_answer": "range",
-                "code_snippets": ["for i in range():", "while :", "break", "continue"],
-                "code_required": ["for i in range():", "break"],
-                "formula_question": "Немає",
-                "fix_error_question": "Виправте:",
-                "fix_error_code": "for i in range[5]:\n    print(i)",
-                "fix_error_fixes": ["for i in range(5):"],
-                "drag_and_drop_question": "З'єднайте цикл з описом:",
-                "drag_and_drop_descriptions": ["Повторення для кожного елемента", "Повторення поки умова істинна"],
-                "drag_and_drop_words": ["for", "while"],
-                "drag_and_drop_answers": ["for", "while"],
-            },
-
-        }
-
         super().__init__()
-        #task_window = TaskWindow()
+        
+        # Store the current lesson ID and data
+        self.current_lesson_id = None
+        self.parent_lessons_page = None
+        self.parent_stack = None
+        
+        # Initialize services
+        from src.services.lesson_service import LessonService
+        from src.services.progress_service import ProgressService
+        self.lesson_service = LessonService()
+        self.progress_service = ProgressService()
+        
         self.pg_lesson = QtWidgets.QWidget()
         self.pg_lesson.setObjectName("pg_lesson")
         
@@ -153,12 +89,7 @@ class Lesson_page(QWidget):
         self.main_scroll_content.setObjectName("main_scroll_content")
         self.main_content_layout = QtWidgets.QGridLayout(self.main_scroll_content)
         self.main_content_layout.setObjectName("main_content_layout")
-        """self.video_widget = QVideoWidget(self.main_scroll_content)
-        self.video_widget.setMinimumSize(QtCore.QSize(1000, 350))
-        self.video_widget.setMaximumSize(QtCore.QSize(16777215, 350))
-        self.video_widget.setProperty("type","w_pg")
-        self.video_widget.setObjectName("video_widget")
-        self.main_content_layout.addWidget(self.video_widget, 1, 0, 2, 1)"""
+        
         self.main_content_layout.setColumnStretch(0, 3)
         
         self.progress_section_widget = QtWidgets.QWidget(self.main_scroll_content)
@@ -211,30 +142,6 @@ class Lesson_page(QWidget):
         self.lessons_list_layout.setObjectName("lessons_list_layout")
         
         self.list_widget = QtWidgets.QListWidget()
-        #список
-        lessons = [
-            ("Вступ до Python", "12 min 30 sec", "done"),
-            ("Умовні оператори", "12 min 30 sec", "done"),
-            ("Цикли for та while", "45 min 11 sec", "active"),
-            ("Функції", "20 min 21 sec", "incomplete"),
-            ("Класи та обʼєкти", "12 min 30 sec", "done"),
-            ("Алгоритми сортування", "45 min 11 sec", "active"),
-            ("Рекурсія", "20 min 21 sec", "incomplete"),
-            ("Списки та словники", "12 min 30 sec", "done"),
-            ("Модулі та пакети", "45 min 11 sec", "active"),
-            ("Text Generation", "20 min 21 sec", "incomplete"),
-            ("Intro to Neural Nets", "32 min 14 sec", "incomplete")
-        ]
-
-        for title, duration, status in lessons:
-            item = QtWidgets.QListWidgetItem()
-            widget = LessonItem(title, duration, status)
-            item.setSizeHint(widget.sizeHint())
-
-            self.list_widget.addItem(item)
-            self.list_widget.setItemWidget(item, widget)
-
-        self.list_widget.itemClicked.connect(self.on_item_click)
         self.lessons_list_layout.addWidget(self.list_widget, 0, 0, 1, 1)
         
         self.lessons_list_scroll_layout.addWidget(self.lessons_list_container, 0, 0, 1, 1)
@@ -272,21 +179,88 @@ class Lesson_page(QWidget):
         self.task_tabs.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.task_tabs.setObjectName("task_tabs")
         
-        self.tab = QtWidgets.QWidget()
-        self.tab.setObjectName("tab")
-        self.tab_container_widget.setProperty("type", "w_pg")
-        #self.task_tabs.addTab(self.createScrollableTab(task_window.create_theory()), "Теорія")
-        #self.task_tabs.addTab(self.createScrollableTab(task_window.create_tasks_tab()),"Всі завдання")
-
+        # Create tabs for different content types
+        self.theory_tab = QtWidgets.QWidget()
+        self.theory_tab.setObjectName("theory_tab")
+        self.theory_layout = QtWidgets.QVBoxLayout(self.theory_tab)
+        self.lesson_text = QtWidgets.QTextBrowser()
+        self.lesson_text.setOpenExternalLinks(True)
+        self.theory_layout.addWidget(self.lesson_text)
+        
+        # Create exercises tab
+        self.exercises_tab = QtWidgets.QWidget()
+        self.exercises_tab.setObjectName("exercises_tab")
+        self.exercises_layout = QtWidgets.QVBoxLayout(self.exercises_tab)
+        self.exercises_container = QtWidgets.QWidget()
+        self.exercises_container_layout = QtWidgets.QVBoxLayout(self.exercises_container)
+        self.exercises_layout.addWidget(self.exercises_container)
+        
+        # Create practice tab
+        self.practice_tab = QtWidgets.QWidget()
+        self.practice_tab.setObjectName("practice_tab")
+        self.practice_layout = QtWidgets.QVBoxLayout(self.practice_tab)
+        
+        # Add tabs to the tab widget
+        self.task_tabs.addTab(self.theory_tab, "Theory")
+        self.task_tabs.addTab(self.exercises_tab, "Exercises")
+        self.task_tabs.addTab(self.practice_tab, "Practice")
+        
         self.task_tabs_layout.addWidget(self.task_tabs, 0, 0, 1, 1)
         self.task_scroll_layout.addWidget(self.tab_container_widget, 0, 0, 1, 1)
         self.task_section_scroll_area.setWidget(self.scroll_task_section_content)
-        self.main_content_layout.addWidget(self.task_section_scroll_area, 4, 0, 1, 1)
+        self.main_content_layout.addWidget(self.task_section_scroll_area, 3, 0, 1, 1)
+        
+        # Add tools and navigation widget
+        self.tools_widget = QtWidgets.QWidget()
+        tools_layout = QtWidgets.QHBoxLayout(self.tools_widget)
+        
+        self.backButton = QtWidgets.QPushButton("Back to Lessons")
+        self.backButton.setProperty("type", "start_continue")
+        self.backButton.setFixedWidth(150)
+        self.backButton.clicked.connect(self.go_back_to_lessons)
+        tools_layout.addWidget(self.backButton)
+        
+        # Progress widget instead of complete button
+        self.progress_widget = QtWidgets.QWidget()
+        self.progress_widget.setProperty("type", "w_pg")
+        progress_layout = QtWidgets.QVBoxLayout(self.progress_widget)
+        
+        # Progress labels
+        self.progress_status = QtWidgets.QLabel("Progress: 0%")
+        self.progress_status.setProperty("type", "lb_name_lesson")
+        progress_layout.addWidget(self.progress_status)
+        
+        # Progress bar
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_bar.setValue(0)
+        progress_layout.addWidget(self.progress_bar)
+        
+        # Complete Lesson button
+        self.complete_button = QtWidgets.QPushButton("Complete Lesson")
+        self.complete_button.setProperty("type", "start_continue")
+        self.complete_button.clicked.connect(self.manual_complete_lesson)
+        progress_layout.addWidget(self.complete_button)
+        
+        # Info container
+        info_container = QtWidgets.QWidget()
+        info_layout = QtWidgets.QHBoxLayout(info_container)
+        info_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Lesson metadata
+        self.lb_difficulty = QtWidgets.QLabel("Difficulty: Basic")
+        self.lb_difficulty.setProperty("type", "lb_small")
+        info_layout.addWidget(self.lb_difficulty)
+        
+        self.lb_time = QtWidgets.QLabel("30 min")
+        self.lb_time.setProperty("type", "lb_small")
+        info_layout.addWidget(self.lb_time)
+        
+        progress_layout.addWidget(info_container)
+        
+        self.main_content_layout.addWidget(self.tools_widget, 0, 0, 1, 1)
+        self.main_content_layout.addWidget(self.progress_widget, 4, 0, 1, 1)
+        
         self.title_main_lb = QtWidgets.QLabel(self.main_scroll_content)
-        self.title_main_lb.setMinimumSize(QtCore.QSize(1000, 40))
-        self.title_main_lb.setMaximumSize(QtCore.QSize(16777215, 40))
-        self.title_main_lb.setText("Урок")
-        self.title_main_lb.setProperty("type", "title")
         self.title_main_lb.setObjectName("title_main_lb")
         self.main_content_layout.addWidget(self.title_main_lb, 0, 0, 1, 1)
         self.main_scroll_area.setWidget(self.main_scroll_content)
@@ -294,7 +268,13 @@ class Lesson_page(QWidget):
         self.main_grid_layout.addWidget(self.main_scroll_area, 0, 0, 1, 1)
         
         self.setLayout(self.main_grid_layout)
-
+        
+        # Connect signals
+        self.task_tabs.currentChanged.connect(self.update_progress)
+        
+        # Exercise completion counter
+        self.completed_exercises = 0
+        self.total_exercises = 0
 
     def createScrollableTab(self, inner_widget):
         scroll_area = QScrollArea()
@@ -305,45 +285,726 @@ class Lesson_page(QWidget):
         inner_widget.setProperty("type", "w_pg")
         return scroll_area
 
-    def set_lesson_data(self, lesson_name):
-        print(f"Завантажуємо урок: {lesson_name}")
-        found_item = None
-        for index in range(self.list_widget.count()):
-            item = self.list_widget.item(index)
-            widget = self.list_widget.itemWidget(item)
-            if widget.title_label.text() == lesson_name:
-                found_item = item
-                break
-
-        if found_item:
-            self.list_widget.setCurrentItem(found_item)
-            self.update_lesson_content(found_item)
-            self.update_task_tabs()
+    def set_lesson_data(self, title, lesson_id=None):
+        """Set the lesson data based on the lesson ID"""
+        # Update the lesson title
+        self.lesson_title_lb.setText(title)
+        self.current_lesson_id = lesson_id
+        
+        # Reset UI elements
+        self.list_widget.clear()
+        self.exercises_container_layout.removeWidget(self.exercises_container)
+        
+        # Reset exercise counters
+        self.completed_exercises = 0
+        self.total_exercises = 0
+        
+        if lesson_id:
+            print(f"Loading lesson data for ID: {lesson_id}")
+            try:
+                # Load the real lesson from database 
+                lesson = self.lesson_service.get_lesson_by_id(lesson_id)
+                
+                if lesson:
+                    # Set real lesson data
+                    self.lesson_title_lb.setText(lesson.title)
+                    
+                    # Get course information to display in progress section
+                    course = lesson.course if hasattr(lesson, 'course') else None
+                    if course:
+                        self.course_title_lb.setText(f"Course: {course.name}")
+                    
+                    # Check if the user has completed this lesson
+                    user_completed = False
+                    try:
+                        from src.services.session_manager import SessionManager
+                        session_manager = SessionManager()
+                        user_data = session_manager.get_current_user_data()
+                        
+                        if user_data and 'id' in user_data:
+                            user_id = user_data['id']
+                            user_completed = self.progress_service.has_completed_lesson(user_id, lesson_id)
+                    except Exception as e:
+                        print(f"Error checking lesson completion: {str(e)}")
+                    
+                    # If user already completed this lesson, show full progress
+                    if user_completed:
+                        self.progress_bar.setValue(100)
+                        self.progress_status.setText("Progress: 100%")
+                        self.complete_button.setText("Lesson Completed ✓")
+                        self.complete_button.setEnabled(False)
+                    else:
+                        # Set initial progress value
+                        self.progress_bar.setValue(0)
+                        self.progress_status.setText("Progress: 0%")
+                        self.complete_button.setText("Complete Lesson")
+                        self.complete_button.setEnabled(True)
+                    
+                    # Create theory content HTML
+                    content_html = f"<h2>{lesson.title}</h2>"
+                    
+                    # Add more content details if available 
+                    if hasattr(lesson, 'description') and lesson.description:
+                        content_html += f"<p>{lesson.description}</p>"
+                    else:
+                        content_html += "<p>This lesson will guide you through important concepts and exercises.</p>"
+                    
+                    # Add lesson-specific theory content
+                    lesson_number = lesson.lesson_order if hasattr(lesson, 'lesson_order') else 1
+                    
+                    if lesson_number == 1:
+                        content_html += """
+                        <h3>Introduction to the Concepts</h3>
+                        <p>In this lesson, we'll learn the fundamental concepts that form the foundation of this subject.</p>
+                        <p>Key points to understand:</p>
+                        <ul>
+                            <li>Basic definitions and properties</li>
+                            <li>Core principles and applications</li>
+                            <li>Problem-solving approaches</li>
+                        </ul>
+                        <p>Let's begin by exploring the basics...</p>
+                        <h4>Core Principles</h4>
+                        <p>The main principle we need to understand is how different elements interact with each other.</p>
+                        <p>When we study these interactions, we discover patterns that help us predict outcomes and solve problems.</p>
+                        """
+                    elif lesson_number == 2:
+                        content_html += """
+                        <h3>Advanced Applications</h3>
+                        <p>Now that we understand the basics, let's explore more advanced applications.</p>
+                        <p>These applications demonstrate how the concepts can be used to solve real-world problems:</p>
+                        <ol>
+                            <li>Pattern recognition in complex systems</li>
+                            <li>Optimization techniques for efficiency</li>
+                            <li>Predictive modeling based on historical data</li>
+                        </ol>
+                        <p>Let's examine each of these in detail...</p>
+                        """
+                    elif lesson_number == 3:
+                        content_html += """
+                        <h3>Practical Implementation</h3>
+                        <p>In this final section, we'll focus on practical implementation of what we've learned.</p>
+                        <p>The key steps in implementing these concepts are:</p>
+                        <ol>
+                            <li>Analyzing the problem domain</li>
+                            <li>Identifying the appropriate techniques</li>
+                            <li>Applying the methods systematically</li>
+                            <li>Evaluating results and iterating as needed</li>
+                        </ol>
+                        <p>Let's practice with some realistic scenarios...</p>
+                        """
+                    else:
+                        content_html += """
+                        <h3>Exploring the Topic</h3>
+                        <p>In this lesson, we'll delve deeper into specialized areas of the subject.</p>
+                        <p>We'll examine both theoretical foundations and practical applications.</p>
+                        <p>By the end, you should be able to:</p>
+                        <ul>
+                            <li>Understand complex relationships between key concepts</li>
+                            <li>Apply specialized techniques to solve domain-specific problems</li>
+                            <li>Evaluate the effectiveness of different approaches</li>
+                        </ul>
+                        """
+                        
+                    # Render the theory content
+                    self.lesson_text.setHtml(content_html)
+                    
+                    # Set difficulty level
+                    difficulty = self._get_difficulty_text(lesson)
+                    self.lb_difficulty.setText(f"Difficulty: {difficulty}")
+                    
+                    # Set the estimated time
+                    if hasattr(lesson, 'estimated_time') and lesson.estimated_time:
+                        self.lb_time.setText(f"{lesson.estimated_time} min")
+                    
+                    # Create exercise content
+                    self.generate_exercises(lesson_number)
+                    
+                    # Add practical content
+                    self.generate_practice_content(lesson_number)
+                    
+                    # Add course lessons to the sidebar list
+                    if course and hasattr(course, 'id'):
+                        try:
+                            # Get all lessons for this course
+                            course_lessons = self.lesson_service.get_lessons_by_course_id(str(course.id))
+                            
+                            # Add each lesson to the list widget
+                            for course_lesson in course_lessons:
+                                item = QtWidgets.QListWidgetItem()
+                                
+                                # Check if lesson is completed
+                                status = "incomplete"
+                                if course_lesson.id == lesson.id:
+                                    status = "active"
+                                    
+                                # Check if lesson is completed in the database
+                                try:
+                                    from src.services.session_manager import SessionManager
+                                    session_manager = SessionManager()
+                                    user_data = session_manager.get_current_user_data()
+                                    
+                                    if user_data and 'id' in user_data:
+                                        user_id = user_data['id']
+                                        is_completed = self.progress_service.has_completed_lesson(user_id, course_lesson.id)
+                                        if is_completed:
+                                            status = "done"
+                                            # If this is the current lesson, update progress bar
+                                            if course_lesson.id == lesson.id:
+                                                self.progress_bar.setValue(100)
+                                                self.progress_status.setText("Progress: 100%")
+                                except Exception as e:
+                                    print(f"Error checking lesson completion: {str(e)}")
+                                
+                                # Format estimated time
+                                time_str = f"{course_lesson.estimated_time} min" if hasattr(course_lesson, 'estimated_time') else "~30 min"
+                                widget = LessonItem(course_lesson.title, time_str, status)
+                                item.setSizeHint(widget.sizeHint())
+                                item.setData(QtCore.Qt.UserRole, str(course_lesson.id))  # Store lesson ID
+                                self.list_widget.addItem(item)
+                                self.list_widget.setItemWidget(item, widget)
+                        except Exception as e:
+                            print(f"Error loading course lessons: {str(e)}")
+                    
+                    # Connect the lesson item click handler
+                    self.list_widget.itemClicked.connect(self.on_item_click)
+                    
+                    # Set progress widget and toolbar visibility
+                    self.progress_widget.setVisible(True)
+                    self.tools_widget.setVisible(True)
+                    
+                    # Go to the first tab
+                    self.task_tabs.setCurrentIndex(0)
+                else:
+                    # Lesson not found, show error
+                    self.lesson_text.setHtml(f"<h2>Lesson Not Found</h2><p>The lesson with ID {lesson_id} could not be found.</p>")
+                    self.tools_widget.setVisible(True)
+                    self.progress_widget.setVisible(False)
+            except Exception as e:
+                print(f"Error loading lesson data: {str(e)}")
+                self.lesson_text.setHtml(f"<h2>Error Loading Lesson</h2><p>An error occurred while loading the lesson: {str(e)}</p>")
+                self.tools_widget.setVisible(True)
+                self.progress_widget.setVisible(False)
         else:
-            print(f"Урок з назвою '{lesson_name}' не знайдено у списку.")
+            # No lesson ID provided, show placeholder
+            self.lesson_text.setHtml(f"<h2>{title}</h2><p>No lesson data available. Please select a lesson from the course page.</p>")
+            self.tools_widget.setVisible(False)
+            self.progress_widget.setVisible(False)
 
-    def update_task_tabs(self):
-        self.task_tabs.clear() 
-        self.task_tabs.addTab(self.createScrollableTab(self.task_window.create_theory()), "Теорія")
-        self.task_tabs.addTab(self.createScrollableTab(self.task_window.create_tasks_tab()), "Всі завдання")
-
-    def update_lesson_content(self, item):
-        if isinstance(item, QtWidgets.QListWidgetItem):
-            selected_lesson_widget = self.list_widget.itemWidget(item)
-            if selected_lesson_widget:
-                lesson_title = selected_lesson_widget.title_label.text()
-                self.lesson_title_lb.setText(lesson_title)
-                self.task_window = TaskWindow()
-                self.task_window.update_content(self.lesson_data[lesson_title])
-                self.update_task_tabs()             
-            else:
-                print("не вдалося отримати віджет")
+    def generate_exercises(self, lesson_number):
+        """Generate exercise content for the lesson"""
+        # Clear existing exercises
+        for i in reversed(range(self.exercises_container_layout.count())):
+            widget = self.exercises_container_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+                
+        self.total_exercises = 5  # We'll create 5 exercises per lesson
+        
+        # Different exercises based on lesson number
+        if lesson_number == 1:
+            exercise_data = [
+                {"question": "What is the main principle discussed in this lesson?", 
+                 "options": ["Element interactions", "Statistical analysis", "Quantum theory", "Economic models"],
+                 "correct": 0},
+                {"question": "Which of these is NOT mentioned as a key point in the lesson?", 
+                 "options": ["Basic definitions", "Core principles", "Problem-solving approaches", "Historical context"],
+                 "correct": 3},
+                {"question": "According to the lesson, what helps us predict outcomes?", 
+                 "options": ["Random guessing", "Pattern recognition", "Computer algorithms", "Personal intuition"],
+                 "correct": 1},
+                {"question": "How many core points are listed in the introduction?", 
+                 "options": ["2", "3", "4", "5"],
+                 "correct": 1},
+                {"question": "What is the main focus of this lesson?", 
+                 "options": ["Advanced applications", "Practical implementation", "Introduction to concepts", "Historical development"],
+                 "correct": 2}
+            ]
+        elif lesson_number == 2:
+            exercise_data = [
+                {"question": "What is the main focus of this lesson?", 
+                 "options": ["Basic concepts", "Advanced applications", "Historical development", "Future predictions"],
+                 "correct": 1},
+                {"question": "How many applications are specifically listed in the lesson?", 
+                 "options": ["2", "3", "4", "5"],
+                 "correct": 1},
+                {"question": "Which of these is NOT mentioned as an application in the lesson?", 
+                 "options": ["Pattern recognition", "Optimization techniques", "Predictive modeling", "Resource allocation"],
+                 "correct": 3},
+                {"question": "What type of data is mentioned for predictive modeling?", 
+                 "options": ["Future data", "Real-time data", "Historical data", "Simulated data"],
+                 "correct": 2},
+                {"question": "What kind of systems are mentioned in relation to pattern recognition?", 
+                 "options": ["Simple systems", "Complex systems", "Linear systems", "Closed systems"],
+                 "correct": 1}
+            ]
         else:
-            print("не є в списку ")
-
+            exercise_data = [
+                {"question": "What is the main focus of this lesson?", 
+                 "options": ["Theoretical foundations", "Historical context", "Practical implementation", "Future developments"],
+                 "correct": 2},
+                {"question": "How many key steps are listed for implementation?", 
+                 "options": ["2", "3", "4", "5"],
+                 "correct": 2},
+                {"question": "Which step comes first in the implementation process?", 
+                 "options": ["Applying methods", "Evaluating results", "Identifying techniques", "Analyzing the problem domain"],
+                 "correct": 3},
+                {"question": "What is the last step in the implementation process?", 
+                 "options": ["Analyzing the problem", "Evaluating results", "Applying methods", "Identifying techniques"],
+                 "correct": 1},
+                {"question": "According to the lesson, what should you do after evaluating results?", 
+                 "options": ["Start a new project", "Document findings", "Iterate as needed", "Present conclusions"],
+                 "correct": 2}
+            ]
+            
+        # Create exercise widgets
+        for i, exercise in enumerate(exercise_data):
+            exercise_widget = QtWidgets.QGroupBox(f"Exercise {i+1}")
+            exercise_layout = QtWidgets.QVBoxLayout(exercise_widget)
+            
+            # Question label
+            question_label = QtWidgets.QLabel(exercise["question"])
+            question_label.setWordWrap(True)
+            question_label.setProperty("type", "lb_name_lesson")
+            exercise_layout.addWidget(question_label)
+            
+            # Radio button group for options
+            option_group = QtWidgets.QButtonGroup(exercise_widget)
+            
+            for j, option_text in enumerate(exercise["options"]):
+                option = QtWidgets.QRadioButton(option_text)
+                option_group.addButton(option, j)
+                exercise_layout.addWidget(option)
+                
+            # Check answer button
+            check_button = QtWidgets.QPushButton("Check Answer")
+            check_button.setProperty("type", "start_continue")
+            
+            # Store the correct answer index
+            check_button.setProperty("correct_answer", exercise["correct"])
+            check_button.setProperty("exercise_index", i)
+            
+            # Result label
+            result_label = QtWidgets.QLabel("")
+            result_label.setVisible(False)
+            
+            exercise_layout.addWidget(check_button)
+            exercise_layout.addWidget(result_label)
+            
+            # Connect button to check function
+            check_button.clicked.connect(lambda checked, btn=check_button, group=option_group, label=result_label: 
+                                        self.check_exercise_answer(btn, group, label))
+            
+            self.exercises_container_layout.addWidget(exercise_widget)
+    
+    def generate_practice_content(self, lesson_number):
+        """Generate practice content for the lesson"""
+        # Clear the practice tab
+        for i in reversed(range(self.practice_layout.count())):
+            widget = self.practice_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+                
+        # Create different practice content based on lesson number
+        practice_html = f"<h2>Practice Activities</h2>"
+        
+        if lesson_number == 1:
+            practice_html += """
+            <h3>Interactive Exercise</h3>
+            <p>Try to solve these problems on your own for practice:</p>
+            <div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #007bff;">
+                <p><strong>Scenario:</strong> You are analyzing a dataset of customer interactions with a website. 
+                Your task is to identify patterns that could predict customer behavior.</p>
+                
+                <p><strong>Think about:</strong></p>
+                <ol>
+                    <li>What patterns might you look for in the data?</li>
+                    <li>How could each pattern be used to predict future behavior?</li>
+                    <li>How would you validate your predictions?</li>
+                </ol>
+            </div>
+            
+            <h3>Reflection Points</h3>
+            <p>Consider these questions as you learn:</p>
+            <ol>
+                <li>How do the concepts from this lesson relate to your own experiences?</li>
+                <li>What challenges might you face when applying these concepts?</li>
+                <li>What additional information would help you better understand these concepts?</li>
+            </ol>
+            """
+        elif lesson_number == 2:
+            practice_html += """
+            <h3>Case Study Exploration</h3>
+            <p>Review this case study and think about the questions:</p>
+            <div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #007bff;">
+                <p><strong>Case Study:</strong> A transportation company is trying to optimize their delivery routes to minimize fuel consumption and delivery time.</p>
+                
+                <p><strong>Questions to consider:</strong></p>
+                <ol>
+                    <li>Which optimization techniques from the lesson would be most applicable?</li>
+                    <li>What data would you need to collect to implement your solution?</li>
+                    <li>How would you measure the success of your optimization efforts?</li>
+                    <li>What challenges might you encounter during implementation?</li>
+                </ol>
+            </div>
+            
+            <h3>Interactive Simulation</h3>
+            <p>Explore these concepts with an interactive simulation:</p>
+            <div style="background-color: #e6f7ff; padding: 10px; border-left: 4px solid #0099cc;">
+                <p>Visit <a href="https://phet.colorado.edu/en/simulations/category/math">PhET Math Simulations</a> to explore interactive models related to this topic.</p>
+                <p>These simulations allow you to experiment with concepts and see immediate results without needing evaluation.</p>
+            </div>
+            """
+        else:
+            practice_html += """
+            <h3>Guided Self-Assessment</h3>
+            <p>Test your understanding with these self-assessment questions:</p>
+            <div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #007bff;">
+                <p><strong>Problem:</strong> You're helping an organization implement the techniques discussed in this lesson.</p>
+                
+                <p><strong>Consider these points:</strong></p>
+                <ol>
+                    <li>How would you create an implementation plan following the steps in the lesson?</li>
+                    <li>What timeline and milestones would be appropriate?</li>
+                    <li>Who are the potential stakeholders and what roles would they play?</li>
+                    <li>How would you monitor progress and measure outcomes?</li>
+                </ol>
+            </div>
+            
+            <h3>Interactive Resources</h3>
+            <p>Explore these additional resources to deepen your understanding:</p>
+            <ul>
+                <li><a href="https://www.khanacademy.org/math">Khan Academy Math</a> - Free practice exercises and videos</li>
+                <li><a href="https://www.geogebra.org/">GeoGebra</a> - Interactive mathematical tools</li>
+                <li><a href="https://www.wolframalpha.com/">Wolfram Alpha</a> - Computational knowledge engine</li>
+            </ul>
+            """
+            
+        # Create a text browser to display the practice content
+        practice_browser = QtWidgets.QTextBrowser()
+        practice_browser.setOpenExternalLinks(True)
+        practice_browser.setHtml(practice_html)
+        
+        # Add "Complete Section" button that automatically marks progress
+        complete_button = QtWidgets.QPushButton("Complete Practice Section")
+        complete_button.setProperty("type", "start_continue")
+        complete_button.clicked.connect(self.complete_practice_section)
+        
+        # Add widgets to the practice tab
+        self.practice_layout.addWidget(practice_browser)
+        self.practice_layout.addWidget(complete_button)
+    
+    def check_exercise_answer(self, button, option_group, result_label):
+        """Check if the selected answer is correct"""
+        selected_button = option_group.checkedId()
+        correct_answer = button.property("correct_answer")
+        exercise_index = button.property("exercise_index")
+        
+        if selected_button == -1:
+            # No option selected
+            result_label.setText("Please select an answer")
+            result_label.setStyleSheet("color: orange;")
+            result_label.setVisible(True)
+            return
+            
+        if selected_button == correct_answer:
+            # Correct answer
+            result_label.setText("Correct! ✓")
+            result_label.setStyleSheet("color: green;")
+            
+            # Mark this exercise as completed if not already
+            if not button.property("completed"):
+                button.setProperty("completed", True)
+                self.completed_exercises += 1
+                self.update_progress()
+        else:
+            # Wrong answer
+            result_label.setText("Incorrect. Try again.")
+            result_label.setStyleSheet("color: red;")
+            
+        result_label.setVisible(True)
+    
+    def complete_practice_section(self):
+        """Handle completion of practice section"""
+        # Mark practice as completed
+        self.completed_exercises += 1
+        self.update_progress()
+        
+        # Show confirmation
+        QtWidgets.QMessageBox.information(
+            self,
+            "Section Completed",
+            "Great job exploring this practice section!"
+        )
+    
+    def update_progress(self, tab_index=None):
+        """Update progress based on completed exercises and tabs visited"""
+        # Calculate progress percentage based on exercises completed and tabs visited
+        tab_count = self.task_tabs.count()
+        tabs_visited = set()
+        
+        # If tab_index is provided, add it to visited tabs
+        if tab_index is not None:
+            tabs_visited.add(tab_index)
+            
+        # Calculate progress
+        exercise_weight = 0.6  # Exercises count for 60% of progress
+        tab_weight = 0.4  # Visiting tabs counts for 40% of progress
+        
+        # Exercise progress (what percentage of exercises are completed)
+        exercise_progress = 0
+        if self.total_exercises > 0:
+            exercise_progress = (self.completed_exercises / self.total_exercises) * 100
+            
+        # Tab progress (what percentage of tabs have been visited)
+        tab_progress = (len(tabs_visited) / tab_count) * 100
+        
+        # Total progress
+        total_progress = int((exercise_progress * exercise_weight) + (tab_progress * tab_weight))
+        
+        # Update UI
+        self.progress_bar.setValue(total_progress)
+        self.progress_status.setText(f"Progress: {total_progress}%")
+        
+        # If progress is 100%, mark the lesson as complete in the database
+        if total_progress >= 100 and self.current_lesson_id:
+            self.auto_complete_lesson()
+    
+    def auto_complete_lesson(self):
+        """Automatically complete the lesson when all requirements are met"""
+        if not self.current_lesson_id:
+            return
+            
+        try:
+            # Get the current user ID from session
+            from src.services.session_manager import SessionManager
+            session_manager = SessionManager()
+            user_data = session_manager.get_current_user_data()
+            
+            if not user_data or 'id' not in user_data:
+                return
+                
+            user_id = user_data['id']
+            
+            # Get lesson details
+            lesson = self.lesson_service.get_lesson_by_id(self.current_lesson_id)
+            if not lesson:
+                return
+                
+            # Check if already completed
+            is_completed = self.progress_service.has_completed_lesson(user_id, self.current_lesson_id)
+            if is_completed:
+                return
+                
+            # Mark the lesson as complete
+            result = self.progress_service.complete_lesson(
+                user_id=user_id,
+                lesson_id=self.current_lesson_id,
+                course_id=lesson.course_id,
+                time_spent=30  # Default to 30 minutes
+            )
+            
+            if result:
+                # Update lesson list items to show this lesson as completed
+                for i in range(self.list_widget.count()):
+                    item = self.list_widget.item(i)
+                    item_lesson_id = item.data(QtCore.Qt.UserRole)
+                    
+                    if item_lesson_id == self.current_lesson_id:
+                        # Update the UI to show this lesson as completed
+                        widget = self.list_widget.itemWidget(item)
+                        time_str = f"{lesson.estimated_time} min" if hasattr(lesson, 'estimated_time') else "~30 min"
+                        new_widget = LessonItem(widget.title_label.text(), time_str, "done")
+                        item.setSizeHint(new_widget.sizeHint())
+                        self.list_widget.setItemWidget(item, new_widget)
+                        break
+                
+                # Show success message
+                QtWidgets.QMessageBox.information(
+                    self, 
+                    "Lesson Completed", 
+                    f"Congratulations! You've completed the lesson: {lesson.title}"
+                )
+        except Exception as e:
+            print(f"Error completing lesson: {str(e)}")
+    
+    def manual_complete_lesson(self):
+        """Handle the manual completion of a lesson via the complete button"""
+        if not self.current_lesson_id:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "No Lesson Selected",
+                "Please select a lesson first."
+            )
+            return
+            
+        try:
+            # Get the current user ID from session
+            from src.services.session_manager import SessionManager
+            session_manager = SessionManager()
+            user_data = session_manager.get_current_user_data()
+            
+            if not user_data or 'id' not in user_data:
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    "Not Logged In",
+                    "You need to be logged in to complete lessons."
+                )
+                return
+                
+            user_id = user_data['id']
+            
+            # Get lesson details
+            lesson = self.lesson_service.get_lesson_by_id(self.current_lesson_id)
+            if not lesson:
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    "Lesson Not Found",
+                    "The selected lesson could not be found."
+                )
+                return
+                
+            # Check if already completed
+            is_completed = self.progress_service.has_completed_lesson(user_id, self.current_lesson_id)
+            if is_completed:
+                QtWidgets.QMessageBox.information(
+                    self,
+                    "Already Completed",
+                    f"You have already completed this lesson: {lesson.title}"
+                )
+                return
+                
+            # Ask for confirmation
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Complete Lesson",
+                f"Are you sure you want to mark this lesson as completed: {lesson.title}?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No
+            )
+            
+            if reply == QtWidgets.QMessageBox.Yes:
+                # Mark the lesson as complete
+                result = self.progress_service.complete_lesson(
+                    user_id=user_id,
+                    lesson_id=self.current_lesson_id,
+                    course_id=lesson.course_id,
+                    time_spent=30  # Default to 30 minutes
+                )
+                
+                if result:
+                    # Update the complete button state
+                    self.complete_button.setText("Lesson Completed ✓")
+                    self.complete_button.setEnabled(False)
+                    
+                    # Update lesson list items to show this lesson as completed
+                    for i in range(self.list_widget.count()):
+                        item = self.list_widget.item(i)
+                        item_lesson_id = item.data(QtCore.Qt.UserRole)
+                        
+                        if item_lesson_id == self.current_lesson_id:
+                            # Update the UI to show this lesson as completed
+                            widget = self.list_widget.itemWidget(item)
+                            time_str = f"{lesson.estimated_time} min" if hasattr(lesson, 'estimated_time') else "~30 min"
+                            new_widget = LessonItem(widget.title_label.text(), time_str, "done")
+                            item.setSizeHint(new_widget.sizeHint())
+                            self.list_widget.setItemWidget(item, new_widget)
+                            break
+                    
+                    # Update progress bar to 100%
+                    self.progress_bar.setValue(100)
+                    self.progress_status.setText("Progress: 100%")
+                    
+                    # Show success message
+                    QtWidgets.QMessageBox.information(
+                        self, 
+                        "Lesson Completed", 
+                        f"Congratulations! You've completed the lesson: {lesson.title}"
+                    )
+                else:
+                    # Failed to complete the lesson
+                    QtWidgets.QMessageBox.warning(
+                        self,
+                        "Error",
+                        "Failed to mark the lesson as completed. Please try again."
+                    )
+        except Exception as e:
+            print(f"Error completing lesson: {str(e)}")
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Error",
+                f"An error occurred while completing the lesson: {str(e)}"
+            )
+    
+    def _get_difficulty_text(self, lesson):
+        """Get a formatted difficulty text from a lesson object
+        
+        Args:
+            lesson: The lesson object
+            
+        Returns:
+            A string representing the difficulty level
+        """
+        if not hasattr(lesson, 'difficulty_level'):
+            return "Basic"  # Default
+            
+        difficulty = lesson.difficulty_level
+        if difficulty is None:
+            return "Basic"
+            
+        # Handle if it's an enum
+        if hasattr(difficulty, 'value'):
+            difficulty_value = difficulty.value
+            # Translate Ukrainian to English if needed
+            if difficulty_value == "Базовий":
+                return "Basic"
+            elif difficulty_value == "Середній":
+                return "Medium"
+            elif difficulty_value == "Досвідчений":
+                return "Advanced"
+            return difficulty_value
+            
+        # Handle if it's a string
+        difficulty_str = str(difficulty)
+        if difficulty_str.lower() in ["basic", "beginner", "базовий"]:
+            return "Basic"
+        elif difficulty_str.lower() in ["medium", "intermediate", "середній"]:
+            return "Medium"
+        elif difficulty_str.lower() in ["advanced", "expert", "досвідчений"]:
+            return "Advanced"
+            
+        return difficulty_str
+    
     def on_item_click(self, item):
-        index = self.list_widget.indexFromItem(item)
-        item_text = self.list_widget.itemWidget(item).title_label.text()
-        self.lesson_title_lb.setText(item_text)
-        self.set_lesson_data(item_text)
+        """Handle lesson item click in the sidebar list"""
+        # Get the lesson ID stored in the item
+        lesson_id = item.data(QtCore.Qt.UserRole)
+        if lesson_id:
+            # Get the lesson from the database
+            try:
+                lesson = self.lesson_service.get_lesson_by_id(lesson_id)
+                if lesson:
+                    # Update the UI with the selected lesson
+                    self.set_lesson_data(lesson.title, lesson_id)
+            except Exception as e:
+                print(f"Error loading lesson: {str(e)}")
+                # Show error in lesson content
+                self.lesson_text.setHtml(f"<h2>Error</h2><p>Failed to load lesson: {str(e)}</p>")
+        else:
+            # No lesson ID available
+            widget = self.list_widget.itemWidget(item)
+            if widget:
+                self.lesson_title_lb.setText(widget.title_label.text())
+                self.lesson_text.setHtml(f"<h2>{widget.title_label.text()}</h2><p>No data available for this lesson.</p>")
+    
+    def set_parent_pages(self, lessons_page=None, stack=None):
+        """Set the parent pages for navigation"""
+        self.parent_lessons_page = lessons_page
+        self.parent_stack = stack
+    
+    def go_back_to_lessons(self):
+        """Navigate back to the lessons list page"""
+        if self.parent_stack and self.parent_lessons_page:
+            self.parent_stack.setCurrentWidget(self.parent_lessons_page)
+        else:
+            print("Warning: Cannot navigate back - parent pages not set")
     

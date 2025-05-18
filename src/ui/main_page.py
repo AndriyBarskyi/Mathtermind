@@ -6,6 +6,12 @@ from progress_win import Progress_page
 from settings_win import Settings_page
 from lesson_win import Lesson_page
 import sys
+from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
+from PyQt5.QtCore import Qt
+from circular_progress import *
+from graphs import *
+from src.services.progress_service import ProgressService
+from src.services.course_service import CourseService
 
 class Ui_MainWindow(object):
     def open_lesson_page(self, widget):
@@ -217,3 +223,12 @@ class Ui_MainWindow(object):
         
         self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow) 
+
+class ClickFilter(QtCore.QObject):
+    clicked = QtCore.pyqtSignal()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.MouseButtonPress:
+            if event.button() == Qt.LeftButton:
+                self.clicked.emit()
+        return False 

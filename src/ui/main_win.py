@@ -5,6 +5,9 @@ from circular_progress import *
 from graphs import *
 from lesson_win import Lesson_page
 from main_page import *
+from src.services.course_service import CourseService
+from src.services.progress_service import ProgressService
+import random
 
 
 class ClickFilter(QtCore.QObject):
@@ -20,10 +23,15 @@ class ClickFilter(QtCore.QObject):
 class Main_page(QWidget):
     def __init__(self, stack=None, lesson_page=None):
         super().__init__()
-        self.stack = None
-        self.pg_lesson = None
         self.stack = stack
-        self.pg_lesson = lesson_page
+        self.lesson_page = lesson_page
+        
+        # Initialize services
+        self.progress_service = ProgressService()
+        self.course_service = CourseService()
+        
+        # Connect to show event to refresh data when page becomes visible
+        self.showEvent = self.on_show_event
         
         self.pg_main = QtWidgets.QWidget(self)
         self.pg_main.setObjectName("pg_main")
@@ -287,7 +295,123 @@ class Main_page(QWidget):
     def on_lesson_click(self, widget):
         name_label = widget.findChild(QtWidgets.QLabel, "lb_n_les3")
         print(f"Клік по уроці: {name_label.text() if name_label else 'Невідомо'}")
-        self.pg_lesson.set_lesson_data(widget.lesson_label.text())
-        self.stack.setCurrentWidget(self.pg_lesson)
+        self.lesson_page.set_lesson_data(widget.lesson_label.text())
+        self.stack.setCurrentWidget(self.lesson_page)
     
+    def on_show_event(self, event):
+        """Handle show event to refresh progress data"""
+        print("Main page is now visible - loading recent courses")
+        # Load recent courses when widget becomes visible
+        self.load_recent_courses()
+        
+    def load_recent_courses(self):
+        """Load and display user's recent courses with progress"""
+        try:
+            # Clear existing content
+            for i in reversed(range(self.continue_viewing_courses_layout.count())):
+                item = self.continue_viewing_courses_layout.itemAt(i)
+                if item.widget():
+                    item.widget().setParent(None)
+            
+            # Get the current user from the session
+            from src.services.session_manager import SessionManager
+            session_manager = SessionManager()
+            user_data = session_manager.get_current_user_data()
+            
+            if not user_data or 'id' not in user_data:
+                print("No user logged in, can't load recent courses")
+                # If no user data, show placeholders
+                for title in ["Introduction to Math", "Algebra Basics", "Geometry Fundamentals"]:
+                    self.create_continue_course_widget(title=title, progress=random.randint(10, 90))
+                return
+                
+            user_id = user_data['id']
+            
+            # Get courses with progress
+            courses = self.course_service.get_all_courses()
+            if not courses:
+                print("No courses available")
+                return
+                
+            # Display up to 5 courses with progress information
+            count = 0
+            for course in courses:
+                if count >= 5:
+                    break
+                    
+                course_id = str(course.id)
+                course_progress = self.progress_service.get_course_progress(user_id, course_id)
+                progress_value = 0
+                
+                if course_progress:
+                    progress_value = int(course_progress.progress_percentage or 0)
+                
+                # Only show courses that have been started
+                if progress_value > 0:
+                    self.create_continue_course_widget(
+                        title=course.name,
+                        progress=progress_value,
+                        course_id=course_id
+                    )
+                    count += 1
+                    
+            # If no courses with progress were found, show some courses anyway
+            if count == 0:
+                # Display some courses without progress
+                for course in courses[:3]:
+                    self.create_continue_course_widget(
+                        title=course.name,
+                        progress=0,
+                        course_id=str(course.id)
+                    )
+                    
+        except Exception as e:
+            print(f"Error getting user progress: {str(e)}")
+            # Show placeholders on error
+            for title in ["Math Course", "Programming Basics", "Logic and Reasoning"]:
+                self.create_continue_course_widget(title=title, progress=random.randint(10, 90))
+            
+    def create_continue_course_widget(self, title="Course Title", progress=0, course_id=None):
+        """Create a widget for a course in the 'Continue Viewing' section"""
+        widget = QtWidgets.QWidget()
+        widget.setFixedSize(QtCore.QSize(230, 100))
+        widget.setProperty("type", "w_pg")
+        widget.setProperty("course_id", course_id)
+        
+        vertical_layout = QtWidgets.QVBoxLayout(widget)
+        
+        title_label = QtWidgets.QLabel(title)
+        title_label.setProperty("type", "lb_small")
+        vertical_layout.addWidget(title_label)
+        
+        progress_label = QtWidgets.QLabel(f"Progress: {progress}%")
+        progress_label.setProperty("type", "lb_small")
+        vertical_layout.addWidget(progress_label)
+        
+        lesson_progress_bar = QtWidgets.QProgressBar()
+        lesson_progress_bar.setFixedHeight(10)
+        lesson_progress_bar.setValue(progress)
+        lesson_progress_bar.setTextVisible(False)
+        vertical_layout.addWidget(lesson_progress_bar)
+        
+        # Add click event handler
+        click_filter = ClickFilter(widget)
+        widget.installEventFilter(click_filter)
+        click_filter.clicked.connect(lambda: self.on_course_click(widget))
+        
+        return widget
+        
+    def on_course_click(self, widget):
+        """Handle click on a course widget"""
+        # Get course ID from widget properties
+        course_id = widget.property("course_id")
+        if course_id and self.stack:
+            print(f"Opening course: {course_id}")
+            # Navigate to the course page
+            course_page = self.stack.findChild(QtWidgets.QWidget, "pg_course")
+            if course_page:
+                # Access the course page's load method (assuming it has one)
+                if hasattr(course_page, "load_course"):
+                    course_page.load_course(course_id)
+                self.stack.setCurrentWidget(course_page)
         

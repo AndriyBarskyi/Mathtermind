@@ -452,12 +452,15 @@ class LessonService(BaseService):
             if content is None:
                 content = {}
             
-            # Note: lesson_type is intentionally not included - lessons don't have types,
-            # only content items within them have types
-            
-            difficulty_level = db_lesson.difficulty_level
-            if hasattr(difficulty_level, 'value'):
-                difficulty_level = difficulty_level.value
+            # Set default difficulty level if not present in DB model
+            if hasattr(db_lesson, 'difficulty_level'):
+                difficulty_level = db_lesson.difficulty_level
+                if hasattr(difficulty_level, 'value'):
+                    difficulty_level = difficulty_level.value
+                else:
+                    difficulty_level = "BEGINNER"  # Default value
+            else:
+                difficulty_level = "BEGINNER"  # Default value
             
             # Get course_id
             course_id = str(db_lesson.course_id) if hasattr(db_lesson, 'course_id') else "unknown"
@@ -473,7 +476,9 @@ class LessonService(BaseService):
                 points_reward=db_lesson.points_reward,
                 prerequisites=prerequisites,
                 learning_objectives=learning_objectives,
-                course_id=course_id
+                course_id=course_id,
+                created_at=getattr(db_lesson, 'created_at', None),
+                updated_at=getattr(db_lesson, 'updated_at', None)
             )
             
             logger.debug(f"Successfully converted lesson: {lesson_id}")
@@ -490,9 +495,9 @@ class LessonService(BaseService):
                 title=db_lesson.title if hasattr(db_lesson, 'title') else "Unknown Lesson",
                 content={},
                 difficulty_level="BEGINNER",
-                lesson_order=1,
-                estimated_time=30,
-                points_reward=10,
+                lesson_order=getattr(db_lesson, 'lesson_order', 1),
+                estimated_time=getattr(db_lesson, 'estimated_time', 30),
+                points_reward=getattr(db_lesson, 'points_reward', 10),
                 prerequisites={},
                 learning_objectives=[],
                 course_id=str(db_lesson.course_id) if hasattr(db_lesson, 'course_id') else "unknown"

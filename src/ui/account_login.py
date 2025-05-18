@@ -109,29 +109,23 @@ class LoginPage(QtWidgets.QWidget):
         remember_me = self.remember_checkbox.isChecked()
         
         try:
-            # For development, allow quick login with "1" and "1"
-            if login == "1" and password == "1":
-                # Create a mock user for testing
-                user_data = {
-                    "username": "test_user",
-                    "email": "test@example.com",
-                    "user_id": "1"
-                }
-                app_state.set_current_user(user_data)
-                
-                # Save login info if Remember Me is checked
-                if remember_me:
-                    self.save_login_info(login)
-                    
-                self.login_successful.emit()
-                return
-                
-            # Attempt real login with AuthService
+            # Attempt login with AuthService
             success, session_token, user_data = self.auth_service.login(login, password)
             
             if success and user_data:
                 # Store the user data in app_state
                 app_state.set_current_user(user_data)
+                
+                # Print debug info
+                print("\n----- LOGIN SUCCESSFUL -----")
+                print(f"User data type: {type(user_data)}")
+                if isinstance(user_data, dict):
+                    print("User data contents:")
+                    for key, value in user_data.items():
+                        print(f"  {key}: {value} (type: {type(value)})")
+                else:
+                    print(f"WARNING: User data is not a dictionary: {user_data}")
+                print("---------------------------\n")
                 
                 # Save login info if Remember Me is checked
                 if remember_me:

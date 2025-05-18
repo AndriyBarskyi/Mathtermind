@@ -1,5 +1,9 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
+from src.services.progress_service import ProgressService
+from src.services.course_service import CourseService
+from src.services.lesson_service import LessonService
+from src.models.progress import Progress
 
 
 class Progress_page(QWidget):
@@ -28,8 +32,17 @@ class Progress_page(QWidget):
 
     def __init__(self):
         super().__init__()
+        
+        # Initialize services
+        self.progress_service = ProgressService()
+        self.course_service = CourseService()
+        self.lesson_service = LessonService()
+        
         self.pg_progress = QtWidgets.QWidget()
         self.pg_progress.setObjectName("pg_progress")
+        
+        # Connect to show event to refresh data when page becomes visible
+        self.showEvent = self.on_show_event
         
         self.main_progress_layout = QtWidgets.QGridLayout(self.pg_progress)
         self.main_progress_layout.setHorizontalSpacing(7)
@@ -346,3 +359,136 @@ class Progress_page(QWidget):
 
         self.main_progress_layout.addWidget(self.lb_progress, 0, 0, 1, 1)
         self.setLayout(self.main_progress_layout)
+
+    def on_show_event(self, event):
+        """Handle show event to refresh progress data"""
+        print("Progress page is now visible - loading user progress")
+        # Load progress data when widget becomes visible
+        self.load_user_progress()
+
+    def load_user_progress(self):
+        """Load and display user progress data"""
+        try:
+            # Clear existing content - Fix the list error by correctly accessing widget children
+            try:
+                children = self.widget_courses_main.findChildren(QtWidgets.QLabel) + self.widget_courses_main.findChildren(QtWidgets.QProgressBar)
+                for child in children:
+                    if child:
+                        child.deleteLater()
+            except Exception as e:
+                print(f"Error clearing widgets: {str(e)}")
+            
+            # Get the current user from the session
+            from src.services.session_manager import SessionManager
+            session_manager = SessionManager()
+            user_data = session_manager.get_current_user_data()
+            
+            if not user_data or 'id' not in user_data:
+                print("No user logged in, can't load progress")
+                # Add placeholder content for testing
+                self.add_course_info_widget(
+                    name="No User Logged In",
+                    completed_lessons=0,
+                    total_lessons=5,
+                    percentage=0
+                )
+                return
+                
+            user_id = user_data['id']
+            
+            # Get all courses
+            courses = self.course_service.get_all_courses()
+            if not courses:
+                print("No courses available")
+                return
+            
+            # Track if any progress was found
+            found_progress = False
+            
+            # Add each course with its progress
+            for course in courses:
+                try:
+                    course_id = str(course.id)
+                    # Get progress for this course
+                    progress = self.progress_service.get_course_progress(user_id, course_id)
+                    
+                    if progress:
+                        # Get lessons completed
+                        lessons = self.lesson_service.get_lessons_by_course_id(course_id)
+                        total_lessons = len(lessons) if lessons else 0
+                        
+                        # Calculate completed lessons based on progress percentage
+                        percentage = progress.progress_percentage or 0
+                        completed_lessons = int((percentage / 100) * total_lessons) if total_lessons > 0 else 0
+                        
+                        # Add the course widget with progress
+                        self.add_course_info_widget(
+                            name=course.name,
+                            completed_lessons=completed_lessons,
+                            total_lessons=total_lessons,
+                            percentage=percentage
+                        )
+                        found_progress = True
+                except Exception as e:
+                    print(f"Error processing course {course.name}: {str(e)}")
+            
+            # If no courses with progress were found, show a message
+            if not found_progress:
+                self.add_course_info_widget(
+                    name="No Courses Started Yet",
+                    completed_lessons=0,
+                    total_lessons=0,
+                    percentage=0
+                )
+        except Exception as e:
+            print(f"Error loading user progress: {str(e)}")
+            # Add error message
+            self.add_course_info_widget(
+                name="Error Loading Progress",
+                completed_lessons=0,
+                total_lessons=0,
+                percentage=0
+            )
+
+    def add_course_info_widget(self, name, completed_lessons, total_lessons, percentage):
+        """Add a course info widget to the progress page"""
+        try:
+            # Clear existing items first if there are any
+            for i in reversed(range(self.courses_main_layout.count())):
+                item = self.courses_main_layout.itemAt(i)
+                if item and item.widget():
+                    item.widget().deleteLater()
+            
+            # Create a new course info widget
+            label = QtWidgets.QLabel(self.widget_courses_main)
+            label.setText(name)
+            label.setMinimumSize(QtCore.QSize(0, 50))
+            label.setMaximumSize(QtCore.QSize(16777215, 50))
+            label.setObjectName(f"lb_course_{name}")
+            label.setProperty("type", "lb_small")
+            self.courses_main_layout.addWidget(label, 0, 0, 1, 1)
+            
+            # Create progress bar
+            progress_bar = QtWidgets.QProgressBar(self.widget_courses_main)
+            progress_bar.setMinimumSize(QtCore.QSize(0, 20))
+            progress_bar.setMaximumSize(QtCore.QSize(16777215, 20))
+            progress_bar.setProperty("value", percentage)
+            progress_bar.setTextVisible(False)
+            progress_bar.setOrientation(QtCore.Qt.Horizontal)
+            progress_bar.setObjectName(f"pg4_progress_{name}")
+            self.courses_main_layout.addWidget(progress_bar, 1, 0, 1, 2)
+            
+            # Create percentage label
+            lb_interest = QtWidgets.QLabel(self.widget_courses_main)
+            lb_interest.setText(f"{percentage}% ({completed_lessons}/{total_lessons} lessons)")
+            lb_interest.setMinimumSize(QtCore.QSize(0, 50))
+            lb_interest.setMaximumSize(QtCore.QSize(16777215, 50))
+            lb_interest.setObjectName("lb_interest")
+            lb_interest.setProperty("type", "lb_small")
+            self.courses_main_layout.addWidget(lb_interest, 1, 2, 1, 1)
+            
+            return label  # Return the label for reference
+        except Exception as e:
+            print(f"Error adding course info widget: {str(e)}")
+            import traceback
+            traceback.print_exc()

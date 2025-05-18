@@ -490,4 +490,46 @@ class SessionManager:
         finally:
             # Extend the session after use
             self.extend_session(token)
-            logger.debug(f"Extended session for user: {session_data.get('user_id', 'unknown')}") 
+            logger.debug(f"Extended session for user: {session_data.get('user_id', 'unknown')}")
+    
+    @handle_security_errors(service_name="session")
+    def get_current_user_data(self) -> Optional[Dict[str, Any]]:
+        """
+        Get data for the currently logged-in user from the in-memory app state.
+        
+        Returns:
+            The user data or None if no user is logged in
+        """
+        # Import here to avoid circular imports
+        from src.core.app_state import get_current_user
+        
+        try:
+            # Get current user from app state
+            user_data = get_current_user()
+            if user_data:
+                logger.debug(f"Found current user: {user_data.get('username', 'unknown')}")
+                return user_data
+            else:
+                # For demo purposes, return a default user when no user is logged in
+                # In a production environment, this would return None
+                logger.debug("No current user found in app state, returning demo user")
+                return {
+                    "id": "00000000-0000-0000-0000-000000000001",
+                    "username": "demo_user",
+                    "email": "demo@example.com",
+                    "first_name": "Demo",
+                    "last_name": "User",
+                    "role": "STUDENT"
+                }
+        except Exception as e:
+            logger.error(f"Error getting current user data: {str(e)}")
+            report_error(e, operation="get_current_user_data")
+            # For testing purposes only
+            return {
+                "id": "00000000-0000-0000-0000-000000000001",
+                "username": "demo_user",
+                "email": "demo@example.com",
+                "first_name": "Demo",
+                "last_name": "User",
+                "role": "STUDENT"
+            } 

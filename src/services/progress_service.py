@@ -94,7 +94,7 @@ class ProgressService:
             course_uuid = uuid.UUID(course_id)
             
             # Get the progress for the course
-            db_progress = self.progress_repo.get_course_progress(user_uuid, course_uuid)
+            db_progress = self.progress_repo.get_course_progress(self.db, user_uuid, course_uuid)
             
             if not db_progress:
                 return None
@@ -120,22 +120,23 @@ class ProgressService:
             course_uuid = uuid.UUID(course_id)
             
             # Check if progress already exists
-            existing_progress = self.progress_repo.get_course_progress(user_uuid, course_uuid)
+            existing_progress = self.progress_repo.get_course_progress(self.db, user_uuid, course_uuid)
             if existing_progress:
                 return self._convert_db_progress_to_ui_progress(existing_progress)
             
             # Get the first lesson of the course
-            course = self.course_repo.get_by_id(course_uuid)
+            course = self.course_repo.get_by_id(self.db, course_uuid)
             if not course:
                 logger.warning(f"Course not found: {course_id}")
                 return None
                 
             # Get all lessons and use the first one based on order
-            lessons = self.lesson_repo.get_lessons_by_course_id(course_uuid)
+            lessons = self.lesson_repo.get_lessons_by_course_id(self.db, course_uuid)
             first_lesson_id = lessons[0].id if lessons else None
             
             # Create the progress
             db_progress = self.progress_repo.create_progress(
+                self.db,
                 user_id=user_uuid,
                 course_id=course_uuid,
                 current_lesson_id=first_lesson_id
@@ -287,7 +288,7 @@ class ProgressService:
                      lesson_id: str, 
                      course_id: str, 
                      score: Optional[int] = None,
-                     time_spent: Optional[int] = None) -> Optional[CompletedLesson]:
+                     time_spent: int = 30) -> Optional[CompletedLesson]:
         """
         Mark a lesson as complete for a user.
         
@@ -296,7 +297,7 @@ class ProgressService:
             lesson_id: The ID of the lesson
             course_id: The ID of the course the lesson belongs to
             score: Optional score achieved in the lesson
-            time_spent: Optional time spent on the lesson in minutes
+            time_spent: Time spent on the lesson in minutes (default: 30)
             
         Returns:
             The completed lesson record if successful, None otherwise
@@ -306,48 +307,57 @@ class ProgressService:
             lesson_uuid = uuid.UUID(lesson_id)
             course_uuid = uuid.UUID(course_id)
             
-            # Check if already completed
-            is_completed = self.completed_lesson_repo.is_lesson_completed(user_uuid, lesson_uuid)
-            if is_completed:
-                # Get the completion record
-                db_completed = self.completed_lesson_repo.get_lesson_completion(user_uuid, lesson_uuid)
-                return self._convert_db_completed_lesson_to_ui_completed_lesson(db_completed)
-            
-            # Create completed lesson
-            db_completed = self.completed_lesson_repo.create_completed_lesson(
-                user_id=user_uuid,
-                lesson_id=lesson_uuid,
-                course_id=course_uuid,
-                score=score,
-                time_spent=time_spent
+            # Check if the lesson is already completed
+            existing = self.completed_lesson_repo.is_lesson_completed(
+                self.db,
+                user_uuid, 
+                lesson_uuid
             )
             
-            if not db_completed:
+            if existing:
+                logger.info(f"Lesson {lesson_id} already completed by user {user_id}")
+                
+                # Get the existing completed lesson
+                completed_lesson = self.completed_lesson_repo.get_completed_lesson(
+                    self.db,
+                    user_uuid,
+                    lesson_uuid
+                )
+                
+                if completed_lesson:
+                    return self._convert_db_completed_lesson_to_ui_completed_lesson(completed_lesson)
                 return None
             
-            # Update course progress
-            progress = self.progress_repo.get_course_progress(user_uuid, course_uuid)
-            if progress:
-                # Calculate new progress percentage
-                lessons = self.lesson_repo.get_lessons_by_course_id(course_uuid)
-                total_lessons = len(lessons)
-                completed_lessons = self.completed_lesson_repo.count_completed_lessons(user_uuid, course_uuid)
-                
-                if total_lessons > 0:
-                    new_percentage = (completed_lessons / total_lessons) * 100
-                    self.progress_repo.update_progress_percentage(progress.id, new_percentage)
-                
-                # Check if all lessons are completed
-                if completed_lessons == total_lessons:
-                    self.progress_repo.mark_as_completed(progress.id)
-                    
-                    # Create completed course record
-                    self.completed_course_repo.create_completed_course(
-                        user_id=user_uuid,
-                        course_id=course_uuid
-                    )
+            # Create completed lesson record
+            completed_lesson = self.completed_lesson_repo.complete_lesson(
+                self.db,
+                user_uuid,
+                lesson_uuid,
+                course_uuid,
+                score,
+                time_spent
+            )
             
-            return self._convert_db_completed_lesson_to_ui_completed_lesson(db_completed)
+            if not completed_lesson:
+                return None
+                
+            # Update course progress
+            progress = self.progress_repo.get_course_progress(
+                self.db,
+                user_uuid,
+                course_uuid
+            )
+            
+            if progress:
+                # Update progress details
+                self.update_progress_percentage(
+                    progress_id=str(progress.id),
+                    percentage=self._calculate_course_completion_percentage(user_id, course_id)
+                )
+            
+            # Convert to UI model and return
+            return self._convert_db_completed_lesson_to_ui_completed_lesson(completed_lesson)
+            
         except Exception as e:
             logger.error(f"Error completing lesson: {str(e)}")
             self.db.rollback()
@@ -391,9 +401,13 @@ class ProgressService:
             lesson_uuid = uuid.UUID(lesson_id)
             
             # Check if the lesson exists in the user's completed lessons
-            db_completed_lesson = self.completed_lesson_repo.get_completed_lesson(user_uuid, lesson_uuid)
+            is_completed = self.completed_lesson_repo.is_lesson_completed(
+                self.db,
+                user_uuid, 
+                lesson_uuid
+            )
             
-            return db_completed_lesson is not None
+            return is_completed
         except Exception as e:
             logger.error(f"Error checking if lesson is completed: {str(e)}")
             return False
@@ -415,8 +429,7 @@ class ProgressService:
             
             # Get all completed lessons for the user in the course
             db_completed_lessons = self.completed_lesson_repo.get_course_completed_lessons(
-                user_id=user_uuid,
-                course_id=course_uuid
+                self.db, user_uuid, course_uuid
             )
             
             # Convert to UI models
@@ -1273,4 +1286,46 @@ class ProgressService:
         except Exception as e:
             logger.error(f"Error synchronizing progress data: {str(e)}")
             self.db.rollback()
-            return False 
+            return False
+
+    def _calculate_course_completion_percentage(self, user_id: str, course_id: str) -> float:
+        """
+        Calculate the percentage of completion for a course.
+        
+        Args:
+            user_id: The ID of the user
+            course_id: The ID of the course
+            
+        Returns:
+            The completion percentage (0-100)
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            course_uuid = uuid.UUID(course_id)
+            
+            # Get all lessons in the course
+            lessons = self.lesson_repo.get_lessons_by_course_id(self.db, course_uuid)
+            if not lessons:
+                logger.warning(f"No lessons found for course ID: {course_id}")
+                return 0.0
+                
+            # Count total lessons
+            total_lessons = len(lessons)
+            
+            # Count completed lessons
+            completed_count = self.completed_lesson_repo.count_completed_lessons(
+                self.db, user_uuid, course_uuid
+            )
+            
+            # Calculate percentage
+            if total_lessons > 0:
+                percentage = (completed_count / total_lessons) * 100
+            else:
+                percentage = 0.0
+                
+            logger.info(f"Course completion: {completed_count}/{total_lessons} = {percentage:.2f}%")
+            return percentage
+            
+        except Exception as e:
+            logger.error(f"Error calculating course completion percentage: {str(e)}")
+            return 0.0 

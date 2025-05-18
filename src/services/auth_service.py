@@ -26,6 +26,7 @@ from src.services.password_utils import (
 )
 from src.services.session_manager import SessionManager
 from src.services.permission_service import PermissionService, Permission, Role
+from src.core.app_state import set_current_user
 
 # Import our new logging and error handling framework
 from src.core import get_logger
@@ -105,18 +106,30 @@ class AuthService(BaseService):
                 logger.warning(f"Login failed: Invalid password for {username_or_email}")
                 return (False, None, None)
             
-            # Create session
+            # Create comprehensive user data dictionary
             user_data = {
                 'id': str(user.id),
                 'username': user.username,
                 'email': user.email,
-                # Remove is_admin field
-                # Add role if available, otherwise default to student
                 'role': getattr(user, 'role', Role.STUDENT.value),
+                'age_group': user.age_group.value if hasattr(user, 'age_group') else None,
+                'points': user.points if hasattr(user, 'points') else 0,
+                'experience_level': user.experience_level if hasattr(user, 'experience_level') else 1,
+                'total_study_time': user.total_study_time if hasattr(user, 'total_study_time') else 0,
                 'last_login': datetime.now().isoformat()
             }
             
+            # Add additional fields if they exist
+            if hasattr(user, 'first_name'):
+                user_data['first_name'] = user.first_name
+            if hasattr(user, 'last_name'):
+                user_data['last_name'] = user.last_name
+            
+            # Create session
             session_token = self.session_manager.create_session(str(user.id), user_data)
+            
+            # Store user data in app state
+            set_current_user(user_data)
             
             # Update last login timestamp
             if hasattr(user, 'last_login'):
@@ -241,6 +254,10 @@ class AuthService(BaseService):
         try:
             success = self.session_manager.destroy_session(session_token)
             if success:
+                # Clear current user from app state
+                from src.core.app_state import clear_current_user
+                clear_current_user()
+                
                 logger.info("User logged out successfully")
                 return True
             else:
@@ -278,6 +295,11 @@ class AuthService(BaseService):
             user_data = self.session_manager.get_session(session_token)
             if user_data:
                 logger.debug(f"Session valid for user: {user_data.get('username')}")
+                
+                # Update the current user in app_state
+                from src.core.app_state import set_current_user
+                set_current_user(user_data)
+                
                 return user_data
             else:
                 logger.warning(f"Session validation failed: Invalid or expired token")
