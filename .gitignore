@@ -141,7 +141,8 @@ data/mathtermind.db
 archive/
 *.db
 *.db-journal
-logs/error_reports/
+logs/
+untracked/
 
 # Spyder project settings
 .spyderproject
