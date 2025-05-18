@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
 from slider import RangeSlider
 from lessons_list_win import Lessons_page
-from ui import *
+from main_page import *
 
 
 class Course_page(QWidget):

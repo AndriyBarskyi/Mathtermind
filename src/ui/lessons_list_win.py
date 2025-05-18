@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout,QVBoxLayout, QLabel,QSizePolicy
 from PyQt5 import QtWidgets, QtCore, QtGui
-from ui import*
+from main_page import *
 from lesson_win import Lesson_page
 
 

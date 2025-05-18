@@ -32,14 +32,19 @@ class CircularProgress(QWidget):
         else:
             pen.setColor(QColor(4, 214, 87))
         painter.setPen(pen)
+        
+        # Fix for QPainter errors - convert rect to QRect and int values
         painter.drawArc(
-            rect,  
+            int(rect.x()), int(rect.y()), 
+            int(rect.width()), int(rect.height()),
             -90 * 16,
-            -self.value * 3.6 * 16 
+            int(-self.value * 3.6 * 16)
         )
-
 
         painter.setPen(Qt.black)
         painter.setFont(QFont("MS Shell Dlg 2", 16, QFont.Bold))
         text = f"{self.value}%"
         painter.drawText(self.rect(), Qt.AlignCenter, text)
+        
+        # Add painter.end() to properly close the painter
+        painter.end()

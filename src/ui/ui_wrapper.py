@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMainWindow
-from ui import Ui_MainWindow
+from main_page import Ui_MainWindow
 
 class UiWrapper(QMainWindow):
     def __init__(self):

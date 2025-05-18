@@ -6,12 +6,14 @@ from progress_win import Progress_page
 from settings_win import Settings_page
 from lesson_win import Lesson_page
 import sys
+
 class Ui_MainWindow(object):
     def open_lesson_page(self, widget):
         lesson_page = Lesson_page()
         lesson_page.setObjectName("pg_lesson")
         self.stackedWidget.addWidget(lesson_page)
         self.stackedWidget.setCurrentWidget(lesson_page)
+        
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1742, 865)
@@ -39,29 +41,66 @@ class Ui_MainWindow(object):
         self.sidebar_widget.setMinimumSize(QtCore.QSize(200, 50))
         self.sidebar_widget.setMaximumSize(QtCore.QSize(250, 2000))
         self.sidebar_widget.setObjectName("sidebar_widget")
-        self.sidebar_inner_layout = QtWidgets.QHBoxLayout(self.sidebar_widget)
-        self.sidebar_inner_layout.setContentsMargins(0, 0, 0, 0)
-        self.sidebar_inner_layout.setSpacing(0)
-        self.sidebar_inner_layout.setObjectName("sidebar_inner_layout")
+        
+        # Continue with the rest of the UI setup
+        
+        self.sidebar_layout = QtWidgets.QVBoxLayout(self.sidebar_widget)
+        self.sidebar_layout.setObjectName("sidebar_layout")
+        
+        self.sidebar_header_layout = QtWidgets.QVBoxLayout()
+        self.sidebar_header_layout.setObjectName("sidebar_header_layout")
+        
+        self.sidebar_logo_label = QtWidgets.QLabel(self.sidebar_widget)
+        self.sidebar_logo_label.setMinimumSize(QtCore.QSize(200, 100))
+        self.sidebar_logo_label.setMaximumSize(QtCore.QSize(200, 150))
+        self.sidebar_logo_label.setText("")
+        self.sidebar_logo_label.setPixmap(QtGui.QPixmap("icon/logo.png"))
+        self.sidebar_logo_label.setScaledContents(True)
+        self.sidebar_logo_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.sidebar_logo_label.setObjectName("sidebar_logo_label")
+        self.sidebar_header_layout.addWidget(self.sidebar_logo_label)
+        
+        self.sidebar_layout.addLayout(self.sidebar_header_layout)
+        
         self.sidebar_buttons_layout = QtWidgets.QVBoxLayout()
-        self.sidebar_buttons_layout.setSpacing(0)
+        self.sidebar_buttons_layout.setSpacing(11)
         self.sidebar_buttons_layout.setObjectName("sidebar_buttons_layout")
-        self.sidebar_buttons_layout.setContentsMargins(0, 0, 0, 0)
-        self.sidebar_logo = QtWidgets.QLabel(self.sidebar_widget)
-        self.sidebar_logo.setText("")
-        self.sidebar_logo.setPixmap(QtGui.QPixmap("icon/logo.png"))
-        self.sidebar_logo.setObjectName("sidebar_logo")
-        self.sidebar_logo.setFixedSize(50, 50)  
-        self.sidebar_buttons_layout.addWidget(self.sidebar_logo)
+        
         self.menu_buttons = [
-        {"name": "btn_main", "icon_normal": "gray_icon/gray_home.PNG", "icon_active": "blue_icon/blue_home.PNG", "text": "Головна"},
-        {"name": "btn_courses", "icon_normal": "gray_icon/gray_courses.PNG", "icon_active": "blue_icon/blue_course.PNG", "text": "Курси"},
-        {"name": "btn_lessons", "icon_normal": "gray_icon/gray_lessons.PNG", "icon_active": "blue_icon/blue_lessons.PNG", "text": "Уроки"},
-        {"name": "btn_progress", "icon_normal": "gray_icon/gray_progress.PNG", "icon_active": "blue_icon/blue_progress.PNG", "text": "Успішність"},
-        {"name": "btn_settings", "icon_normal": "gray_icon/gray_settings.PNG", "icon_active": "blue_icon/blue_settings.PNG", "text": "Налаштування"},
+            {
+                "name": "btn_main",
+                "text": "Головна",
+                "icon_normal": "icon/main.png",
+                "icon_active": "icon/main_active.png"
+            },
+            {
+                "name": "btn_progress",
+                "text": "Прогрес",
+                "icon_normal": "icon/progress.png",
+                "icon_active": "icon/progress_active.png"
+            },
+            {
+                "name": "btn_courses",
+                "text": "Курси",
+                "icon_normal": "icon/course.png",
+                "icon_active": "icon/course_active.png"
+            },
+            {
+                "name": "btn_lessons",
+                "text": "Уроки",
+                "icon_normal": "icon/lessons.png",
+                "icon_active": "icon/lessons_active.png"
+            },
+            {
+                "name": "btn_settings",
+                "text": "Налаштування",
+                "icon_normal": "icon/settings.png",
+                "icon_active": "icon/settings_active.png"
+            }
         ]
-
+        
         self.buttons_dict = {}
+        
         def update_buttons(clicked_button):
                 for name, btn in self.buttons_dict.items():
                         if btn == clicked_button:
@@ -95,106 +134,35 @@ class Ui_MainWindow(object):
                         self.stackedWidget.setCurrentWidget(getattr(self, f"pg_{page.split('_')[1]}"))  
                 ))
         
-        
         spacerItem = QtWidgets.QSpacerItem(20, 328, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.sidebar_buttons_layout.addItem(spacerItem)
-        self.btn_exit = QtWidgets.QPushButton(self.sidebar_widget)
-        self.btn_exit.setProperty("type", "main")
         
-        icon_exit = QtGui.QIcon()
-        icon_exit.addPixmap(QtGui.QPixmap("icon/icon_exit.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.btn_exit.setIcon(icon_exit)
-        self.btn_exit.setIconSize(QtCore.QSize(30, 30))
-        self.btn_exit.setCheckable(True)
-        self.btn_exit.setObjectName("btn_exit")
-        self.sidebar_buttons_layout.addWidget(self.btn_exit)
-        self.sidebar_inner_layout.addLayout(self.sidebar_buttons_layout)
+        self.sidebar_layout.addLayout(self.sidebar_buttons_layout)
+        
+        self.btn_user = QtWidgets.QPushButton(self.sidebar_widget)
+        self.btn_user.setText("Користувач")
+        self.btn_user.setProperty("type", "user")
+        
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("icon/user.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.btn_user.setIcon(icon)
+        
+        self.btn_user.setIconSize(QtCore.QSize(30, 30))
+        self.btn_user.setObjectName("btn_user")
+        
+        self.sidebar_layout.addWidget(self.btn_user)
+        
         self.sidebar_main_layout.addWidget(self.sidebar_widget)
         self.main_layout.addLayout(self.sidebar_main_layout, 0, 0, 1, 1)
+        
         self.content_widget = QtWidgets.QWidget(self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.content_widget.sizePolicy().hasHeightForWidth())
-        self.content_widget.setSizePolicy(sizePolicy)
-        self.content_widget.setMinimumSize(QtCore.QSize(1421, 850))
         self.content_widget.setObjectName("content_widget")
         self.content_layout = QtWidgets.QVBoxLayout(self.content_widget)
-        self.content_layout.setContentsMargins(0, -1, 0, -1)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
         self.content_layout.setSpacing(0)
         self.content_layout.setObjectName("content_layout")
-        self.topbar_widget = QtWidgets.QWidget(self.content_widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.topbar_widget.sizePolicy().hasHeightForWidth())
-        self.topbar_widget.setSizePolicy(sizePolicy)
-        self.topbar_widget.setMaximumSize(QtCore.QSize(1700, 75))
-        self.topbar_widget.setObjectName("topbar_widget")
-        self.topbar_layout = QtWidgets.QHBoxLayout(self.topbar_widget)
-        self.topbar_layout.setObjectName("topbar_layout")
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.topbar_layout.addItem(spacerItem1)
-        self.topbar_search_layout = QtWidgets.QHBoxLayout()
-        self.topbar_search_layout.setObjectName("topbar_search_layout")
-        self.le_search = QtWidgets.QLineEdit(self.topbar_widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(50)
-        sizePolicy.setVerticalStretch(100)
-        sizePolicy.setHeightForWidth(self.le_search.sizePolicy().hasHeightForWidth())
-        self.le_search.setSizePolicy(sizePolicy)
-        self.le_search.setMinimumSize(QtCore.QSize(600, 50))
-        self.le_search.setMaximumSize(QtCore.QSize(16777215, 100))
-        self.le_search.setProperty("type","search")
-        self.le_search.setProperty("class", "search")
-        self.le_search.setObjectName("le_search")
-        self.topbar_search_layout.addWidget(self.le_search)
-        self.btn_search = QtWidgets.QPushButton(self.topbar_widget)
-        self.btn_search.setMinimumSize(QtCore.QSize(50, 50))
-        self.btn_search.setMaximumSize(QtCore.QSize(200, 100))
-        self.btn_search.setObjectName("btn_user")
-        self.btn_search.setText("")
-        icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap("icon/icon_search.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.btn_search.setIcon(icon6)
-        self.btn_search.setCheckable(True)
-        self.topbar_search_layout.addWidget(self.btn_search)
         
-        self.topbar_layout.addLayout(self.topbar_search_layout)
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.topbar_layout.addItem(spacerItem2)
-        self.btn_points = QtWidgets.QPushButton(self.topbar_widget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_points.sizePolicy().hasHeightForWidth())
-        self.btn_points.setSizePolicy(sizePolicy)
-        self.btn_points.setMaximumSize(QtCore.QSize(50, 100))
-
-        self.btn_points.setText("")
-        icon7 = QtGui.QIcon()
-        icon7.addPixmap(QtGui.QPixmap("icon/point.PNG"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.btn_points.setIcon(icon7)
-        self.btn_points.setIconSize(QtCore.QSize(50, 50))
-        self.btn_points.setCheckable(True)
-        self.btn_points.setObjectName("btn_points")
-        self.topbar_layout.addWidget(self.btn_points)
-        self.lb_points = QtWidgets.QLabel(self.topbar_widget)
-        self.lb_points.setObjectName("lb_points")
-        self.topbar_layout.addWidget(self.lb_points)
-        self.btn_user = QtWidgets.QPushButton(self.topbar_widget)
-        self.btn_user.setMinimumSize(QtCore.QSize(50, 50))
-        self.btn_user.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
-        icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap("icon/icon_users.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.btn_user.setIcon(icon8)
-        self.btn_user.setIconSize(QtCore.QSize(30, 30))
-        self.btn_user.setCheckable(True)
-        self.btn_user.setObjectName("btn_user")
-        self.topbar_layout.addWidget(self.btn_user)
-        self.content_layout.addWidget(self.topbar_widget)
         self.scrollArea = QtWidgets.QScrollArea(self.content_widget)
-        self.scrollArea.setMaximumSize(QtCore.QSize(1700, 16777215))
         self.scrollArea.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
@@ -248,4 +216,4 @@ class Ui_MainWindow(object):
 
         
         self.stackedWidget.setCurrentIndex(0)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(MainWindow) 

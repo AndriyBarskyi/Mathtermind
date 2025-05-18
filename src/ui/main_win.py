@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt
 from circular_progress import *
 from graphs import *
 from lesson_win import Lesson_page
-from ui import *
+from main_page import *
 
 
 class ClickFilter(QtCore.QObject):

@@ -36,7 +36,7 @@ from src.app_init import init_app
 logger = get_logger(__name__)
 
 # Import application modules
-from src.ui.ui import MainWindowUI
+from ui.main_page import MainWindowUI
 from src.db import get_db
 from src.config import DATABASE_URL, DEBUG_MODE
 
