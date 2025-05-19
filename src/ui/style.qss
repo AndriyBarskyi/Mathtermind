@@ -14,7 +14,7 @@ QProgressBar::chunk {
 
 QTabBar::tab {
     width:160;
-    font: 75 9pt \"MS Shell Dlg 2\";
+    font: normal 10pt "MS Shell Dlg 2";
     background: #ffffff;
     color: #516ed9;
     border: 1px solid #dde2f6;
@@ -76,7 +76,8 @@ QWidget {
 
 QLabel[type="lb_description"] 
 {
-    border-color: rgb(255, 255, 255); font: 75 10pt \"MS Shell Dlg 2\";
+    border-color: rgb(255, 255, 255); 
+    font: normal 11pt "MS Shell Dlg 2"; /* Explicit normal weight, slightly larger size */
     background-color: transparent;
 }
 
@@ -84,25 +85,28 @@ QLabel[type="lb_name_course"]{
     border-radius: 25px;
     background-color: rgb(221, 243, 246);
     border: 2px solid rgb(221, 243, 246);
-    }
+    font: normal 11pt "MS Shell Dlg 2"; /* Standardized font */
+    padding: 5px; /* Add some padding so text isn't at the very edge of the background */
+}
 
 QLabel[type="lb_name_lesson"] 
 {
     border-color: transparent; 
-    font: 75 14pt \"MS Shell Dlg 2\";
+    font: normal 14pt "MS Shell Dlg 2";
     background-color: transparent;
 }
 
 QPushButton[type="next_previous"] {
     border: 2px solid #e6e6e6;
-    background-color: transparent;
+    background-color: transparent; /* Reverted from red */
     border-radius: 20px;
     width: 40px;
     height: 40px;
+    /* icon-size is not a standard QSS property here, managed in Python */
 }
 
 QPushButton[type="next_previous"]:hover {
-    background-color: #e6e6e6;
+    background-color: #e6e6e6; /* Reverted from lighter red */
 }
 
 QWidget[type="w_pg"]{
@@ -112,9 +116,12 @@ QWidget[type="w_pg"]{
 
 QLabel[type="page_section"]{
     border-color: transparent; 
-    font: 75 14pt \"MS Shell Dlg 2\";
-    border-radius: 25px;
+    font-size: 11pt; /* Reduced from 12pt */
+    font-weight: bold;
+    /* border-radius: 25px; /* Removed, likely no effect */
     background-color:transparent; 
+    padding: 0px; /* Explicitly set padding */
+    margin: 0px;  /* Explicitly set margin */
 }
 
 QScrollArea{
@@ -142,13 +149,13 @@ QLabel[type="tags"]{
 QLabel[type="lb_small"] 
 {
     border-color: transparent; 
-    font: 75 8pt \"MS Shell Dlg 2\";
+    font: normal 10pt "MS Shell Dlg 2";
     background-color: transparent;
 }
 
 QPushButton[type="start_continue"] {
     background-color: transparent;
-    border-radius:25px; 
+    border-radius: 17px;
     background: #516ed9; 
     font: 75 15pt 'MS Shell Dlg 2';
     color: white;
@@ -156,7 +163,7 @@ QPushButton[type="start_continue"] {
 
 QPushButton[type="start_continue"]:hover {
     background-color: transparent;
-    border-radius:25px; 
+    border-radius: 17px;
     background:#8fb4ff; 
     font: 75 15pt 'MS Shell Dlg 2';
     color: white;
@@ -166,25 +173,46 @@ QPushButton[type="start_continue_complete"]{
     border-radius:25px; 
     min-width: 100px;
     min-height: 50px;
-    background-color:  #f3f3f3;
-    font: 75 15pt 'MS Shell Dlg 2';
+    background-color:  #eeeeee; /* Lighter grey for unselected */
+    color: black; /* Black text for unselected */
+    font: normal 15pt 'MS Shell Dlg 2'; /* Normal weight, keeping 15pt size */
 }
 
 QPushButton[type="start_continue_complete"]:hover{
-    background-color: rgb(230, 230, 230);
+    background-color: #dddddd; /* Lighter grey on hover for unselected */
+    color: black;
+    /* Font properties are inherited, no need to repeat font: here if only color/background changes */
 }
 
 QPushButton[type="start_continue_complete"]:checked {
-    background-color: rgb(230, 230, 230);
+    background-color: #516ed9; /* Dark blue for selected */
+    color: white; /* White text for selected */
+    /* Font properties are inherited */
 }
 
 QCheckBox{
-    font: 75 10pt \"MS Shell Dlg 2\";
+    font: normal 11pt "MS Shell Dlg 2"; /* Explicit normal weight, slightly larger size */
     background-color:transparent;
+    spacing: 5px;
+}
+
+/* Restoring original QCheckBox indicator styles based on previous tool output */
+QCheckBox::indicator:checked {
+    background-color: #6c9dfd;  /* синій */
+    border: 1px solid #6c9dfd;
+}
+
+QCheckBox::indicator:unchecked {
+    background-color: white;
+    border: 1px solid #6c9dfd;
+}
+
+QCheckBox:hover {
+    background-color: #e6e6e6;
 }
 
 QRadioButton{
-    font: 75 10pt \"MS Shell Dlg 2\";
+    font: normal 11pt "MS Shell Dlg 2"; /* Explicit normal weight, slightly larger size */
     background-color: transparent;
 }
 
@@ -240,6 +268,7 @@ QPushButton[type="register"]{
     background: transparent;
     border: none; 
     text-decoration: underline;
+    font: normal 11pt "MS Shell Dlg 2"; /* Standardized font */
 }
 
 QLabel[type="title"] {
@@ -251,27 +280,17 @@ QLabel[type="title"] {
 QRadioButton::indicator {
         width: 15px;
         height: 15px;
-        border: 2px solid #6c9dfd;
-        border-radius: 7px;
-        background-color: white;
+        border: 2px solid #6c9dfd; /* Blue border for unchecked */
+        border-radius: 7px;        /* Circular shape */
+        background-color: white;   /* White background for unchecked */
     }
 QRadioButton::indicator:checked {
-    image: url("blue_icon/mark.PNG");
-    width: 16px;
+    image: url("blue_icon/mark.PNG"); /* Checkmark image */
+    width: 16px; /* Keep existing size for checked */
     height: 16px;
-        /*background-color: #6c9dfd;
-        border-color: #6c9dfd;*/
-    }
-
-QCheckBox::indicator:checked {
-    background-color: #6c9dfd;  /* синій */
-    border: 1px solid #6c9dfd;
+    background-color: #6c9dfd; /* Blue background for checked */
+    border: 2px solid #6c9dfd; /* Blue border for checked, same as background for a solid look */
 }
-
-QCheckBox::indicator:unchecked {
-        background-color: white;
-        border: 1px solid #6c9dfd;
-    }
 
 QMessageBox {
     background-color:rgb(243, 246, 250);
@@ -357,8 +376,22 @@ QLineEdit[type="search"]{
 
 QTextEdit{
     border-color: transparent; 
-    font: 75 10pt \"MS Shell Dlg 2\";
+    font: normal 11pt "MS Shell Dlg 2";
     border-radius: 25px;
     background-color:transparent;
+}
+
+QTextBrowser{
+    border-color: transparent; 
+    font: normal 11pt "MS Shell Dlg 2";
+    background-color:transparent;
+}
+
+QPlainTextEdit{
+    border-color: transparent; 
+    font: normal 11pt "MS Shell Dlg 2"; /* Match QTextEdit */
+    background-color:transparent; /* Ensure consistent background */
+    border-radius: 15px; /* Add some rounding like other inputs */
+    padding: 5px; /* Add some padding */
 }
 

@@ -9,9 +9,9 @@ class LessonItem(QWidget):
     def __init__(self, title, duration, status="incomplete"):
         super().__init__()
         self.title_label = QLabel(title)
-        self.title_label.setStyleSheet("background-color: transparent;")
+        self.title_label.setStyleSheet("background-color: transparent; font: normal 11pt \"MS Shell Dlg 2\";")
         duration_label = QLabel(duration)
-        duration_label.setStyleSheet("color: gray; background-color: transparent;")
+        duration_label.setStyleSheet("color: gray; background-color: transparent; font: normal 10pt \"MS Shell Dlg 2\";")
         text_layout = QVBoxLayout()
         text_layout.addWidget(self.title_label)
         text_layout.addWidget(duration_label)
@@ -113,6 +113,7 @@ class Lesson_page(QWidget):
         self.main_content_layout.addWidget(self.progress_section_widget, 1, 1, 1, 1)
         
         self.lesson_title_lb = QtWidgets.QLabel(self.main_scroll_content)
+        self.lesson_title_lb.setProperty("type", "title")
         self.lesson_title_lb.setMinimumSize(QtCore.QSize(1000, 50))
         self.lesson_title_lb.setMaximumSize(QtCore.QSize(16777215, 100))
         self.lesson_title_lb.setObjectName("lesson_title_lb")
@@ -227,7 +228,7 @@ class Lesson_page(QWidget):
         
         # Progress labels
         self.progress_status = QtWidgets.QLabel("Progress: 0%")
-        self.progress_status.setProperty("type", "lb_name_lesson")
+        self.progress_status.setProperty("type", "lb_description")
         progress_layout.addWidget(self.progress_status)
         
         # Progress bar
@@ -248,11 +249,11 @@ class Lesson_page(QWidget):
         
         # Lesson metadata
         self.lb_difficulty = QtWidgets.QLabel("Difficulty: Basic")
-        self.lb_difficulty.setProperty("type", "lb_small")
+        self.lb_difficulty.setProperty("type", "lb_description")
         info_layout.addWidget(self.lb_difficulty)
         
-        self.lb_time = QtWidgets.QLabel("30 min")
-        self.lb_time.setProperty("type", "lb_small")
+        self.lb_time = QtWidgets.QLabel("Time: ~30 min")
+        self.lb_time.setProperty("type", "lb_description")
         info_layout.addWidget(self.lb_time)
         
         progress_layout.addWidget(info_container)

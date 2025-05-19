@@ -20,6 +20,7 @@ class Lesson:
     points_reward: int
     difficulty_level: Optional[str] = None
     content: Dict[str, Any] = None
+    content_items: List[Any] = None
     prerequisites: Dict[str, Any] = None
     learning_objectives: List[str] = None
     created_at: Optional[datetime] = None
@@ -32,6 +33,8 @@ class Lesson:
             self.learning_objectives = []
         if self.content is None:
             self.content = {}
+        if self.content_items is None:
+            self.content_items = []
 
     @property
     def formatted_duration(self) -> str:

@@ -57,17 +57,20 @@ class ProgressRepository(BaseRepository[Progress]):
         db.refresh(progress)
         return progress
     
-    def get_user_progress(self, db: Session, user_id: uuid.UUID) -> List[Progress]:
+    def get_user_progress(self, user_id: uuid.UUID) -> List[Progress]:
         """
         Get all progress records for a user.
         
         Args:
-            db: Database session
             user_id: User ID
             
         Returns:
             List of progress records for the user
         """
+        # Create a new database session from the parent class instead of requiring it as a parameter
+        from src.db import get_db
+        db = next(get_db())
+        
         return db.query(Progress).filter(Progress.user_id == user_id).all()
     
     def get_course_progress(self, db: Session, user_id: uuid.UUID, course_id: uuid.UUID) -> Optional[Progress]:

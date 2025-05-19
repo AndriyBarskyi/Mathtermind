@@ -245,9 +245,9 @@ class Lessons_page(QWidget):
         btn_start.setProperty("type","start_continue")
         btn_start.setStyleSheet("""
             QPushButton {
-                border-radius: 10px;
                 padding: 5px;
                 font-size: 11pt;
+                font-weight: normal;
             }
         """)
         
@@ -265,9 +265,9 @@ class Lessons_page(QWidget):
         btn_continue.setProperty("type","start_continue")
         btn_continue.setStyleSheet("""
             QPushButton {
-                border-radius: 10px;
                 padding: 5px;
                 font-size: 11pt;
+                font-weight: normal;
             }
         """)
 

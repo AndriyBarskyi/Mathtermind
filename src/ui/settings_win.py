@@ -260,25 +260,31 @@ class Settings_page(QWidget):
         self.layout_settings_form.addRow(widget_user_greeting)
 
     def add_form_field_with_placeholder(self, label_text, text_value, placeholder_text, obj_name):
-        label = QLabel(label_text, self.widget_settings_content)
-        label.setProperty("type", "page_section")
-        label.setFixedHeight(20)
-        self.layout_settings_form.addRow(label)
+        form_group_widget = QWidget(self.widget_settings_content)
+        form_group_layout = QHBoxLayout(form_group_widget)
+        form_group_layout.setContentsMargins(0, 0, 0, 0)
+        form_group_layout.setSpacing(10) 
 
-        input_field = QLineEdit(self.widget_settings_content)
+        label = QLabel(label_text, form_group_widget)
+        label.setProperty("type", "lb_description")
+        label.setMinimumWidth(150) 
+        label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        form_group_layout.addWidget(label)
+
+        field = QLineEdit(form_group_widget)
         
         # Set text if available, otherwise use placeholder
         if text_value:
-            input_field.setText(text_value)
+            field.setText(text_value)
         else:
-            input_field.setPlaceholderText(placeholder_text)
+            field.setPlaceholderText(placeholder_text)
             
-        input_field.setFixedHeight(28)
-        input_field.setObjectName(obj_name)
-        input_field.setProperty("type", "settings")
+        field.setFixedHeight(28)
+        field.setObjectName(obj_name)
+        field.setProperty("type", "settings")
         
         # Improve field styling
-        input_field.setStyleSheet("""
+        field.setStyleSheet("""
             QLineEdit[type="settings"] {
                 font: \"MS Shell Dlg 2\";
                 font-size: 12px;
@@ -294,24 +300,31 @@ class Settings_page(QWidget):
             }
         """)
         
-        self.layout_settings_form.addRow(input_field)
-        return input_field
+        form_group_layout.addWidget(field)
+        self.layout_settings_form.addRow(form_group_widget)
+        return field
 
     def add_password_field(self, label_text, placeholder_text, obj_name):
-        label = QLabel(label_text, self.widget_settings_content)
-        label.setProperty("type", "page_section")
-        label.setFixedHeight(20)
-        self.layout_settings_form.addRow(label)
+        form_group_widget = QWidget(self.widget_settings_content)
+        form_group_layout = QHBoxLayout(form_group_widget)
+        form_group_layout.setContentsMargins(0, 0, 0, 0)
+        form_group_layout.setSpacing(10)
 
-        input_field = QLineEdit(self.widget_settings_content)
-        input_field.setPlaceholderText("Введіть пароль")  # Clear text, use placeholder
-        input_field.setEchoMode(QLineEdit.Password)  
-        input_field.setFixedHeight(28)
-        input_field.setObjectName(obj_name)
-        input_field.setProperty("type", "settings")
+        label = QLabel(label_text, form_group_widget)
+        label.setProperty("type", "lb_description")
+        label.setMinimumWidth(150)
+        label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        form_group_layout.addWidget(label)
+
+        field = QLineEdit(form_group_widget)
+        field.setPlaceholderText("Введіть пароль")  # Clear text, use placeholder
+        field.setEchoMode(QLineEdit.Password)  
+        field.setFixedHeight(28)
+        field.setObjectName(obj_name)
+        field.setProperty("type", "settings")
         
         # Improve field styling
-        input_field.setStyleSheet("""
+        field.setStyleSheet("""
             QLineEdit[type="settings"] {
                 font: \"MS Shell Dlg 2\";
                 font-size: 12px;
@@ -327,8 +340,9 @@ class Settings_page(QWidget):
             }
         """)
         
-        self.layout_settings_form.addRow(input_field)
-        return input_field
+        form_group_layout.addWidget(field)
+        self.layout_settings_form.addRow(form_group_widget)
+        return field
     
     def refresh_user_data(self):
         """Force refresh of user data fields"""

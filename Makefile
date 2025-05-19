@@ -36,7 +36,7 @@ setup:
 
 # Run target
 run:
-	$(PYTHON) main.py
+	$(PYTHON) src/ui/main.py
 
 # Clean target
 clean:

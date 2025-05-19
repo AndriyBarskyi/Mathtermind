@@ -254,11 +254,15 @@ class TaskWindow(QWidget):
         widget = QWidget()
         widget.setProperty("type", "w_pg")
         layout = QVBoxLayout()
+
         quest = QLabel(f"3. {self.lesson_content.get('input_question', 'Питання не знайдено')}")
         quest.setProperty("type", "lb_description")
-        
-        layout.addWidget(quest)
+
         self.input_answer = QLineEdit()
+        self.input_answer.setProperty("type", "settings")
+        self.input_answer.setPlaceholderText("Введіть відповідь")
+
+        layout.addWidget(quest)
         layout.addWidget(self.input_answer)
         widget.setLayout(layout)  
         return widget

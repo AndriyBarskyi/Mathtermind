@@ -37,6 +37,7 @@ def seed_courses():
     
     # Create sample courses
     courses = [
+        # Math courses
         {
             "id": uuid.uuid4(),
             "topic": Topic.MATHEMATICS,
@@ -63,6 +64,31 @@ def seed_courses():
         },
         {
             "id": uuid.uuid4(),
+            "topic": Topic.MATHEMATICS,
+            "name": "Статистика та аналіз даних",
+            "description": "Вивчення статистичних методів та аналізу даних",
+            "duration": 200,
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.MATHEMATICS,
+            "name": "Геометрія та топологія",
+            "description": "Курс з геометрії у просторі та основ топології",
+            "duration": 190,
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.MATHEMATICS,
+            "name": "Теорія ймовірностей",
+            "description": "Основи теорії ймовірностей та стохастичні процеси",
+            "duration": 160,
+            "created_at": datetime.now(timezone.utc),
+        },
+        # Informatics courses
+        {
+            "id": uuid.uuid4(),
             "topic": Topic.INFORMATICS,
             "name": "Основи програмування",
             "description": "Вступ до програмування та алгоритмів",
@@ -85,6 +111,62 @@ def seed_courses():
             "duration": 300,
             "created_at": datetime.now(timezone.utc),
         },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.INFORMATICS,
+            "name": "Бази даних та SQL",
+            "description": "Проєктування та робота з базами даних",
+            "duration": 180,
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.INFORMATICS,
+            "name": "Машинне навчання",
+            "description": "Основи машинного навчання та штучного інтелекту",
+            "duration": 250,
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.INFORMATICS,
+            "name": "Мобільна розробка",
+            "description": "Створення додатків для мобільних платформ",
+            "duration": 220,
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.INFORMATICS,
+            "name": "Кібербезпека для початківців",
+            "description": "Основи кібербезпеки, захист даних та приватність в Інтернеті.",
+            "duration": 120,
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.MATHEMATICS,
+            "name": "Теорія графів та її застосування",
+            "description": "Вступ до теорії графів, алгоритми на графах та їх практичне використання.",
+            "duration": 180,
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.INFORMATICS,
+            "name": "Python для аналізу даних",
+            "description": "Використання Python та бібліотек Pandas, NumPy, Matplotlib для аналізу та візуалізації даних.",
+            "duration": 240,
+            "created_at": datetime.now(timezone.utc),
+        },
+        {
+            "id": uuid.uuid4(),
+            "topic": Topic.MATHEMATICS,
+            "name": "Вступ до математичного моделювання",
+            "description": "Побудова математичних моделей для розв'язання реальних задач.",
+            "duration": 150,
+            "created_at": datetime.now(timezone.utc),
+        }
     ]
     
     # Create and save course objects
@@ -114,12 +196,12 @@ def _seed_lessons(db: Session, courses: List[Course]):
     """
     logger.info("Seeding lessons for courses...")
     
-    # Create 3-5 lessons for each course
+    # Create lessons for each course - vary the number of lessons by course
     lessons_count = 0
     
     for i, course in enumerate(courses):
-        # Number of lessons varies by course
-        num_lessons = 3 if i % 3 == 0 else 4 if i % 3 == 1 else 5
+        # Number of lessons varies by course (4-8 lessons per course)
+        num_lessons = 4 + (i % 5)  # This will create courses with 4, 5, 6, 7, or 8 lessons
         
         for j in range(1, num_lessons + 1):
             lesson = Lesson(
@@ -154,20 +236,32 @@ def _get_lesson_title(topic: Topic, lesson_number: int, level: int) -> str:
         0: [  # Beginner
             "Числа та арифметичні операції",
             "Дроби та відсотки",
-            "Геометричні фігури"
+            "Геометричні фігури",
+            "Основи алгебри",
+            "Розв'язування простих рівнянь",
+            "Пропорції та відношення",
+            "Вимірювання та одиниці виміру",
+            "Основи теорії множин",
         ],
         1: [  # Intermediate
             "Лінійні рівняння",
             "Функції та графіки",
             "Квадратні рівняння",
-            "Системи рівнянь"
+            "Системи рівнянь",
+            "Тригонометричні функції",
+            "Вектори та матриці",
+            "Логарифми та експоненти",
+            "Статистичні методи",
         ],
         2: [  # Advanced
             "Тригонометрія",
             "Похідні функцій",
             "Інтеграли",
             "Диференціальні рівняння",
-            "Комплексні числа"
+            "Комплексні числа",
+            "Аналітична геометрія",
+            "Теорія груп",
+            "Числові ряди",
         ]
     }
     
@@ -175,20 +269,32 @@ def _get_lesson_title(topic: Topic, lesson_number: int, level: int) -> str:
         0: [  # Beginner
             "Алгоритми та блок-схеми",
             "Змінні та типи даних",
-            "Умови та цикли"
+            "Умови та цикли",
+            "Основи функцій",
+            "Робота з файлами",
+            "Масиви та списки",
+            "Основи об'єктно-орієнтованого програмування",
+            "Введення та виведення даних",
         ],
         1: [  # Intermediate
             "Масиви та списки",
             "Функції та методи",
             "Хеш-таблиці",
-            "Графи та дерева"
+            "Графи та дерева",
+            "Рекурсивні алгоритми",
+            "Обробка винятків",
+            "Основи мережевого програмування",
+            "Робота з базами даних",
         ],
         2: [  # Advanced
             "HTML, CSS, JavaScript",
             "Фреймворки та бібліотеки",
             "Бази даних",
             "Серверна частина",
-            "Розгортання додатків"
+            "Розгортання додатків",
+            "Безпека веб-додатків",
+            "RESTful API",
+            "Мікросервісна архітектура",
         ]
     }
     

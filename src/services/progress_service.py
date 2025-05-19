@@ -67,6 +67,10 @@ class ProgressService:
             A list of progress records
         """
         try:
+            if not user_id:
+                logger.error("User ID is required to get progress data")
+                return []
+                
             user_uuid = uuid.UUID(user_id)
             
             # Get all progress records for the user
@@ -76,6 +80,8 @@ class ProgressService:
             return [self._convert_db_progress_to_ui_progress(record) for record in db_progress_records]
         except Exception as e:
             logger.error(f"Error getting user progress: {str(e)}")
+            import traceback
+            logger.debug(traceback.format_exc())
             return []
     
     def get_course_progress(self, user_id: str, course_id: str) -> Optional[Progress]:
@@ -90,6 +96,10 @@ class ProgressService:
             The progress record if found, None otherwise
         """
         try:
+            if not user_id or not course_id:
+                logger.error("Both user_id and course_id are required to get course progress")
+                return None
+                
             user_uuid = uuid.UUID(user_id)
             course_uuid = uuid.UUID(course_id)
             
@@ -102,6 +112,8 @@ class ProgressService:
             return self._convert_db_progress_to_ui_progress(db_progress)
         except Exception as e:
             logger.error(f"Error getting course progress: {str(e)}")
+            import traceback
+            logger.debug(traceback.format_exc())
             return None
     
     def create_course_progress(self, user_id: str, course_id: str) -> Optional[Progress]:
@@ -377,7 +389,7 @@ class ProgressService:
             user_uuid = uuid.UUID(user_id)
             
             # Get all completed lessons for the user
-            db_completed_lessons = self.completed_lesson_repo.get_user_completed_lessons(user_uuid)
+            db_completed_lessons = self.completed_lesson_repo.get_user_completed_lessons(self.db, user_uuid)
             
             # Convert to UI models
             return [self._convert_db_completed_lesson_to_ui_completed_lesson(lesson) for lesson in db_completed_lessons]
@@ -986,6 +998,24 @@ class ProgressService:
         except Exception as e:
             logger.error(f"Error checking content interaction: {str(e)}")
             return False
+
+    def get_all_user_completed_content_items(self, user_id: str) -> List[UserContentProgress]:
+        """
+        Get all content items marked as 'completed' for a user.
+
+        Args:
+            user_id: The ID of the user.
+
+        Returns:
+            A list of UserContentProgress objects.
+        """
+        try:
+            user_uuid = uuid.UUID(user_id)
+            db_items = self.user_content_progress_repo.get_all_completed_by_user(self.db, user_uuid)
+            return [self._convert_db_user_content_progress_to_ui_user_content_progress(item) for item in db_items]
+        except Exception as e:
+            logger.error(f"Error getting all completed content items for user {user_id}: {str(e)}")
+            return []
 
     def calculate_weighted_course_progress(self, user_id: str, course_id: str) -> Tuple[float, Dict[str, Any]]:
         """

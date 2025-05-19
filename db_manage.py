@@ -110,6 +110,7 @@ def seed_db():
         # Import and run the seed scripts
         from src.db.seed_users import seed_users
         from src.db.seed_courses import seed_courses
+        from src.db.seed_progress import seed_progress
         
         with create_error_boundary("seed_users"):
             seed_users()
@@ -118,6 +119,10 @@ def seed_db():
         with create_error_boundary("seed_courses"):
             seed_courses()
             logger.info("Course data seeded successfully.")
+        
+        with create_error_boundary("seed_progress"):
+            seed_progress()
+            logger.info("Progress data seeded successfully.")
         
         logger.info("Database seeding completed successfully.")
     except Exception as e:

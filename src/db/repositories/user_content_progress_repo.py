@@ -197,6 +197,23 @@ class UserContentProgressRepository(BaseRepository[UserContentProgress]):
             UserContentProgress.status == "completed"
         ).count()
     
+    def get_all_completed_by_user(self, db: Session, user_id: uuid.UUID) -> List[UserContentProgress]:
+        """
+        Get all content progress records marked as 'completed' for a user,
+        ordered by the update time (assumed completion time) descending.
+        
+        Args:
+            db: Database session
+            user_id: User ID
+            
+        Returns:
+            List of completed user content progress records
+        """
+        return db.query(UserContentProgress).filter(
+            UserContentProgress.user_id == user_id,
+            UserContentProgress.is_completed == True
+        ).order_by(desc(UserContentProgress.last_interaction)).all()
+    
     def get_content_completion_percentage(self, db: Session, 
                                         user_id: uuid.UUID, 
                                         lesson_id: uuid.UUID) -> float:

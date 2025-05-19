@@ -447,10 +447,23 @@ class LessonService(BaseService):
             if learning_objectives is None:
                 learning_objectives = []
             
-            # Create content if it doesn't exist
-            content = getattr(db_lesson, 'content', {})
-            if content is None:
-                content = {}
+            # Create content if it doesn't exist (this is for the old 'content' dict, might need review)
+            content_dict_from_db = getattr(db_lesson, 'content', {})
+            if content_dict_from_db is None:
+                content_dict_from_db = {}
+
+            # Populate content_items list from db_lesson.contents relationship
+            ui_content_items = []
+            if hasattr(db_lesson, 'contents') and db_lesson.contents:
+                for db_content_item in db_lesson.contents:
+                    # Converting each DB Content item to a dictionary for the UI model
+                    # You might want a more specific UI ContentItem model later
+                    ui_content_items.append({
+                        "id": str(db_content_item.id),
+                        "title": db_content_item.title,
+                        "content_type": str(db_content_item.content_type.value if hasattr(db_content_item.content_type, 'value') else db_content_item.content_type),
+                        "order": db_content_item.order
+                    })
             
             # Set default difficulty level if not present in DB model
             if hasattr(db_lesson, 'difficulty_level'):
@@ -469,7 +482,8 @@ class LessonService(BaseService):
             ui_lesson = Lesson(
                 id=lesson_id,
                 title=db_lesson.title,
-                content=content,
+                content=content_dict_from_db, # Keep old content field for now
+                content_items=ui_content_items, # Populate new content_items field
                 difficulty_level=difficulty_level,
                 lesson_order=db_lesson.lesson_order,
                 estimated_time=db_lesson.estimated_time,
@@ -494,6 +508,7 @@ class LessonService(BaseService):
                 id=str(db_lesson.id) if hasattr(db_lesson, 'id') else "unknown",
                 title=db_lesson.title if hasattr(db_lesson, 'title') else "Unknown Lesson",
                 content={},
+                content_items=[], # Ensure fallback also has empty content_items
                 difficulty_level="BEGINNER",
                 lesson_order=getattr(db_lesson, 'lesson_order', 1),
                 estimated_time=getattr(db_lesson, 'estimated_time', 30),
