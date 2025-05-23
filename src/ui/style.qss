@@ -71,7 +71,14 @@ QWidget {
 #btn_user {
     font-size: 16px;
     border-radius: 15px;
-    background-color: rgb(230, 230, 230);
+    background-color: rgb(255, 255, 255); /* White background */
+    color: #516ed9; /* Blue text, matching TabBar */
+    border: 1px solid #dde2f6; /* Light border, matching TabBar */
+    padding: 5px 10px; /* Add some padding */
+}
+
+#btn_user:hover {
+    background-color: rgb(230, 230, 230); /* Light grey hover, similar to main buttons */
 }
 
 QLabel[type="lb_description"] 

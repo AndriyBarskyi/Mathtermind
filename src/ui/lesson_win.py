@@ -5,6 +5,8 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtGui import QDrag,QPixmap,QIcon
 from graphs import *
 from tasks import *
+import os
+
 class LessonItem(QWidget):
     def __init__(self, title, duration, status="incomplete"):
         super().__init__()
@@ -70,12 +72,20 @@ class Lesson_page(QWidget):
         self.lesson_service = LessonService()
         self.progress_service = ProgressService()
         
+        # Create main layout
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.setLayout(self.main_layout)
+        
+        # Continue with the rest of the UI
         self.pg_lesson = QtWidgets.QWidget()
         self.pg_lesson.setObjectName("pg_lesson")
         
         self.main_grid_layout = QtWidgets.QGridLayout(self.pg_lesson)
         self.main_grid_layout.setContentsMargins(0, 0, 0, 0)
         self.main_grid_layout.setObjectName("main_grid_layout")
+        
+        # Add the lesson page to the main layout
+        self.main_layout.addWidget(self.pg_lesson)
         
         self.main_scroll_area = QtWidgets.QScrollArea(self.pg_lesson)
         self.main_scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -202,9 +212,9 @@ class Lesson_page(QWidget):
         self.practice_layout = QtWidgets.QVBoxLayout(self.practice_tab)
         
         # Add tabs to the tab widget
-        self.task_tabs.addTab(self.theory_tab, "Theory")
-        self.task_tabs.addTab(self.exercises_tab, "Exercises")
-        self.task_tabs.addTab(self.practice_tab, "Practice")
+        self.task_tabs.addTab(self.theory_tab, "Теорія")
+        self.task_tabs.addTab(self.exercises_tab, "Вправи")
+        self.task_tabs.addTab(self.practice_tab, "Практика")
         
         self.task_tabs_layout.addWidget(self.task_tabs, 0, 0, 1, 1)
         self.task_scroll_layout.addWidget(self.tab_container_widget, 0, 0, 1, 1)
@@ -212,13 +222,21 @@ class Lesson_page(QWidget):
         self.main_content_layout.addWidget(self.task_section_scroll_area, 3, 0, 1, 1)
         
         # Add tools and navigation widget
-        self.tools_widget = QtWidgets.QWidget()
-        tools_layout = QtWidgets.QHBoxLayout(self.tools_widget)
-        
-        self.backButton = QtWidgets.QPushButton("Back to Lessons")
+        self.backButton = QtWidgets.QPushButton("Назад до уроків")
         self.backButton.setProperty("type", "start_continue")
         self.backButton.setFixedWidth(150)
+        self.backButton.setMinimumHeight(40)
+        self.backButton.setStyleSheet("""
+            QPushButton {
+                border-radius: 20px !important;
+                border: none;
+            }
+        """)
         self.backButton.clicked.connect(self.go_back_to_lessons)
+        
+        # Create tools widget
+        self.tools_widget = QtWidgets.QWidget()
+        tools_layout = QtWidgets.QHBoxLayout(self.tools_widget)
         tools_layout.addWidget(self.backButton)
         
         # Progress widget instead of complete button
@@ -227,7 +245,7 @@ class Lesson_page(QWidget):
         progress_layout = QtWidgets.QVBoxLayout(self.progress_widget)
         
         # Progress labels
-        self.progress_status = QtWidgets.QLabel("Progress: 0%")
+        self.progress_status = QtWidgets.QLabel("Прогрес: 0%")
         self.progress_status.setProperty("type", "lb_description")
         progress_layout.addWidget(self.progress_status)
         
@@ -237,8 +255,15 @@ class Lesson_page(QWidget):
         progress_layout.addWidget(self.progress_bar)
         
         # Complete Lesson button
-        self.complete_button = QtWidgets.QPushButton("Complete Lesson")
+        self.complete_button = QtWidgets.QPushButton("Завершити урок")
         self.complete_button.setProperty("type", "start_continue")
+        self.complete_button.setMinimumHeight(40)
+        self.complete_button.setStyleSheet("""
+            QPushButton {
+                border-radius: 20px !important;
+                border: none;
+            }
+        """)
         self.complete_button.clicked.connect(self.manual_complete_lesson)
         progress_layout.addWidget(self.complete_button)
         
@@ -248,27 +273,32 @@ class Lesson_page(QWidget):
         info_layout.setContentsMargins(0, 0, 0, 0)
         
         # Lesson metadata
-        self.lb_difficulty = QtWidgets.QLabel("Difficulty: Basic")
+        self.lb_difficulty = QtWidgets.QLabel("Складність: Базовий")
         self.lb_difficulty.setProperty("type", "lb_description")
         info_layout.addWidget(self.lb_difficulty)
         
-        self.lb_time = QtWidgets.QLabel("Time: ~30 min")
+        self.lb_time = QtWidgets.QLabel("Час: ~30 хв")
         self.lb_time.setProperty("type", "lb_description")
         info_layout.addWidget(self.lb_time)
         
         progress_layout.addWidget(info_container)
         
-        self.main_content_layout.addWidget(self.tools_widget, 0, 0, 1, 1)
+        # Create a header container for tools
+        self.header_container = QtWidgets.QWidget(self.main_scroll_content)
+        self.header_container.setMaximumHeight(100)
+        self.header_container.setMinimumHeight(80)
+        header_layout = QtWidgets.QHBoxLayout(self.header_container)
+        header_layout.setContentsMargins(10, 10, 10, 10)
+        header_layout.addWidget(self.tools_widget)
+        header_layout.setAlignment(self.tools_widget, QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        
+        # Add the header container
+        self.main_content_layout.addWidget(self.header_container, 0, 0, 1, 2)
         self.main_content_layout.addWidget(self.progress_widget, 4, 0, 1, 1)
         
-        self.title_main_lb = QtWidgets.QLabel(self.main_scroll_content)
-        self.title_main_lb.setObjectName("title_main_lb")
-        self.main_content_layout.addWidget(self.title_main_lb, 0, 0, 1, 1)
         self.main_scroll_area.setWidget(self.main_scroll_content)
         
         self.main_grid_layout.addWidget(self.main_scroll_area, 0, 0, 1, 1)
-        
-        self.setLayout(self.main_grid_layout)
         
         # Connect signals
         self.task_tabs.currentChanged.connect(self.update_progress)
@@ -331,14 +361,14 @@ class Lesson_page(QWidget):
                     # If user already completed this lesson, show full progress
                     if user_completed:
                         self.progress_bar.setValue(100)
-                        self.progress_status.setText("Progress: 100%")
-                        self.complete_button.setText("Lesson Completed ✓")
+                        self.progress_status.setText("Прогрес: 100%")
+                        self.complete_button.setText("Урок завершено ✓")
                         self.complete_button.setEnabled(False)
                     else:
                         # Set initial progress value
                         self.progress_bar.setValue(0)
-                        self.progress_status.setText("Progress: 0%")
-                        self.complete_button.setText("Complete Lesson")
+                        self.progress_status.setText("Прогрес: 0%")
+                        self.complete_button.setText("Завершити урок")
                         self.complete_button.setEnabled(True)
                     
                     # Create theory content HTML
@@ -348,61 +378,61 @@ class Lesson_page(QWidget):
                     if hasattr(lesson, 'description') and lesson.description:
                         content_html += f"<p>{lesson.description}</p>"
                     else:
-                        content_html += "<p>This lesson will guide you through important concepts and exercises.</p>"
+                        content_html += "<p>Цей урок проведе вас через важливі концепції та вправи.</p>"
                     
                     # Add lesson-specific theory content
                     lesson_number = lesson.lesson_order if hasattr(lesson, 'lesson_order') else 1
                     
                     if lesson_number == 1:
                         content_html += """
-                        <h3>Introduction to the Concepts</h3>
-                        <p>In this lesson, we'll learn the fundamental concepts that form the foundation of this subject.</p>
-                        <p>Key points to understand:</p>
+                        <h3>Введення до концепцій</h3>
+                        <p>У цьому уроці ми вивчимо фундаментальні концепції, які формують основу цього предмета.</p>
+                        <p>Ключові моменти для розуміння:</p>
                         <ul>
-                            <li>Basic definitions and properties</li>
-                            <li>Core principles and applications</li>
-                            <li>Problem-solving approaches</li>
+                            <li>Основні визначення та властивості</li>
+                            <li>Головні принципи та застосування</li>
+                            <li>Підходи до вирішення задач</li>
                         </ul>
-                        <p>Let's begin by exploring the basics...</p>
-                        <h4>Core Principles</h4>
-                        <p>The main principle we need to understand is how different elements interact with each other.</p>
-                        <p>When we study these interactions, we discover patterns that help us predict outcomes and solve problems.</p>
+                        <p>Почнемо з вивчення основ...</p>
+                        <h4>Головні принципи</h4>
+                        <p>Головний принцип, який ми повинні зрозуміти, - це як різні елементи взаємодіють один з одним.</p>
+                        <p>Коли ми вивчаємо ці взаємодії, ми відкриваємо шаблони, які допомагають нам передбачати результати та вирішувати проблеми.</p>
                         """
                     elif lesson_number == 2:
                         content_html += """
-                        <h3>Advanced Applications</h3>
-                        <p>Now that we understand the basics, let's explore more advanced applications.</p>
-                        <p>These applications demonstrate how the concepts can be used to solve real-world problems:</p>
+                        <h3>Розширені застосування</h3>
+                        <p>Тепер, коли ми розуміємо основи, давайте розглянемо більш складні застосування.</p>
+                        <p>Ці застосування демонструють, як концепції можна використовувати для вирішення реальних проблем:</p>
                         <ol>
-                            <li>Pattern recognition in complex systems</li>
-                            <li>Optimization techniques for efficiency</li>
-                            <li>Predictive modeling based on historical data</li>
+                            <li>Розпізнавання шаблонів у складних системах</li>
+                            <li>Методи оптимізації для ефективності</li>
+                            <li>Предиктивне моделювання на основі історичних даних</li>
                         </ol>
-                        <p>Let's examine each of these in detail...</p>
+                        <p>Давайте детально розглянемо кожне з них...</p>
                         """
                     elif lesson_number == 3:
                         content_html += """
-                        <h3>Practical Implementation</h3>
-                        <p>In this final section, we'll focus on practical implementation of what we've learned.</p>
-                        <p>The key steps in implementing these concepts are:</p>
+                        <h3>Практична реалізація</h3>
+                        <p>У цьому заключному розділі ми зосередимося на практичній реалізації того, що ми вивчили.</p>
+                        <p>Ключові кроки в реалізації цих концепцій:</p>
                         <ol>
-                            <li>Analyzing the problem domain</li>
-                            <li>Identifying the appropriate techniques</li>
-                            <li>Applying the methods systematically</li>
-                            <li>Evaluating results and iterating as needed</li>
+                            <li>Аналіз проблемної області</li>
+                            <li>Визначення відповідних технік</li>
+                            <li>Систематичне застосування методів</li>
+                            <li>Оцінка результатів та ітерація за потреби</li>
                         </ol>
-                        <p>Let's practice with some realistic scenarios...</p>
+                        <p>Давайте попрактикуємося з деякими реалістичними сценаріями...</p>
                         """
                     else:
                         content_html += """
-                        <h3>Exploring the Topic</h3>
-                        <p>In this lesson, we'll delve deeper into specialized areas of the subject.</p>
-                        <p>We'll examine both theoretical foundations and practical applications.</p>
-                        <p>By the end, you should be able to:</p>
+                        <h3>Вивчення теми</h3>
+                        <p>У цьому уроці ми глибше розглянемо спеціалізовані області предмета.</p>
+                        <p>Ми розглянемо як теоретичні основи, так і практичні застосування.</p>
+                        <p>До кінця уроку ви повинні вміти:</p>
                         <ul>
-                            <li>Understand complex relationships between key concepts</li>
-                            <li>Apply specialized techniques to solve domain-specific problems</li>
-                            <li>Evaluate the effectiveness of different approaches</li>
+                            <li>Розуміти складні взаємозв'язки між ключовими концепціями</li>
+                            <li>Застосовувати спеціалізовані техніки для вирішення специфічних проблем</li>
+                            <li>Оцінювати ефективність різних підходів</li>
                         </ul>
                         """
                         
@@ -411,7 +441,7 @@ class Lesson_page(QWidget):
                     
                     # Set difficulty level
                     difficulty = self._get_difficulty_text(lesson)
-                    self.lb_difficulty.setText(f"Difficulty: {difficulty}")
+                    self.lb_difficulty.setText(f"Складність: {difficulty}")
                     
                     # Set the estimated time
                     if hasattr(lesson, 'estimated_time') and lesson.estimated_time:
@@ -477,17 +507,17 @@ class Lesson_page(QWidget):
                     self.task_tabs.setCurrentIndex(0)
                 else:
                     # Lesson not found, show error
-                    self.lesson_text.setHtml(f"<h2>Lesson Not Found</h2><p>The lesson with ID {lesson_id} could not be found.</p>")
+                    self.lesson_text.setHtml(f"<h2>Урок не знайдено</h2><p>Урок з ID {lesson_id} не вдалося знайти.</p>")
                     self.tools_widget.setVisible(True)
                     self.progress_widget.setVisible(False)
             except Exception as e:
                 print(f"Error loading lesson data: {str(e)}")
-                self.lesson_text.setHtml(f"<h2>Error Loading Lesson</h2><p>An error occurred while loading the lesson: {str(e)}</p>")
+                self.lesson_text.setHtml(f"<h2>Помилка завантаження уроку</h2><p>Сталася помилка під час завантаження уроку: {str(e)}</p>")
                 self.tools_widget.setVisible(True)
                 self.progress_widget.setVisible(False)
         else:
             # No lesson ID provided, show placeholder
-            self.lesson_text.setHtml(f"<h2>{title}</h2><p>No lesson data available. Please select a lesson from the course page.</p>")
+            self.lesson_text.setHtml(f"<h2>{title}</h2><p>Дані уроку недоступні. Будь ласка, виберіть урок зі сторінки курсу.</p>")
             self.tools_widget.setVisible(False)
             self.progress_widget.setVisible(False)
 
@@ -504,62 +534,62 @@ class Lesson_page(QWidget):
         # Different exercises based on lesson number
         if lesson_number == 1:
             exercise_data = [
-                {"question": "What is the main principle discussed in this lesson?", 
-                 "options": ["Element interactions", "Statistical analysis", "Quantum theory", "Economic models"],
+                {"question": "Який головний принцип розглядається в цьому уроці?", 
+                 "options": ["Взаємодія елементів", "Статистичний аналіз", "Квантова теорія", "Економічні моделі"],
                  "correct": 0},
-                {"question": "Which of these is NOT mentioned as a key point in the lesson?", 
-                 "options": ["Basic definitions", "Core principles", "Problem-solving approaches", "Historical context"],
+                {"question": "Який із цих пунктів НЕ згадується як ключовий у уроці?", 
+                 "options": ["Основні визначення", "Головні принципи", "Підходи до вирішення задач", "Історичний контекст"],
                  "correct": 3},
-                {"question": "According to the lesson, what helps us predict outcomes?", 
-                 "options": ["Random guessing", "Pattern recognition", "Computer algorithms", "Personal intuition"],
+                {"question": "Згідно з уроком, що допомагає нам передбачати результати?", 
+                 "options": ["Випадковий вибір", "Розпізнавання шаблонів", "Комп'ютерні алгоритми", "Особиста інтуїція"],
                  "correct": 1},
-                {"question": "How many core points are listed in the introduction?", 
+                {"question": "Скільки основних пунктів перераховано у вступі?", 
                  "options": ["2", "3", "4", "5"],
                  "correct": 1},
-                {"question": "What is the main focus of this lesson?", 
-                 "options": ["Advanced applications", "Practical implementation", "Introduction to concepts", "Historical development"],
+                {"question": "Що є головним фокусом цього уроку?", 
+                 "options": ["Розширені додатки", "Практична реалізація", "Вступ до концепцій", "Історичний розвиток"],
                  "correct": 2}
             ]
         elif lesson_number == 2:
             exercise_data = [
-                {"question": "What is the main focus of this lesson?", 
-                 "options": ["Basic concepts", "Advanced applications", "Historical development", "Future predictions"],
+                {"question": "Що є основним фокусом цього уроку?", 
+                 "options": ["Основні концепції", "Розширені застосування", "Історичний розвиток", "Майбутні прогнози"],
                  "correct": 1},
-                {"question": "How many applications are specifically listed in the lesson?", 
+                {"question": "Скільки застосувань конкретно перераховано в уроці?", 
                  "options": ["2", "3", "4", "5"],
                  "correct": 1},
-                {"question": "Which of these is NOT mentioned as an application in the lesson?", 
-                 "options": ["Pattern recognition", "Optimization techniques", "Predictive modeling", "Resource allocation"],
+                {"question": "Який із цих пунктів НЕ згадується як застосування у уроці?", 
+                 "options": ["Розпізнавання шаблонів", "Методи оптимізації", "Предиктивне моделювання", "Розподіл ресурсів"],
                  "correct": 3},
-                {"question": "What type of data is mentioned for predictive modeling?", 
-                 "options": ["Future data", "Real-time data", "Historical data", "Simulated data"],
+                {"question": "Який тип даних згадується для предиктивного моделювання?", 
+                 "options": ["Майбутні дані", "Дані реального часу", "Історичні дані", "Симульовані дані"],
                  "correct": 2},
-                {"question": "What kind of systems are mentioned in relation to pattern recognition?", 
-                 "options": ["Simple systems", "Complex systems", "Linear systems", "Closed systems"],
+                {"question": "Які типи систем згадуються у зв'язку з розпізнаванням шаблонів?", 
+                 "options": ["Прості системи", "Складні системи", "Лінійні системи", "Закриті системи"],
                  "correct": 1}
             ]
         else:
             exercise_data = [
-                {"question": "What is the main focus of this lesson?", 
-                 "options": ["Theoretical foundations", "Historical context", "Practical implementation", "Future developments"],
+                {"question": "Що є головним фокусом цього уроку?", 
+                 "options": ["Теоретичні основи", "Історичний контекст", "Практична реалізація", "Майбутні розробки"],
                  "correct": 2},
-                {"question": "How many key steps are listed for implementation?", 
+                {"question": "Скільки ключових кроків перераховано для реалізації?", 
                  "options": ["2", "3", "4", "5"],
                  "correct": 2},
-                {"question": "Which step comes first in the implementation process?", 
-                 "options": ["Applying methods", "Evaluating results", "Identifying techniques", "Analyzing the problem domain"],
+                {"question": "Який крок іде першим в процесі реалізації?", 
+                 "options": ["Застосування методів", "Оцінка результатів", "Визначення технік", "Аналіз проблемної області"],
                  "correct": 3},
-                {"question": "What is the last step in the implementation process?", 
-                 "options": ["Analyzing the problem", "Evaluating results", "Applying methods", "Identifying techniques"],
+                {"question": "Який останній крок в процесі реалізації?", 
+                 "options": ["Аналіз проблеми", "Оцінка результатів", "Застосування методів", "Визначення технік"],
                  "correct": 1},
-                {"question": "According to the lesson, what should you do after evaluating results?", 
-                 "options": ["Start a new project", "Document findings", "Iterate as needed", "Present conclusions"],
+                {"question": "Відповідно до уроку, що потрібно робити після оцінки результатів?", 
+                 "options": ["Розпочати новий проект", "Документувати результати", "Ітерувати за необхідністю", "Представити висновки"],
                  "correct": 2}
             ]
             
         # Create exercise widgets
         for i, exercise in enumerate(exercise_data):
-            exercise_widget = QtWidgets.QGroupBox(f"Exercise {i+1}")
+            exercise_widget = QtWidgets.QGroupBox(f"Вправа {i+1}")
             exercise_layout = QtWidgets.QVBoxLayout(exercise_widget)
             
             # Question label
@@ -577,7 +607,7 @@ class Lesson_page(QWidget):
                 exercise_layout.addWidget(option)
                 
             # Check answer button
-            check_button = QtWidgets.QPushButton("Check Answer")
+            check_button = QtWidgets.QPushButton("Перевірити відповідь")
             check_button.setProperty("type", "start_continue")
             
             # Store the correct answer index
@@ -606,136 +636,129 @@ class Lesson_page(QWidget):
                 widget.deleteLater()
                 
         # Create different practice content based on lesson number
-        practice_html = f"<h2>Practice Activities</h2>"
+        practice_html = f"<h2>Практичні завдання</h2>"
         
         if lesson_number == 1:
             practice_html += """
-            <h3>Interactive Exercise</h3>
-            <p>Try to solve these problems on your own for practice:</p>
+            <h3>Інтерактивна вправа</h3>
+            <p>Спробуйте вирішити ці задачі самостійно для практики:</p>
             <div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #007bff;">
-                <p><strong>Scenario:</strong> You are analyzing a dataset of customer interactions with a website. 
-                Your task is to identify patterns that could predict customer behavior.</p>
+                <p><strong>Сценарій:</strong> Ви аналізуєте набір даних взаємодій клієнтів із веб-сайтом. 
+                Ваше завдання — визначити шаблони, які могли б передбачити поведінку клієнтів.</p>
                 
-                <p><strong>Think about:</strong></p>
+                <p><strong>Подумайте про:</strong></p>
                 <ol>
-                    <li>What patterns might you look for in the data?</li>
-                    <li>How could each pattern be used to predict future behavior?</li>
-                    <li>How would you validate your predictions?</li>
+                    <li>Які шаблони ви могли б шукати в даних?</li>
+                    <li>Як кожен шаблон може бути використаний для прогнозування майбутньої поведінки?</li>
+                    <li>Як би ви перевірили свої прогнози?</li>
                 </ol>
             </div>
             
-            <h3>Reflection Points</h3>
-            <p>Consider these questions as you learn:</p>
+            <h3>Точки для роздумів</h3>
+            <p>Розгляньте ці питання під час навчання:</p>
             <ol>
-                <li>How do the concepts from this lesson relate to your own experiences?</li>
-                <li>What challenges might you face when applying these concepts?</li>
-                <li>What additional information would help you better understand these concepts?</li>
+                <li>Як концепції з цього уроку пов'язані з вашим власним досвідом?</li>
+                <li>З якими викликами ви можете зіткнутися при застосуванні цих концепцій?</li>
+                <li>Яка додаткова інформація допомогла б вам краще зрозуміти ці концепції?</li>
             </ol>
             """
         elif lesson_number == 2:
             practice_html += """
-            <h3>Case Study Exploration</h3>
-            <p>Review this case study and think about the questions:</p>
+            <h3>Розбір практичного випадку</h3>
+            <p>Розгляньте цей випадок і подумайте над питаннями:</p>
             <div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #007bff;">
-                <p><strong>Case Study:</strong> A transportation company is trying to optimize their delivery routes to minimize fuel consumption and delivery time.</p>
+                <p><strong>Практичний випадок:</strong> Транспортна компанія намагається оптимізувати свої маршрути доставки для мінімізації витрат палива та часу доставки.</p>
                 
-                <p><strong>Questions to consider:</strong></p>
+                <p><strong>Питання для розгляду:</strong></p>
                 <ol>
-                    <li>Which optimization techniques from the lesson would be most applicable?</li>
-                    <li>What data would you need to collect to implement your solution?</li>
-                    <li>How would you measure the success of your optimization efforts?</li>
-                    <li>What challenges might you encounter during implementation?</li>
+                    <li>Які методи оптимізації з уроку були б найбільш застосовними?</li>
+                    <li>Які дані вам потрібно було б зібрати для впровадження вашого рішення?</li>
+                    <li>Як би ви вимірювали успіх ваших зусиль з оптимізації?</li>
+                    <li>З якими викликами ви можете зіткнутися під час впровадження?</li>
                 </ol>
             </div>
             
-            <h3>Interactive Simulation</h3>
-            <p>Explore these concepts with an interactive simulation:</p>
+            <h3>Інтерактивна симуляція</h3>
+            <p>Досліджуйте ці концепції за допомогою інтерактивної симуляції:</p>
             <div style="background-color: #e6f7ff; padding: 10px; border-left: 4px solid #0099cc;">
-                <p>Visit <a href="https://phet.colorado.edu/en/simulations/category/math">PhET Math Simulations</a> to explore interactive models related to this topic.</p>
-                <p>These simulations allow you to experiment with concepts and see immediate results without needing evaluation.</p>
+                <p>Відвідайте <a href="https://phet.colorado.edu/en/simulations/category/math">PhET Math Simulations</a> для інтерактивних моделей, пов'язаних з цією темою.</p>
+                <p>Ці симуляції дозволяють експериментувати з концепціями та бачити негайні результати без необхідності оцінювання.</p>
             </div>
             """
         else:
             practice_html += """
-            <h3>Guided Self-Assessment</h3>
-            <p>Test your understanding with these self-assessment questions:</p>
+            <h3>Практичний проект</h3>
+            <p>Завершіть цей міні-проект, щоб застосувати свої знання:</p>
             <div style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #007bff;">
-                <p><strong>Problem:</strong> You're helping an organization implement the techniques discussed in this lesson.</p>
+                <p><strong>Проектне завдання:</strong> Вам потрібно впровадити найпростіший варіант системи, використовуючи принципи з цього уроку.</p>
                 
-                <p><strong>Consider these points:</strong></p>
+                <p><strong>Кроки:</strong></p>
                 <ol>
-                    <li>How would you create an implementation plan following the steps in the lesson?</li>
-                    <li>What timeline and milestones would be appropriate?</li>
-                    <li>Who are the potential stakeholders and what roles would they play?</li>
-                    <li>How would you monitor progress and measure outcomes?</li>
+                    <li>Визначте основні компоненти системи.</li>
+                    <li>Окресліть, як ці компоненти будуть взаємодіяти.</li>
+                    <li>Розгляньте потенційні виклики та обмеження.</li>
+                    <li>Опишіть, як ви будете тестувати та оцінювати рішення.</li>
                 </ol>
+                
+                <p><strong>Примітка:</strong> Сконцентруйтеся на розробці документа прототипу, а не на повній реалізації.</p>
             </div>
             
-            <h3>Interactive Resources</h3>
-            <p>Explore these additional resources to deepen your understanding:</p>
-            <ul>
-                <li><a href="https://www.khanacademy.org/math">Khan Academy Math</a> - Free practice exercises and videos</li>
-                <li><a href="https://www.geogebra.org/">GeoGebra</a> - Interactive mathematical tools</li>
-                <li><a href="https://www.wolframalpha.com/">Wolfram Alpha</a> - Computational knowledge engine</li>
-            </ul>
+            <h3>Групове обговорення</h3>
+            <p>Ці питання найкраще обговорювати в групі:</p>
+            <ol>
+                <li>Як відрізняються підходи до впровадження залежно від масштабу та комплексності проблеми?</li>
+                <li>Які інструменти та технології найефективніші для різних типів впровадження?</li>
+                <li>Як би ви підготувалися до потенційних викликів під час процесу впровадження?</li>
+            </ol>
             """
             
-        # Create a text browser to display the practice content
+        # Create a QTextBrowser for the practice content
         practice_browser = QtWidgets.QTextBrowser()
-        practice_browser.setOpenExternalLinks(True)
         practice_browser.setHtml(practice_html)
         
-        # Add "Complete Section" button that automatically marks progress
-        complete_button = QtWidgets.QPushButton("Complete Practice Section")
-        complete_button.setProperty("type", "start_continue")
-        complete_button.clicked.connect(self.complete_practice_section)
+        # Complete button for practice
+        self.practice_complete_button = QtWidgets.QPushButton("Завершити практику")
+        self.practice_complete_button.setProperty("type", "start_continue")
+        self.practice_complete_button.clicked.connect(self.complete_practice_section)
         
         # Add widgets to the practice tab
         self.practice_layout.addWidget(practice_browser)
-        self.practice_layout.addWidget(complete_button)
+        self.practice_layout.addWidget(self.practice_complete_button)
     
     def check_exercise_answer(self, button, option_group, result_label):
-        """Check if the selected answer is correct"""
-        selected_button = option_group.checkedId()
+        """Check if the selected exercise answer is correct"""
+        selected_button = option_group.checkedButton()
         correct_answer = button.property("correct_answer")
-        exercise_index = button.property("exercise_index")
         
-        if selected_button == -1:
-            # No option selected
-            result_label.setText("Please select an answer")
-            result_label.setStyleSheet("color: orange;")
+        if selected_button:
+            selected_id = option_group.id(selected_button)
+            if selected_id == correct_answer:
+                result_label.setText("✓ Правильно!")
+                result_label.setStyleSheet("color: green;")
+            else:
+                result_label.setText("✗ Неправильно, спробуйте ще раз.")
+                result_label.setStyleSheet("color: red;")
             result_label.setVisible(True)
-            return
             
-        if selected_button == correct_answer:
-            # Correct answer
-            result_label.setText("Correct! ✓")
-            result_label.setStyleSheet("color: green;")
-            
-            # Mark this exercise as completed if not already
-            if not button.property("completed"):
-                button.setProperty("completed", True)
-                self.completed_exercises += 1
-                self.update_progress()
-        else:
-            # Wrong answer
-            result_label.setText("Incorrect. Try again.")
-            result_label.setStyleSheet("color: red;")
-            
-        result_label.setVisible(True)
+            # Update progress on correct answer
+            if selected_id == correct_answer:
+                # Update tab progress
+                self.update_progress(tab_index=1)  # Index 1 is the Exercises tab
+                
+                # Check if all exercises are correct to auto-complete
+                self.check_all_exercises_completed()
     
     def complete_practice_section(self):
-        """Handle completion of practice section"""
-        # Mark practice as completed
-        self.completed_exercises += 1
-        self.update_progress()
+        """Mark the practice section as completed"""
+        # Update progress for practice tab
+        self.update_progress(tab_index=2)  # Index 2 is the Practice tab
         
-        # Show confirmation
-        QtWidgets.QMessageBox.information(
-            self,
-            "Section Completed",
-            "Great job exploring this practice section!"
-        )
+        # Update button
+        self.practice_complete_button.setText("Практику завершено ✓")
+        self.practice_complete_button.setEnabled(False)
+        
+        # Check if all sections are completed to mark the lesson as completed
+        self.check_lesson_completion()
     
     def update_progress(self, tab_index=None):
         """Update progress based on completed exercises and tabs visited"""
@@ -764,7 +787,7 @@ class Lesson_page(QWidget):
         
         # Update UI
         self.progress_bar.setValue(total_progress)
-        self.progress_status.setText(f"Progress: {total_progress}%")
+        self.progress_status.setText(f"Прогрес: {total_progress}%")
         
         # If progress is 100%, mark the lesson as complete in the database
         if total_progress >= 100 and self.current_lesson_id:
@@ -822,8 +845,8 @@ class Lesson_page(QWidget):
                 # Show success message
                 QtWidgets.QMessageBox.information(
                     self, 
-                    "Lesson Completed", 
-                    f"Congratulations! You've completed the lesson: {lesson.title}"
+                    "Урок завершено", 
+                    f"Вітаємо! Ви завершили урок: {lesson.title}"
                 )
         except Exception as e:
             print(f"Error completing lesson: {str(e)}")
@@ -833,8 +856,8 @@ class Lesson_page(QWidget):
         if not self.current_lesson_id:
             QtWidgets.QMessageBox.warning(
                 self,
-                "No Lesson Selected",
-                "Please select a lesson first."
+                "Не вибрано урок",
+                "Будь ласка, спочатку виберіть урок."
             )
             return
             
@@ -847,8 +870,8 @@ class Lesson_page(QWidget):
             if not user_data or 'id' not in user_data:
                 QtWidgets.QMessageBox.warning(
                     self,
-                    "Not Logged In",
-                    "You need to be logged in to complete lessons."
+                    "Не виконано вхід",
+                    "Вам потрібно увійти в систему, щоб завершувати уроки."
                 )
                 return
                 
@@ -859,8 +882,8 @@ class Lesson_page(QWidget):
             if not lesson:
                 QtWidgets.QMessageBox.warning(
                     self,
-                    "Lesson Not Found",
-                    "The selected lesson could not be found."
+                    "Урок не знайдено",
+                    "Вибраний урок не вдалося знайти."
                 )
                 return
                 
@@ -869,16 +892,16 @@ class Lesson_page(QWidget):
             if is_completed:
                 QtWidgets.QMessageBox.information(
                     self,
-                    "Already Completed",
-                    f"You have already completed this lesson: {lesson.title}"
+                    "Вже завершено",
+                    f"Ви вже завершили цей урок: {lesson.title}"
                 )
                 return
                 
             # Ask for confirmation
             reply = QtWidgets.QMessageBox.question(
                 self,
-                "Complete Lesson",
-                f"Are you sure you want to mark this lesson as completed: {lesson.title}?",
+                "Завершити урок",
+                f"Ви впевнені, що хочете позначити цей урок як завершений: {lesson.title}?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                 QtWidgets.QMessageBox.No
             )
@@ -894,7 +917,7 @@ class Lesson_page(QWidget):
                 
                 if result:
                     # Update the complete button state
-                    self.complete_button.setText("Lesson Completed ✓")
+                    self.complete_button.setText("Урок завершено ✓")
                     self.complete_button.setEnabled(False)
                     
                     # Update lesson list items to show this lesson as completed
@@ -925,8 +948,8 @@ class Lesson_page(QWidget):
                     # Failed to complete the lesson
                     QtWidgets.QMessageBox.warning(
                         self,
-                        "Error",
-                        "Failed to mark the lesson as completed. Please try again."
+                        "Помилка",
+                        "Не вдалося позначити урок як завершений. Будь ласка, спробуйте ще раз."
                     )
         except Exception as e:
             print(f"Error completing lesson: {str(e)}")
@@ -950,28 +973,33 @@ class Lesson_page(QWidget):
             
         difficulty = lesson.difficulty_level
         if difficulty is None:
-            return "Basic"
+            return "Базовий"
             
         # Handle if it's an enum
         if hasattr(difficulty, 'value'):
             difficulty_value = difficulty.value
-            # Translate Ukrainian to English if needed
             if difficulty_value == "Базовий":
-                return "Basic"
+                return "Базовий"
             elif difficulty_value == "Середній":
-                return "Medium"
+                return "Середній"
             elif difficulty_value == "Досвідчений":
-                return "Advanced"
+                return "Досвідчений"
+            elif difficulty_value == "Basic":
+                return "Базовий"
+            elif difficulty_value == "Medium":
+                return "Середній"
+            elif difficulty_value == "Advanced":
+                return "Досвідчений"
             return difficulty_value
             
         # Handle if it's a string
         difficulty_str = str(difficulty)
         if difficulty_str.lower() in ["basic", "beginner", "базовий"]:
-            return "Basic"
+            return "Базовий"
         elif difficulty_str.lower() in ["medium", "intermediate", "середній"]:
-            return "Medium"
+            return "Середній"
         elif difficulty_str.lower() in ["advanced", "expert", "досвідчений"]:
-            return "Advanced"
+            return "Досвідчений"
             
         return difficulty_str
     

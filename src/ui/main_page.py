@@ -60,8 +60,11 @@ class Ui_MainWindow(object):
         self.sidebar_logo_label.setMinimumSize(QtCore.QSize(200, 100))
         self.sidebar_logo_label.setMaximumSize(QtCore.QSize(200, 150))
         self.sidebar_logo_label.setText("")
-        self.sidebar_logo_label.setPixmap(QtGui.QPixmap("icon/logo.png"))
-        self.sidebar_logo_label.setScaledContents(True)
+        pixmap = QtGui.QPixmap("src/ui/icon/logo_new.png")
+        # Scale pixmap while keeping aspect ratio
+        scaled_pixmap = pixmap.scaled(self.sidebar_logo_label.maximumSize(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        self.sidebar_logo_label.setPixmap(scaled_pixmap)
+        # self.sidebar_logo_label.setScaledContents(True) # Potentially problematic, rely on scaled pixmap
         self.sidebar_logo_label.setAlignment(QtCore.Qt.AlignCenter)
         self.sidebar_logo_label.setObjectName("sidebar_logo_label")
         self.sidebar_header_layout.addWidget(self.sidebar_logo_label)
@@ -76,32 +79,32 @@ class Ui_MainWindow(object):
             {
                 "name": "btn_main",
                 "text": "Головна",
-                "icon_normal": "icon/main.png",
-                "icon_active": "icon/main_active.png"
+                "icon_normal": "src/ui/gray_icon/gray_home.PNG",
+                "icon_active": "src/ui/blue_icon/blue_home.PNG"
             },
             {
                 "name": "btn_progress",
                 "text": "Прогрес",
-                "icon_normal": "icon/progress.png",
-                "icon_active": "icon/progress_active.png"
+                "icon_normal": "src/ui/gray_icon/gray_progress.PNG",
+                "icon_active": "src/ui/blue_icon/blue_progress.PNG"
             },
             {
                 "name": "btn_courses",
                 "text": "Курси",
-                "icon_normal": "icon/course.png",
-                "icon_active": "icon/course_active.png"
+                "icon_normal": "src/ui/gray_icon/gray_courses.PNG",
+                "icon_active": "src/ui/blue_icon/blue_course.PNG"
             },
             {
                 "name": "btn_lessons",
                 "text": "Уроки",
-                "icon_normal": "icon/lessons.png",
-                "icon_active": "icon/lessons_active.png"
+                "icon_normal": "src/ui/gray_icon/gray_lessons.PNG",
+                "icon_active": "src/ui/blue_icon/blue_lessons.PNG"
             },
             {
                 "name": "btn_settings",
                 "text": "Налаштування",
-                "icon_normal": "icon/settings.png",
-                "icon_active": "icon/settings_active.png"
+                "icon_normal": "src/ui/gray_icon/gray_settings.PNG",
+                "icon_active": "src/ui/blue_icon/blue_settings.PNG"
             }
         ]
         
@@ -148,9 +151,10 @@ class Ui_MainWindow(object):
         self.btn_user = QtWidgets.QPushButton(self.sidebar_widget)
         self.btn_user.setText("Користувач")
         self.btn_user.setProperty("type", "user")
+        # self.btn_user.setStyleSheet("color: white;") # Text color now handled by style.qss
         
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("icon/user.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("src/ui/icon/user_grey.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.btn_user.setIcon(icon)
         
         self.btn_user.setIconSize(QtCore.QSize(30, 30))
