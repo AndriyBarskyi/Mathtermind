@@ -388,7 +388,7 @@ class Course_page(QWidget):
         layout_continue = QtWidgets.QGridLayout(page_continue)
         layout_continue.setContentsMargins(0, 0, 0, 0)
         
-        btn_continue = QtWidgets.QPushButton("Continue") # Needs translation if still here
+        btn_continue = QtWidgets.QPushButton("Продовжити")
         btn_continue.setMinimumSize(QtCore.QSize(0, 35))
         btn_continue.setMaximumSize(QtCore.QSize(16777215, 35))
         btn_continue.setProperty("type", "start_continue")

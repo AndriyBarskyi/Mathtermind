@@ -969,39 +969,26 @@ class Lesson_page(QWidget):
             A string representing the difficulty level
         """
         if not hasattr(lesson, 'difficulty_level'):
-            return "Basic"  # Default
+            return "Базовий"  # Default
             
         difficulty = lesson.difficulty_level
         if difficulty is None:
-            return "Базовий"
+            return "Базовий" # Default if None
             
         # Handle if it's an enum
         if hasattr(difficulty, 'value'):
-            difficulty_value = difficulty.value
-            if difficulty_value == "Базовий":
-                return "Базовий"
-            elif difficulty_value == "Середній":
-                return "Середній"
-            elif difficulty_value == "Досвідчений":
-                return "Досвідчений"
-            elif difficulty_value == "Basic":
-                return "Базовий"
-            elif difficulty_value == "Medium":
-                return "Середній"
-            elif difficulty_value == "Advanced":
-                return "Досвідчений"
-            return difficulty_value
+            return difficulty.value # Directly return the Ukrainian value
             
         # Handle if it's a string
-        difficulty_str = str(difficulty)
-        if difficulty_str.lower() in ["basic", "beginner", "базовий"]:
-            return "Базовий"
-        elif difficulty_str.lower() in ["medium", "intermediate", "середній"]:
+        difficulty_str = str(difficulty).lower()
+        if difficulty_str in ["basic", "beginner", "початковий"]:
+            return "Початковий"
+        elif difficulty_str in ["medium", "intermediate", "середній"]:
             return "Середній"
-        elif difficulty_str.lower() in ["advanced", "expert", "досвідчений"]:
+        elif difficulty_str in ["advanced", "expert", "досвідчений"]:
             return "Досвідчений"
             
-        return difficulty_str
+        return difficulty_str # Return as is if no mapping found or already Ukrainian
     
     def on_item_click(self, item):
         """Handle lesson item click in the sidebar list"""

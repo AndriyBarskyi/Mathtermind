@@ -514,19 +514,26 @@ class Lessons_page(QWidget):
         Returns:
             A string representing the difficulty level
         """
-        if not hasattr(lesson, 'difficulty_level'):
-            return "Базовий"  # Default
+        if not hasattr(lesson, 'difficulty_level') or lesson.difficulty_level is None:
+            return "Початковий"  # Default from enum
             
         difficulty = lesson.difficulty_level
-        if difficulty is None:
-            return "Базовий"
             
         # Handle if it's an enum
         if hasattr(difficulty, 'value'):
             return difficulty.value
             
-        # Handle if it's a string
-        return str(difficulty)
+        # Handle if it's a string (e.g. came directly from an older DB entry or unforeseen case)
+        # Map common English terms to Ukrainian from enum for consistency
+        difficulty_str = str(difficulty).lower()
+        if difficulty_str in ["basic", "beginner"]:
+            return "Початковий"
+        elif difficulty_str in ["medium", "intermediate"]:
+            return "Середній"
+        elif difficulty_str in ["advanced", "expert"]:
+            return "Досвідчений"
+
+        return str(difficulty) # Return as is if already Ukrainian or unmapped
 
     def set_current_course_id(self, course_id):
         """Set the current course ID and load its lessons

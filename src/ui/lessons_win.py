@@ -41,7 +41,7 @@ class Page3(QWidget):
         page_continue = QtWidgets.QWidget()
         layout_continue = QtWidgets.QGridLayout(page_continue)
 
-        btn_continue = QtWidgets.QPushButton("Continue")
+        btn_continue = QtWidgets.QPushButton("Продовжити")
         btn_continue.setMinimumSize(QtCore.QSize(310, 50))
         btn_continue.setStyleSheet("border-radius:25px; background: #516ed9; font: 75 15pt 'Bahnschrift'; color: white;")
 
