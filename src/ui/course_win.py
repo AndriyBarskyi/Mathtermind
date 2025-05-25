@@ -3,6 +3,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from slider import RangeSlider
 from lessons_list_win import Lessons_page
 from ui import *
+from src.services import CourseService, ProgressService, SessionManager
 
 
 class Course_page(QWidget):
@@ -12,6 +13,10 @@ class Course_page(QWidget):
         self.pg_lessons = None
         self.stack = stack
         self.pg_lessons = lessons_page
+        
+        # Initialize services
+        self.course_service = CourseService()
+        self.progress_service = ProgressService()
 
         self.pg_courses = QtWidgets.QWidget()
         self.pg_courses.setObjectName("pg_courses")
@@ -177,18 +182,8 @@ class Course_page(QWidget):
         self.setLayout(self.main_courses_layout)
         
         #Перелік курсів
-        self.course_widgets_complete = []  # список для збереження карток
-        self.add_course_widget("Python Basics", "Introduction to Python", "Математика", "Базовий", 10,8)
-        self.add_course_widget("Data Science", "Learn Data Analysis", "Математика", "Середній", 15,10)
-        self.add_course_widget("Web Development", "HTML, CSS, JavaScript", "Математика", "Високий", 20,20)
-        self.add_course_widget("Python Basics", "Introduction to Python", "Інформатика", "Базовий", 10,7)
-        self.add_course_widget("Data Science", "Learn Data Analysis", "Математика", "Базовий", 15,10)
-        self.add_course_widget("Web Development", "HTML, CSS, JavaScript", "Інформатика", "Середній", 20,10)
-        self.add_course_widget("Python Basics", "Introduction to Python", "Математика", "Базовий", 10,3)
-        self.add_course_widget("Data Science", "Learn Data Analysis", "Інформатика", "Середній", 15,5)
-        self.add_course_widget("Web Development", "HTML, CSS, JavaScript", "Інформатика", "Середній", 20,19)
-        self.add_course_widget("Data Science", "Learn Data Analysis", "Інформатика", "Високий", 15,15)
-        self.add_course_widget("Web Development", "HTML, CSS, JavaScript", "Інформатика", "Високий", 20,15)
+        self.course_widgets_complete = [] 
+        self.load_courses()
         
         self.btn_completed.clicked.connect(self.show_completed_courses)
         self.btn_all.clicked.connect(self.show_all_courses)
@@ -196,10 +191,54 @@ class Course_page(QWidget):
         self.btn_apply.clicked.connect(self.apply_filters)
         self.btn_clear.clicked.connect(self.clear_filters)
 
-    def add_course_widget(self, name, description, subject, level, lessons, complete_lessons=0):
+    def load_courses(self):
+        """
+        Load courses from the CourseService
+        """
+        # Clear existing course widgets
+        self.clear_course_widgets()
+        
+        # Get courses from service
+        courses = self.course_service.get_all_courses()
+        
+        # Get current user
+        current_user = SessionManager.get_current_user()
+        user_id = str(current_user.id) if current_user else None
+        
+        for course in courses:
+            # Get completion data if user is logged in
+            completed_lessons = 0
+            total_lessons = 0
+            
+            if user_id:
+                # Get the number of completed lessons for this course
+                completed_lessons_list = self.progress_service.get_course_completed_lessons(user_id, course.id)
+                completed_lessons = len(completed_lessons_list)
+                
+                # Get total lessons for the course (using the lesson repository directly for now)
+                # In a production app you would use a proper method from LessonService
+                total_lessons = len(self.progress_service.lesson_repo.get_lessons_by_course_id(course.id))
+            
+            # Default to sample value if we can't get real data
+            if total_lessons == 0:
+                total_lessons = 10
+            
+            # Add the course widget
+            self.add_course_widget(
+                course.name,
+                course.description,
+                course.subject,
+                course.level,
+                total_lessons,
+                completed_lessons,
+                course.id
+            )
+
+    def add_course_widget(self, name, description, subject, level, lessons, complete_lessons=0, course_id=None):
         course_card_widget = QtWidgets.QWidget(self.scroll_area_content)
         course_card_widget.setMinimumSize(QtCore.QSize(360, 330))
         course_card_widget.setProperty("type", "card")
+        course_card_widget.course_id = course_id
         
         card_grid_layout = QtWidgets.QGridLayout(course_card_widget) 
         card_grid_layout.setContentsMargins(10, 10, 10, 10)  
@@ -299,10 +338,19 @@ class Course_page(QWidget):
 
         btn_start.clicked.connect(switch_to_continue)
         def open_lessons_page():
-            print(f"Клік по уроці: {name}")
-            self.pg_lessons.set_lesson_tab_by_name(name)
-            self.stack.setCurrentWidget(self.pg_lessons)
-           
+            # If lessons_page is passed, use it
+            if self.pg_lessons and self.stack:
+                # Pass the course ID to the lessons page if available
+                if hasattr(self.pg_lessons, 'set_course_id') and course_id:
+                    self.pg_lessons.set_course_id(course_id)
+                self.stack.setCurrentWidget(self.pg_lessons)
+            else:
+                # Create a new lessons page if needed
+                lessons_page = Lessons_page(course_id=course_id)
+                if self.stack:
+                    self.stack.addWidget(lessons_page)
+                    self.stack.setCurrentWidget(lessons_page)
+
         btn_continue.clicked.connect(open_lessons_page)
 
         card_grid_layout.addWidget(course_action_stack, 4, 0, 1, 1)  
@@ -314,108 +362,155 @@ class Course_page(QWidget):
         self.course_cards_layout.setColumnStretch(col, 1)
         self.course_cards_layout.setRowStretch(row, 1)
 
-        
     def show_completed_courses(self):
         # Очистити всі курси
-        for i in reversed(range(self.course_cards_layout.count())):
-            item = self.course_cards_layout.itemAt(i)
-            if item:
-                widget = item.widget()
-                if widget:
-                    self.course_cards_layout.removeWidget(widget)
-                    widget.setParent(None)
-        # Додати завершені
-        visible_index = 0
-        columns = 3
-        for course_card_widget, progress_bar, total_lessons in self.course_widgets_complete:
-            if progress_bar.value() == total_lessons:
-                row = visible_index // columns
-                col = visible_index % columns
-                self.course_cards_layout.addWidget(course_card_widget, row, col, 1, 1)
-                visible_index += 1
+        self.clear_course_widgets()
+        
+        # Get current user
+        current_user = SessionManager.get_current_user()
+        if not current_user:
+            return
+        
+        # Get completed courses from the service
+        user_id = str(current_user.id)
+        completed_courses = self.course_service.get_completed_courses()
+        
+        for course in completed_courses:
+            # Get total lessons for the course
+            total_lessons = len(self.progress_service.lesson_repo.get_lessons_by_course_id(course.id))
+            
+            # Default to sample value if we can't get real data
+            if total_lessons == 0:
+                total_lessons = 10
+            
+            # Add the course widget
+            self.add_course_widget(
+                course.name,
+                course.description,
+                course.subject,
+                course.level,
+                total_lessons,
+                total_lessons,  # All lessons are completed
+                course.id
+            )
 
     def show_all_courses(self):
-        for i in reversed(range(self.course_cards_layout.count())):
-            item = self.course_cards_layout.itemAt(i)
-            if item:
-                widget = item.widget()
-                if widget:
-                    self.course_cards_layout.removeWidget(widget)
-                    widget.setParent(None)
-        # Додати всі курси
-        for i, (course_card_widget, _, _) in enumerate(self.course_widgets_complete):
-            row = i // 3
-            col = i % 3
-            self.course_cards_layout.addWidget(course_card_widget, row, col, 1, 1)
-
+        # Load all courses
+        self.load_courses()
 
     def show_started_courses(self):
-        for i in reversed(range(self.course_cards_layout.count())):
-            item = self.course_cards_layout.itemAt(i)
-            if item:
-                widget = item.widget()
-                if widget:
-                    self.course_cards_layout.removeWidget(widget)
-                    widget.setParent(None)
-        # Додати завершені
-        visible_index = 0
-        columns = 3
-        for course_card_widget, progress_bar, total_lessons in self.course_widgets_complete:
-            if progress_bar.value() != total_lessons:
-                row = visible_index // columns
-                col = visible_index % columns
-                self.course_cards_layout.addWidget(course_card_widget, row, col, 1, 1)
-                visible_index += 1
+        # Очистити всі курси
+        self.clear_course_widgets()
+        
+        # Get current user
+        current_user = SessionManager.get_current_user()
+        if not current_user:
+            return
+        
+        # Get active courses from the service
+        user_id = str(current_user.id)
+        active_courses = self.course_service.get_active_courses()
+        
+        for course in active_courses:
+            # Get the number of completed lessons for this course
+            completed_lessons_list = self.progress_service.get_course_completed_lessons(user_id, course.id)
+            completed_lessons = len(completed_lessons_list)
+            
+            # Get total lessons for the course
+            total_lessons = len(self.progress_service.lesson_repo.get_lessons_by_course_id(course.id))
+            
+            # Default to sample value if we can't get real data
+            if total_lessons == 0:
+                total_lessons = 10
+            
+            # Add the course widget
+            self.add_course_widget(
+                course.name,
+                course.description,
+                course.subject,
+                course.level,
+                total_lessons,
+                completed_lessons,
+                course.id
+            )
 
     def apply_filters(self):
-        selected_subjects = []
-        if self.cb_subject1.isChecked():
-            selected_subjects.append("Математика")
-        if self.cb_subject2.isChecked():
-            selected_subjects.append("Інформатика")
-
-        selected_level = None
-        if self.rb_level1.isChecked():
-            selected_level = "Базовий"
-        elif self.rb_level2.isChecked():
-            selected_level = "Середній"
-        elif self.rb_level3.isChecked():
-            selected_level = "Високий"
+        # Очистити всі курси
+        self.clear_course_widgets()
         
+        # Build filters dictionary
+        filters = {}
+        
+        # Subject filters
+        if self.cb_subject1.isChecked():
+            filters["topic"] = "Mathematics"
+        elif self.cb_subject2.isChecked():
+            filters["topic"] = "Informatics"
+        
+        # Level filters
+        if self.rb_level1.isChecked():
+            filters["difficulty_level"] = "Beginner"
+        elif self.rb_level2.isChecked():
+            filters["difficulty_level"] = "Intermediate"
+        elif self.rb_level3.isChecked():
+            filters["difficulty_level"] = "Advanced"
+        
+        # Filter courses using the service
+        filtered_courses = self.course_service.filter_courses(filters)
+        
+        # Get current user
+        current_user = SessionManager.get_current_user()
+        user_id = str(current_user.id) if current_user else None
+        
+        for course in filtered_courses:
+            # Get completion data if user is logged in
+            completed_lessons = 0
+            
+            if user_id:
+                completed_lessons_list = self.progress_service.get_course_completed_lessons(user_id, course.id)
+                completed_lessons = len(completed_lessons_list)
+            
+            # Get total lessons
+            total_lessons = len(self.progress_service.lesson_repo.get_lessons_by_course_id(course.id))
+            
+            # Default to sample value if we can't get real data
+            if total_lessons == 0:
+                total_lessons = 10
+            
+            # Add the course widget
+            self.add_course_widget(
+                course.name,
+                course.description,
+                course.subject,
+                course.level,
+                total_lessons,
+                completed_lessons,
+                course.id
+            )
+    
+    def clear_course_widgets(self):
+        # Remove all course widgets
         for i in reversed(range(self.course_cards_layout.count())):
             item = self.course_cards_layout.itemAt(i)
-            if item:
+            if item and item.widget():
                 widget = item.widget()
-                if widget:
-                    self.course_cards_layout.removeWidget(widget)
-                    widget.setParent(None)
-
-        # Додати курси
-        visible_index = 0
-        for card_widget, _, _ in self.course_widgets_complete:
-            subject_match = not selected_subjects or card_widget.subject in selected_subjects
-            level_match = not selected_level or card_widget.level == selected_level
-
-            if subject_match and level_match:
-                row = visible_index // 3
-                col = visible_index % 3
-                self.course_cards_layout.addWidget(card_widget, row, col, 1, 1)
-                visible_index += 1
-
+                self.course_cards_layout.removeWidget(widget)
+                widget.setParent(None)
+                widget.deleteLater()
+        self.course_widgets_complete = []
 
     def clear_filters(self):
+        # Reset all filters
         self.cb_subject1.setChecked(False)
         self.cb_subject2.setChecked(False)
-        self.rb_level1.setAutoExclusive(False)
-        self.rb_level2.setAutoExclusive(False)
-        self.rb_level3.setAutoExclusive(False)
         self.rb_level1.setChecked(False)
         self.rb_level2.setChecked(False)
         self.rb_level3.setChecked(False)
-        self.rb_level1.setAutoExclusive(True)
-        self.rb_level2.setAutoExclusive(True)
-        self.rb_level3.setAutoExclusive(True)
-        self.show_all_courses()
+        self.range_slider.setLow(50)
+        self.range_slider.setHigh(250)
+        
+        # Reload all courses
+        self.load_courses()
 
 
 

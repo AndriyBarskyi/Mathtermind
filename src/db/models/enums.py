@@ -103,11 +103,11 @@ class DifficultyLevel(str, enum.Enum):
 class ContentType(str, enum.Enum):
     """Types of content."""
 
-    THEORY = "Теорія"
-    EXERCISE = "Завдання"
-    ASSESSMENT = "Оцінювання"
-    INTERACTIVE = "Інтерактивне завдання"
-    RESOURCE = "Ресурс"
+    THEORY = "theory"
+    EXERCISE = "exercise"
+    ASSESSMENT = "assessment"
+    INTERACTIVE = "interactive"
+    RESOURCE = "resource"
 
 
 class LessonType(str, enum.Enum):

@@ -5,8 +5,9 @@ Repository module for Content models in the Mathtermind application.
 from typing import List, Optional, Dict, Any, Union, Type
 import uuid
 from datetime import datetime
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy.orm import Session, joinedload, selectinload, with_polymorphic
+from sqlalchemy import desc, select
+from sqlalchemy.sql import text
 
 from src.db.models import (
     Content, 
@@ -16,6 +17,14 @@ from src.db.models import (
     InteractiveContent,
     ResourceContent
 )
+from src.db.models.content import (
+    Content as DBContent,
+    TheoryContent as DBTheoryContent,
+    ExerciseContent as DBExerciseContent,
+    AssessmentContent as DBAssessmentContent,
+    InteractiveContent as DBInteractiveContent
+)
+from src.db.models.enums import ContentType
 from .base_repository import BaseRepository
 
 
@@ -247,65 +256,42 @@ class ContentRepository(BaseRepository[Content]):
         db.refresh(resource_content)
         return resource_content
     
-    def get_lesson_content(self, db: Session, 
-                         lesson_id: uuid.UUID,
-                         content_type: Optional[str] = None) -> List[Content]:
-        """
-        Get all content for a lesson, optionally filtered by type.
-        
-        Args:
-            db: Database session
-            lesson_id: Lesson ID
-            content_type: Optional content type filter
-            
-        Returns:
-            List of content items
-        """
-        query = db.query(Content).filter(Content.lesson_id == lesson_id)
-        
-        if content_type:
-            query = query.filter(Content.content_type == content_type)
-            
-        return query.order_by(Content.order).all()
+    def get_lesson_content(self, db: Session, lesson_id: uuid.UUID) -> List[DBContent]:
+        """Get all content for a given lesson."""
+        stmt = (
+            select(DBContent)
+            .filter(DBContent.lesson_id == lesson_id)
+            .order_by(DBContent.order)
+        )
+        results = db.execute(stmt).scalars().all()
+        return results
     
-    def get_content_by_type(self, db: Session, 
-                          content_id: uuid.UUID) -> Optional[Union[
-                              TheoryContent,
-                              ExerciseContent,
-                              AssessmentContent,
-                              InteractiveContent,
-                              ResourceContent
-                          ]]:
+    def get_content_by_type(self, db: Session, content_type: ContentType) -> List[DBContent]:
         """
-        Get content by ID, returning the appropriate subclass of Content.
+        Get content by type, returning a list of content items.
         
         Args:
             db: Database session
-            content_id: ID of the content
+            content_type: Type of content
             
         Returns:
-            The content object cast to its specific type
+            List of content items of the specified type
         """
-        content = self.get_by_id(db, content_id)
-        if not content:
-            return None
-            
         # Map content_type to the appropriate model
         type_map = {
-            "theory": TheoryContent,
-            "exercise": ExerciseContent,
-            "assessment": AssessmentContent,
-            "interactive": InteractiveContent,
-            "resource": ResourceContent
+            ContentType.THEORY: DBTheoryContent,
+            ContentType.EXERCISE: DBExerciseContent,
+            ContentType.ASSESSMENT: DBAssessmentContent,
+            ContentType.INTERACTIVE: DBInteractiveContent
         }
         
         # Get the appropriate model class
-        model_class = type_map.get(content.content_type.value)
+        model_class = type_map.get(content_type)
         if not model_class:
-            return content
+            return []
             
         # Query for the content with the appropriate model
-        return db.query(model_class).filter(model_class.id == content_id).first()
+        return db.query(model_class).all()
     
     def update_content_order(self, db: Session, 
                            content_id: uuid.UUID, 

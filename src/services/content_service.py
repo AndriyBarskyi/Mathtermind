@@ -39,12 +39,13 @@ from src.services.content_type_registry import ContentTypeRegistry
 from src.services.content_validation_service import ContentValidationService
 from src.core.error_handling.exceptions import ContentError
 from src.exceptions import ContentValidationError
+from src.core import get_logger
 
 # Type variable for content types
 T = TypeVar('T', bound=Content)
 
 # Set up logging
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ContentService:
@@ -53,10 +54,10 @@ class ContentService:
     def __init__(self):
         """Initialize the content service."""
         self.db = next(get_db())
-        self.content_repo = ContentRepository(self.db)
-        self.lesson_repo = LessonRepository(self.db)
-        self.course_repo = CourseRepository(self.db)
-        self.content_state_repo = ContentStateRepository(self.db)
+        self.content_repo = ContentRepository()
+        self.lesson_repo = LessonRepository()
+        self.course_repo = CourseRepository()
+        self.content_state_repo = ContentStateRepository()
         self.type_registry = ContentTypeRegistry()
         self.validation_service = ContentValidationService()
     
@@ -76,7 +77,7 @@ class ContentService:
             content_uuid = uuid.UUID(content_id)
             
             # Get the content from the repository
-            db_content = self.content_repo.get_by_id(content_uuid)
+            db_content = self.content_repo.get_by_id(self.db, content_uuid)
             
             if not db_content:
                 return None
@@ -100,7 +101,7 @@ class ContentService:
             lesson_uuid = uuid.UUID(lesson_id)
             
             # Get all content items for the lesson
-            db_content_items = self.content_repo.get_by_lesson_id(lesson_uuid)
+            db_content_items = self.content_repo.get_lesson_content(self.db, lesson_uuid)
             
             # Convert to UI models
             return [self._convert_db_content_to_ui_content(item) for item in db_content_items]
@@ -166,6 +167,7 @@ class ContentService:
             
             # Create the content in the database
             db_content = self.content_repo.create(
+                db=self.db,
                 lesson_id=lesson_uuid,
                 title=title,
                 content_type=content_type,
@@ -186,7 +188,7 @@ class ContentService:
             is_valid, errors = self.validation_service.validate_content(content)
             if not is_valid:
                 # If validation fails after creation, delete the content
-                self.content_repo.delete(db_content.id)
+                self.content_repo.delete(self.db, db_content.id)
                 error_list = "; ".join(errors)
                 logger.warning(f"Content validation failed after creation: {error_list}")
                 raise ContentValidationError(
@@ -321,6 +323,7 @@ class ContentService:
             
             # Create the content
             db_content = self.content_repo.create(
+                db=self.db,
                 lesson_id=lesson_uuid,
                 title=title,
                 content_type="exercise",
@@ -385,6 +388,7 @@ class ContentService:
             
             # Create the content
             db_content = self.content_repo.create(
+                db=self.db,
                 lesson_id=lesson_uuid,
                 title=title,
                 content_type="assessment",
@@ -443,6 +447,7 @@ class ContentService:
             
             # Create the content
             db_content = self.content_repo.create(
+                db=self.db,
                 lesson_id=lesson_uuid,
                 title=title,
                 content_type="interactive",
@@ -508,6 +513,7 @@ class ContentService:
             
             # Create the content
             db_content = self.content_repo.create(
+                db=self.db,
                 lesson_id=lesson_uuid,
                 title=title,
                 content_type="resource",
@@ -544,7 +550,7 @@ class ContentService:
             content_uuid = uuid.UUID(content_id)
             
             # Get the content
-            db_content = self.content_repo.get_by_id(content_uuid)
+            db_content = self.content_repo.get_by_id(self.db, content_uuid)
             if not db_content:
                 logger.warning(f"Content not found: {content_id}")
                 return None
@@ -570,7 +576,7 @@ class ContentService:
                     setattr(db_content, key, value)
             
             # Save the updates
-            updated_content = self.content_repo.update(db_content)
+            updated_content = self.content_repo.update(self.db, db_content)
             
             if not updated_content:
                 return None
@@ -599,7 +605,7 @@ class ContentService:
             content_uuid = uuid.UUID(content_id)
             
             # Get the content
-            db_content = self.content_repo.get_by_id(content_uuid)
+            db_content = self.content_repo.get_by_id(self.db, content_uuid)
             if not db_content:
                 logger.warning(f"Content not found: {content_id}")
                 return None
@@ -611,7 +617,7 @@ class ContentService:
             
             # Save the updates
             db_content.content_data = content_data
-            updated_content = self.content_repo.update(db_content)
+            updated_content = self.content_repo.update(self.db, db_content)
             
             if not updated_content:
                 return None
@@ -636,7 +642,7 @@ class ContentService:
             content_uuid = uuid.UUID(content_id)
             
             # Delete the content
-            return self.content_repo.delete(content_uuid)
+            return self.content_repo.delete(self.db, content_uuid)
         except Exception as e:
             logger.error(f"Error deleting content: {str(e)}")
             self.db.rollback()
@@ -658,7 +664,7 @@ class ContentService:
             lesson_uuid = uuid.UUID(lesson_id)
             
             # Get the lesson from the repository
-            db_lesson = self.lesson_repo.get_by_id(lesson_uuid)
+            db_lesson = self.lesson_repo.get_by_id(self.db, lesson_uuid)
             
             if not db_lesson:
                 return None
@@ -682,7 +688,7 @@ class ContentService:
             course_uuid = uuid.UUID(course_id)
             
             # Get all lessons for the course
-            db_lessons = self.lesson_repo.get_by_course_id(course_uuid)
+            db_lessons = self.lesson_repo.get_lessons_by_course_id(self.db, course_uuid)
             
             # Convert to UI models
             return [self._convert_db_lesson_to_ui_lesson(lesson) for lesson in db_lessons]
@@ -706,7 +712,7 @@ class ContentService:
             course_uuid = uuid.UUID(course_id)
             
             # Get the course from the repository
-            db_course = self.course_repo.get_by_id(course_uuid)
+            db_course = self.course_repo.get_by_id(self.db, course_uuid)
             
             if not db_course:
                 return None
@@ -729,9 +735,9 @@ class ContentService:
         try:
             # Get all courses
             if include_inactive:
-                db_courses = self.course_repo.get_all()
+                db_courses = self.course_repo.get_all(self.db)
             else:
-                db_courses = self.course_repo.get_active_courses()
+                db_courses = self.course_repo.get_active_courses(self.db)
             
             # Convert to UI models
             return [self._convert_db_course_to_ui_course(course) for course in db_courses]
@@ -759,6 +765,7 @@ class ContentService:
             
             # Get the content state
             state = self.content_state_repo.get_state(
+                db=self.db,
                 user_id=user_uuid,
                 content_id=content_uuid,
                 state_type=state_type
@@ -788,6 +795,7 @@ class ContentService:
             
             # Update the content state
             result = self.content_state_repo.set_state(
+                db=self.db,
                 user_id=user_uuid,
                 content_id=content_uuid,
                 state_type=state_type,
@@ -806,7 +814,7 @@ class ContentService:
         Convert a database content to a UI content.
         
         Args:
-            db_content: The database content
+            db_content: The database content (should be an instance of DBTheoryContent, DBExerciseContent etc.)
             
         Returns:
             The corresponding UI content
@@ -815,68 +823,116 @@ class ContentService:
         base_attrs = {
             "id": str(db_content.id),
             "title": db_content.title,
-            "content_type": db_content.content_type,
+            "content_type": db_content.content_type.name, # Use enum name
             "order": db_content.order,
             "lesson_id": str(db_content.lesson_id),
             "description": db_content.description,
-            "estimated_time": db_content.estimated_time,
             "created_at": db_content.created_at,
             "updated_at": db_content.updated_at,
             "metadata": db_content.metadata or {}
         }
         
-        content_data = db_content.content_data or {}
-        
         # Create the appropriate content type
-        if db_content.content_type == "theory":
+        if db_content.content_type.name == "THEORY":
+            # Ensure db_content is the correct type or has the attributes
             return TheoryContent(
                 **base_attrs,
-                text_content=content_data.get("text_content", ""),
-                images=content_data.get("images", []),
-                examples=content_data.get("examples", []),
-                references=content_data.get("references", [])
+                text_content=getattr(db_content, 'text_content', ""),
+                images=getattr(db_content, 'images', []), # Assuming images is a direct attribute now
+                examples=getattr(db_content, 'examples', {}),
+                references=getattr(db_content, 'references', {})
             )
-        elif db_content.content_type == "exercise":
+        elif db_content.content_type.name == "EXERCISE":
+            logger.info(f"Converting EXERCISE content: ID={db_content.id}, Title={db_content.title}")
+            logger.info(f"Raw db_content for exercise: {vars(db_content) if hasattr(db_content, '__dict__') else db_content}")
+            
+            # The DB ExerciseContent model stores problems in a 'problems' JSONB field,
+            # typically structured as {"exercises": [{"question": ..., "answer": ..., ...}, ...]}
+            db_problems_data = getattr(db_content, 'problems', None)
+            logger.info(f"Extracted db_problems_data (from db_content.problems): {db_problems_data}")
+
+            problem_statement_val = ""
+            solution_val = ""
+            difficulty_val = "medium" # Default difficulty
+            hints_val = []
+
+            if isinstance(db_problems_data, dict) and "exercises" in db_problems_data and isinstance(db_problems_data["exercises"], list) and len(db_problems_data["exercises"]) > 0:
+                first_exercise = db_problems_data["exercises"][0]
+                if isinstance(first_exercise, dict):
+                    problem_statement_val = first_exercise.get('question', "") # Mapped from 'question'
+                    solution_val = first_exercise.get('answer', "") # Mapped from 'answer'
+                    difficulty_val = first_exercise.get('difficulty', difficulty_val) # Keep default if not present
+                    hints_val = first_exercise.get('hints', [])
+                    logger.info(f"Using first exercise from 'problems' field: Statement='{problem_statement_val}', Solution='{solution_val}', Difficulty='{difficulty_val}'")
+                else:
+                    logger.warning(f"First item in 'problems.exercises' is not a dict for ExerciseContent ID: {db_content.id}")
+            else:
+                logger.warning(f"'problems' field is missing, not a dict, or 'exercises' list is empty for ExerciseContent ID: {db_content.id}. Proceeding with empty/default values.")
+
+            logger.info(f"Final values for UI ExerciseContent: Statement='{problem_statement_val}', Solution='{solution_val}', Difficulty='{difficulty_val}'")
+            
             return ExerciseContent(
                 **base_attrs,
-                problem_statement=content_data.get("problem_statement", ""),
-                solution=content_data.get("solution", ""),
-                difficulty=content_data.get("difficulty", "medium"),
-                hints=content_data.get("hints", [])
+                problem_statement=problem_statement_val,
+                solution=solution_val,
+                difficulty=difficulty_val,
+                hints=hints_val
             )
-        elif db_content.content_type == "quiz":
+        elif db_content.content_type.name == "QUIZ": # Assuming QuizContent is a valid type
+             # QuizContent specific attributes
             return QuizContent(
                 **base_attrs,
-                questions=content_data.get("questions", []),
-                passing_score=content_data.get("passing_score", 70)
+                questions=getattr(db_content, 'questions', []),
+                passing_score=getattr(db_content, 'passing_score', 70.0)
             )
-        elif db_content.content_type == "assessment":
+        elif db_content.content_type.name == "ASSESSMENT":
             return AssessmentContent(
                 **base_attrs,
-                questions=content_data.get("questions", []),
-                passing_score=content_data.get("passing_score", 70),
-                time_limit=content_data.get("time_limit", 0),
-                attempts_allowed=content_data.get("attempts_allowed", 1),
-                is_final=content_data.get("is_final", False)
+                questions=getattr(db_content, 'questions', []),
+                passing_score=getattr(db_content, 'passing_score', 70.0),
+                time_limit=getattr(db_content, 'time_limit', None),
+                attempts_allowed=getattr(db_content, 'attempts_allowed', 1),
+                is_final=getattr(db_content, 'is_final', False)
             )
-        elif db_content.content_type == "interactive":
+        elif db_content.content_type.name == "INTERACTIVE":
+            logger.info(f"Attempting to convert INTERACTIVE content: ID={db_content.id}, Title={db_content.title}")
+            logger.info(f"Raw db_content for interactive: {vars(db_content) if hasattr(db_content, '__dict__') else db_content}")
+            logger.info(f"Type of db_content: {type(db_content)}")
+            
+            # Explicitly check for attributes expected on DBInteractiveContent
+            retrieved_interaction_type = getattr(db_content, 'interactive_type', "INTERACTION_TYPE_NOT_FOUND")
+            retrieved_configuration = getattr(db_content, 'configuration', "CONFIGURATION_NOT_FOUND")
+            retrieved_instructions = getattr(db_content, 'instructions', "INSTRUCTIONS_NOT_FOUND")
+            
+            logger.info(f"getattr(db_content, 'interactive_type'): {retrieved_interaction_type}")
+            logger.info(f"getattr(db_content, 'configuration'): {retrieved_configuration}")
+            logger.info(f"getattr(db_content, 'instructions'): {retrieved_instructions}")
+
             return InteractiveContent(
                 **base_attrs,
-                interaction_type=content_data.get("interaction_type", ""),
-                interaction_data=content_data.get("interaction_data", {}),
-                instructions=content_data.get("instructions")
+                interaction_type=retrieved_interaction_type,
+                interaction_data=retrieved_configuration if isinstance(retrieved_configuration, dict) else {},
+                instructions=retrieved_instructions if retrieved_instructions != "INSTRUCTIONS_NOT_FOUND" else None
             )
-        elif db_content.content_type == "resource":
+        elif db_content.content_type.name == "RESOURCE":
+            # For ResourceContent, specific fields are expected to be in the 'content_data' JSONB field
+            # of the base DBContent model, as there isn't a separate DBResourceContent table.
+            content_data = db_content.content_data or {}
+            logger.info(f"Converting RESOURCE content: ID={db_content.id}, Title={db_content.title}, content_data: {content_data}")
+            
             return ResourceContent(
                 **base_attrs,
-                resource_type=content_data.get("resource_type", ""),
-                resource_url=content_data.get("resource_url", ""),
-                is_required=content_data.get("is_required", False),
-                created_by=content_data.get("created_by"),
-                resource_metadata=content_data.get("resource_metadata", {})
+                resource_type=content_data.get('resource_type', "link"),
+                resource_url=content_data.get('resource_url', ""),
+                description=content_data.get('description', base_attrs.get('description', "")), # Use base_attrs description if not in content_data
+                is_required=content_data.get('is_required', False),
+                created_by=str(content_data.get('created_by')) if content_data.get('created_by') else None,
+                resource_metadata=content_data.get('resource_metadata', {})
             )
         else:
-            # Generic content
+            # Generic content - should ideally not happen if all types are covered
+            logger.warning(f"Encountered an unknown DB content type: {db_content.content_type.name} for content ID {db_content.id}. Returning base Content model.")
+            # Create a base Content UI model
             return Content(**base_attrs)
     
     def _convert_db_lesson_to_ui_lesson(self, db_lesson: DBLesson) -> Lesson:

@@ -1,0 +1,11 @@
+2025-05-24 02:32:59,055 | INFO     | mathtermind | config.py:89 | Logging system initialized successfully
+2025-05-24 02:33:06,226 | INFO     | mathtermind | config.py:89 | Logging system initialized successfully
+2025-05-24 02:34:32,664 | INFO     | mathtermind | config.py:89 | Logging system initialized successfully
+2025-05-24 02:35:14,401 | INFO     | mathtermind | config.py:89 | Logging system initialized successfully
+2025-05-24 02:35:16,714 | INFO     | mathtermind | config.py:89 | Logging system initialized successfully
+2025-05-24 02:35:21,846 | ERROR    | mathtermind | reporting.py:117 | Error report: DatabaseError - [DB_ERROR] Database error during seed_database: name 'seed_progress' is not defined - Details: {'original_error': "name 'seed_progress' is not defined", 'operation': 'seed_database'}
+2025-05-24 02:35:21,846 | DEBUG    | mathtermind | reporting.py:142 | Error report saved to logs/error_reports/error_20250524_023521_DatabaseError.json
+2025-05-24 02:35:21,846 | INFO     | mathtermind | reporting.py:217 | Caught and reported error in context 'seed_database'
+2025-05-24 02:35:21,847 | ERROR    | mathtermind | reporting.py:117 | Error report: DatabaseError - [DB_ERROR] Database error during seed_database: name 'seed_progress' is not defined - Details: {'original_error': "name 'seed_progress' is not defined", 'operation': 'seed_database'}
+2025-05-24 02:35:21,847 | DEBUG    | mathtermind | reporting.py:142 | Error report saved to logs/error_reports/error_20250524_023521_DatabaseError.json
+2025-05-24 02:35:48,629 | INFO     | mathtermind | config.py:89 | Logging system initialized successfully

@@ -36,7 +36,7 @@ class UserService(BaseService):
     def __init__(self):
         """Initialize the user service."""
         super().__init__()
-        self.user_repo = UserRepository(self.db)
+        self.user_repo = UserRepository()
         logger.debug("UserService initialized")
 
     @handle_service_errors(service_name="user")
@@ -70,7 +70,7 @@ class UserService(BaseService):
 
         # Get the user from the repository
         with create_error_boundary("fetch_user"):
-            db_user = self.user_repo.get_by_id(user_uuid)
+            db_user = self.user_repo.get_by_id(self.db, user_uuid)
 
         if not db_user:
             logger.warning(f"User not found with ID: {user_id}")
@@ -110,7 +110,7 @@ class UserService(BaseService):
 
         # Get the user from the repository
         with create_error_boundary("fetch_user_by_username"):
-            db_user = self.user_repo.get_user_by_username(username)
+            db_user = self.user_repo.get_user_by_username(self.db, username)
 
         if not db_user:
             logger.warning(f"User not found with username: {username}")
@@ -150,7 +150,7 @@ class UserService(BaseService):
 
         # Get the user from the repository
         with create_error_boundary("fetch_user_by_email"):
-            db_user = self.user_repo.get_user_by_email(email)
+            db_user = self.user_repo.get_user_by_email(self.db, email)
 
         if not db_user:
             logger.warning(f"User not found with email: {email}")
@@ -175,7 +175,7 @@ class UserService(BaseService):
 
         # Get all users from the repository
         with create_error_boundary("fetch_all_users"):
-            db_users = self.user_repo.get_all()
+            db_users = self.user_repo.get_all(self.db)
 
         user_count = len(db_users)
         logger.debug(f"Found {user_count} users")
@@ -195,7 +195,7 @@ class UserService(BaseService):
 
         # Get active users from the repository
         with create_error_boundary("fetch_active_users"):
-            db_users = self.user_repo.get_active_users()
+            db_users = self.user_repo.get_active_users(self.db)
 
         user_count = len(db_users)
         logger.debug(f"Found {user_count} active users")
@@ -265,19 +265,16 @@ class UserService(BaseService):
             )
 
         # Check if username or email already exists
-        with create_error_boundary("check_existing_user"):
-            existing_username = self.user_repo.get_user_by_username(username)
-            if existing_username:
+        with create_error_boundary("check_existing_user_on_create"):
+            if self.user_repo.get_user_by_username(self.db, username):
                 logger.warning(f"Username already exists: {username}")
                 raise ValidationError(
-                    message=f"Username '{username}' is already taken",
+                    message=f"Username '{username}' already exists",
                     field="username",
                     value=username
                 )
-
-            existing_email = self.user_repo.get_user_by_email(email)
-            if existing_email:
-                logger.warning(f"Email already exists: {email}")
+            if self.user_repo.get_user_by_email(self.db, email):
+                logger.warning(f"Email already registered: {email}")
                 raise ValidationError(
                     message=f"Email '{email}' is already registered",
                     field="email",
@@ -285,19 +282,19 @@ class UserService(BaseService):
                 )
 
         # Create the user with transaction
-        with self.transaction():
+        with self.transaction() as session:
             logger.debug(f"Creating user in database: {username}")
-            db_user = self.user_repo.create(
-                username=username,
-                email=email,
-                hashed_password=hashed_password,
-                first_name=first_name,
-                last_name=last_name,
-                age_group=age_group,
-                is_admin=is_admin,
-                avatar_url=avatar_url,
-                metadata=metadata or {},
-            )
+            db_user = self.user_repo.create(session, {
+                "username": username,
+                "email": email,
+                "hashed_password": hashed_password,
+                "first_name": first_name,
+                "last_name": last_name,
+                "age_group": age_group,
+                "is_admin": is_admin,
+                "avatar_url": avatar_url,
+                "profile_data": metadata or {},
+            })
 
         if not db_user:
             logger.error(f"Failed to create user: {username}")
@@ -348,9 +345,9 @@ class UserService(BaseService):
                 value=user_id
             )
 
-        # Check if the user exists
+        # Get the user to ensure it exists
         with create_error_boundary("fetch_user_for_update"):
-            db_user = self.user_repo.get_by_id(user_uuid)
+            db_user = self.user_repo.get_by_id(self.db, user_uuid)
 
         if not db_user:
             logger.warning(f"User not found for update: {user_id}")
@@ -362,9 +359,9 @@ class UserService(BaseService):
 
         # Check uniqueness constraints if updating username or email
         if "username" in updates and updates["username"] != db_user.username:
-            existing_user = self.user_repo.get_user_by_username(updates["username"])
+            existing_user = self.user_repo.get_user_by_username(self.db, updates["username"])
             if existing_user and existing_user.id != user_uuid:
-                logger.warning(f"Username already taken: {updates['username']}")
+                logger.warning(f"Username already exists: {updates['username']}")
                 raise ValidationError(
                     message=f"Username '{updates['username']}' is already taken",
                     field="username",
@@ -372,7 +369,7 @@ class UserService(BaseService):
                 )
 
         if "email" in updates and updates["email"] != db_user.email:
-            existing_user = self.user_repo.get_user_by_email(updates["email"])
+            existing_user = self.user_repo.get_user_by_email(self.db, updates["email"])
             if existing_user and existing_user.id != user_uuid:
                 logger.warning(f"Email already registered: {updates['email']}")
                 raise ValidationError(
@@ -382,9 +379,9 @@ class UserService(BaseService):
                 )
 
         # Apply the updates with transaction
-        with self.transaction():
+        with self.transaction() as session:
             logger.debug(f"Updating user in database: {user_id}")
-            updated_user = self.user_repo.update(user_uuid, **updates)
+            updated_user = self.user_repo.update(session, user_uuid, **updates)
 
         if not updated_user:
             logger.error(f"Failed to update user: {user_id}")
@@ -439,7 +436,7 @@ class UserService(BaseService):
 
         # Get the user to check existence and current metadata
         with create_error_boundary("fetch_user_for_metadata_update"):
-            db_user = self.user_repo.get_by_id(user_uuid)
+            db_user = self.user_repo.get_by_id(self.db, user_uuid)
 
         if not db_user:
             logger.warning(f"User not found for metadata update: {user_id}")
@@ -450,13 +447,13 @@ class UserService(BaseService):
             )
 
         # Merge existing metadata with updates
-        current_metadata = db_user.metadata or {}
+        current_metadata = db_user.profile_data or {}
         updated_metadata = {**current_metadata, **metadata_updates}
         
         # Apply the updates with transaction
-        with self.transaction():
+        with self.transaction() as session:
             logger.debug(f"Updating metadata for user: {user_id}")
-            updated_user = self.user_repo.update(user_uuid, metadata=updated_metadata)
+            updated_user = self.user_repo.update(session, user_uuid, profile_data=updated_metadata)
 
         if not updated_user:
             logger.error(f"Failed to update metadata for user: {user_id}")
@@ -500,7 +497,7 @@ class UserService(BaseService):
 
         # Check if the user exists
         with create_error_boundary("fetch_user_for_deletion"):
-            db_user = self.user_repo.get_by_id(user_uuid)
+            db_user = self.user_repo.get_by_id(self.db, user_uuid)
 
         if not db_user:
             logger.warning(f"User not found for deletion: {user_id}")
@@ -511,9 +508,9 @@ class UserService(BaseService):
             )
 
         # Delete the user with transaction
-        with self.transaction():
+        with self.transaction() as session:
             logger.debug(f"Deleting user from database: {user_id}")
-            success = self.user_repo.delete(user_uuid)
+            success = self.user_repo.delete(session, user_uuid)
 
         if not success:
             logger.error(f"Failed to delete user: {user_id}")
@@ -539,33 +536,44 @@ class UserService(BaseService):
         logger.debug(f"Converting DB user to UI user: {db_user.id}")
         
         try:
+            # Attributes guaranteed on DBUser: id, username, email, age_group, created_at, points, total_study_time
+            # Attributes for UI User that might be missing on DBUser: first_name, last_name, is_active, is_admin, avatar_url, profile_data (for metadata)
+            
+            raw_profile_data = getattr(db_user, "profile_data", None)
+            processed_metadata = {}
+            if isinstance(raw_profile_data, dict):
+                processed_metadata = raw_profile_data
+            elif raw_profile_data is not None:
+                logger.warning(f"DBUser profile_data attribute was of unexpected type: {type(raw_profile_data)}. Using empty dict for UI User metadata.")
+
             user = User(
                 id=str(db_user.id),
                 username=db_user.username,
                 email=db_user.email,
-                first_name=db_user.first_name,
-                last_name=db_user.last_name,
-                is_active=db_user.is_active,
-                is_admin=db_user.is_admin,
-                created_at=db_user.created_at,
-                age_group=db_user.age_group,
-                avatar_url=db_user.avatar_url,
-                points=getattr(db_user, "points", 0),
-                total_study_time=getattr(db_user, "total_study_time", 0),
-                metadata=db_user.metadata or {},
+                first_name=getattr(db_user, "first_name", None),
+                last_name=getattr(db_user, "last_name", None),
+                is_active=getattr(db_user, "is_active", True),  # Default to True if not on DB model
+                is_admin=getattr(db_user, "is_admin", False), # Default to False if not on DB model
+                created_at=db_user.created_at, # This exists on DBUser via TimestampMixin
+                age_group=db_user.age_group, # This exists on DBUser
+                avatar_url=getattr(db_user, "avatar_url", None),
+                points=getattr(db_user, "points", 0), # points exists on DBUser
+                total_study_time=getattr(db_user, "total_study_time", 0), # total_study_time exists on DBUser
+                metadata=processed_metadata, # Use the explicitly processed dictionary
             )
             return user
         except Exception as e:
             logger.error(f"Error converting DB user to UI user: {str(e)}")
             report_error(e, operation="_convert_db_user_to_ui_user", user_id=str(db_user.id))
             
-            # Return a minimal user object as fallback
+            # Fallback with minimal data that is known to exist on DBUser
             return User(
                 id=str(db_user.id),
                 username=db_user.username,
                 email=db_user.email,
-                is_active=getattr(db_user, "is_active", True),
-                is_admin=getattr(db_user, "is_admin", False),
-                created_at=datetime.now() if not hasattr(db_user, "created_at") else db_user.created_at,
-                metadata={}
+                age_group=db_user.age_group,
+                created_at=db_user.created_at,
+                points=getattr(db_user, "points", 0),
+                total_study_time=getattr(db_user, "total_study_time", 0),
+                # For other fields, UI model's defaults will apply (e.g., is_active=True, is_admin=False, metadata={})
             )

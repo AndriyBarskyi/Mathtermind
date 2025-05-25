@@ -107,17 +107,11 @@ def seed_db():
     logger.info("Seeding the database with sample data...")
     
     try:
-        # Import and run the seed scripts
-        from src.db.seed_users import seed_users
-        from src.db.seed_courses import seed_courses
+        # Import and run the main seed function
+        from src.db.seed import seed_database
         
-        with create_error_boundary("seed_users"):
-            seed_users()
-            logger.info("User data seeded successfully.")
-        
-        with create_error_boundary("seed_courses"):
-            seed_courses()
-            logger.info("Course data seeded successfully.")
+        with create_error_boundary("seed_database"):
+            seed_database()
         
         logger.info("Database seeding completed successfully.")
     except Exception as e:

@@ -1,12 +1,15 @@
+import os
+import sys
 from PyQt5 import QtWidgets, QtCore, QtGui
 from ui import Ui_MainWindow
 from account_login import*
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QMenu, QAction
-import sys
 from ui_wrapper import *
 from account_login import LoginPage
 from register_page import RegisterPage
+from src.services import SessionManager
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class MainApp(QtWidgets.QMainWindow):
     def __init__(self):
@@ -15,7 +18,8 @@ class MainApp(QtWidgets.QMainWindow):
         self.resize(1400, 900)
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("icon/logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon_path = os.path.join(SCRIPT_DIR, "icon/logo.png")
+        icon.addPixmap(QtGui.QPixmap(icon_path), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
         self.main_stack = QtWidgets.QStackedWidget()
@@ -42,6 +46,8 @@ class MainApp(QtWidgets.QMainWindow):
 
     def show_main_interface(self):
         self.main_stack.setCurrentWidget(self.ui_page)
+        self.ui_wrapper.update_user_display()
+        self.ui_wrapper.refresh_main_page_data()
 
     def show_register(self):
         self.main_stack.setCurrentWidget(self.register_page)
@@ -60,16 +66,24 @@ class MainApp(QtWidgets.QMainWindow):
         menu.exec_(self.ui_wrapper.ui.btn_user.mapToGlobal(self.ui_wrapper.ui.btn_user.rect().bottomLeft()))
 
     def action1_triggered(self):
-        print("Вибрана дія 1")
+        SessionManager.set_current_user(None)
+        self.main_stack.setCurrentWidget(self.login_page)
         
     def action2_triggered(self):
         self.main_stack.setCurrentWidget(self.login_page)
         
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    with open("style.qss", "r") as file:
-        style_sheet = file.read()
-    app.setStyleSheet(style_sheet)
+    
+    style_file_path = os.path.join(SCRIPT_DIR, "style.qss")
+    try:
+        with open(style_file_path, "r") as file:
+            style_sheet = file.read()
+        app.setStyleSheet(style_sheet)
+    except FileNotFoundError:
+        print(f"Warning: Could not find style.qss at {style_file_path}. Application will run without custom styles from this file.")
+    except Exception as e:
+        print(f"Warning: Error loading style.qss: {e}. Application will run without custom styles from this file.")
    
     window = MainApp()
     window.show()

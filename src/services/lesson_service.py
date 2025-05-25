@@ -455,7 +455,7 @@ class LessonService(BaseService):
             # Note: lesson_type is intentionally not included - lessons don't have types,
             # only content items within them have types
             
-            difficulty_level = db_lesson.difficulty_level
+            difficulty_level = getattr(db_lesson, 'difficulty_level', DifficultyLevel.BEGINNER)
             if hasattr(difficulty_level, 'value'):
                 difficulty_level = difficulty_level.value
             

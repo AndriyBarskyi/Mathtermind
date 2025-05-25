@@ -70,7 +70,7 @@ class ProgressService:
             user_uuid = uuid.UUID(user_id)
             
             # Get all progress records for the user
-            db_progress_records = self.progress_repo.get_user_progress(user_uuid)
+            db_progress_records = self.progress_repo.get_user_progress(self.db, user_uuid)
             
             # Convert to UI models
             return [self._convert_db_progress_to_ui_progress(record) for record in db_progress_records]
@@ -391,7 +391,7 @@ class ProgressService:
             lesson_uuid = uuid.UUID(lesson_id)
             
             # Check if the lesson exists in the user's completed lessons
-            db_completed_lesson = self.completed_lesson_repo.get_completed_lesson(user_uuid, lesson_uuid)
+            db_completed_lesson = self.completed_lesson_repo.get_lesson_completion(self.db, user_uuid, lesson_uuid)
             
             return db_completed_lesson is not None
         except Exception as e:
@@ -771,7 +771,7 @@ class ProgressService:
             lesson_uuid = uuid.UUID(lesson_id)
             
             # Check if the lesson is completed
-            completed_lesson = self.completed_lesson_repo.get_by_user_and_lesson(
+            completed_lesson = self.completed_lesson_repo.get_lesson_completion(
                 self.db, user_uuid, lesson_uuid
             )
             
@@ -812,7 +812,7 @@ class ProgressService:
             lesson_uuid = uuid.UUID(lesson_id)
             
             # Check if the lesson is completed
-            completed_lesson = self.completed_lesson_repo.get_by_user_and_lesson(
+            completed_lesson = self.completed_lesson_repo.get_lesson_completion(
                 self.db, user_uuid, lesson_uuid
             )
             
@@ -875,7 +875,7 @@ class ProgressService:
             lesson_uuid = uuid.UUID(lesson_id)
             
             # First check if there's a score in the completed lesson
-            completed_lesson = self.completed_lesson_repo.get_by_user_and_lesson(
+            completed_lesson = self.completed_lesson_repo.get_lesson_completion(
                 self.db, user_uuid, lesson_uuid
             )
             
@@ -1274,3 +1274,100 @@ class ProgressService:
             logger.error(f"Error synchronizing progress data: {str(e)}")
             self.db.rollback()
             return False 
+
+    def get_user_activity_by_day(self, user_id: str) -> tuple:
+        """
+        Get user completed lessons for the last 7 days to populate the activity graph.
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            Tuple containing (list of activity counts, list of day labels)
+        """
+        # Default values with zero counts instead of sample data
+        default_data = [0, 0, 0, 0, 0, 0, 0]
+        default_labels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"]
+        
+        try:
+            if not user_id:
+                logger.info("No user ID provided for activity data")
+                return default_data, default_labels
+            
+            # Import needed modules
+            from datetime import datetime, timedelta, timezone
+            from collections import defaultdict
+            from sqlalchemy import text
+            
+            user_uuid = uuid.UUID(user_id)
+            
+            # Check if there are any completed lessons for this user at all
+            completed_count = self.db.execute(
+                text("SELECT COUNT(*) FROM completed_lessons WHERE user_id = :user_id"),
+                {"user_id": str(user_uuid).replace('-', '')}
+            ).scalar()
+            
+            logger.info(f"Found {completed_count} total completed lessons for user {user_id}")
+            
+            if completed_count == 0:
+                logger.info("No completed lessons found, returning zeros")
+                return default_data, default_labels
+            
+            # Get date 7 days ago
+            seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+            logger.info(f"Getting completed lessons since: {seven_days_ago.strftime('%Y-%m-%d')}")
+            
+            # Query for completed lessons in the last 7 days
+            result = self.db.execute(
+                text("""
+                    SELECT DATE(completed_at) as day, COUNT(*) as count
+                    FROM completed_lessons
+                    WHERE user_id = :user_id AND completed_at >= :seven_days_ago
+                    GROUP BY DATE(completed_at)
+                    ORDER BY day
+                """),
+                {"user_id": str(user_uuid).replace('-', ''), "seven_days_ago": seven_days_ago}
+            )
+            
+            # Convert to a dictionary
+            day_counts = {row[0].strftime('%Y-%m-%d'): row[1] for row in result}
+            logger.info(f"Raw completed lessons by day: {day_counts}")
+            
+            # Get current date and set up day labels
+            today = datetime.now(timezone.utc).date()
+            day_names = {
+                0: "Пн",  # Monday
+                1: "Вт",  # Tuesday
+                2: "Ср",  # Wednesday
+                3: "Чт",  # Thursday
+                4: "Пт",  # Friday
+                5: "Сб",  # Saturday
+                6: "Нд",  # Sunday
+            }
+            
+            # Initialize data structure for the past 7 days
+            data = []
+            labels = []
+            
+            # Start with 6 days ago, end with today
+            logger.info(f"Day-by-day activity data:")
+            for i in range(6, -1, -1):
+                day = today - timedelta(days=i)
+                weekday = day.weekday()
+                day_iso = day.strftime('%Y-%m-%d')
+                count = day_counts.get(day_iso, 0)
+                
+                data.append(count)
+                labels.append(day_names[weekday])
+                logger.info(f"  {day_iso} ({day_names[weekday]}): {count} completed lessons")
+            
+            logger.info(f"Activity data for chart: {data}")
+            logger.info(f"Activity labels for chart: {labels}")
+            
+            # Even if all counts are zero, return actual data (not sample data)
+            return data, labels
+            
+        except Exception as e:
+            logger.error(f"Error getting user completed lessons data: {e}", exc_info=True)
+            # Return zeros in case of error
+            return default_data, default_labels 

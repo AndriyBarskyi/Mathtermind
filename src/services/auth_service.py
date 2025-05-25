@@ -116,6 +116,8 @@ class AuthService(BaseService):
                 'last_login': datetime.now().isoformat()
             }
             
+            SessionManager.set_current_user(user_data)
+
             session_token = self.session_manager.create_session(str(user.id), user_data)
             
             # Update last login timestamp

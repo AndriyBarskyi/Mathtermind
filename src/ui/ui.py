@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 from main_win import Main_page
 from course_win import Course_page
-from lessons_list_win import Lessons_page
+from lessons_win import Lessons_page
 from progress_win import Progress_page
 from settings_win import Settings_page
 from lesson_win import Lesson_page
@@ -90,10 +90,7 @@ class Ui_MainWindow(object):
                 button.setObjectName(button_config["name"])
                 self.buttons_dict[button_config["name"]] = button  
                 self.sidebar_buttons_layout.addWidget(button)
-                button.clicked.connect(lambda checked, btn=button, page=button_config["name"]: (
-                        update_buttons(btn),
-                        self.stackedWidget.setCurrentWidget(getattr(self, f"pg_{page.split('_')[1]}"))  
-                ))
+                button.clicked.connect(lambda checked, btn=button, page_name=button_config["name"]: self.handle_menu_click(btn, page_name))
         
         
         spacerItem = QtWidgets.QSpacerItem(20, 328, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -215,17 +212,16 @@ class Ui_MainWindow(object):
         self.pg_lesson=Lesson_page()
         self.pg_lesson.setObjectName("pg_lesson")
         
+        self.pg_lessons = Lessons_page(self.stackedWidget, self.pg_lesson)
+        self.pg_lessons.setObjectName("pg_lessons")
         
-        
-        self.pg_main = Main_page(self.stackedWidget, self.pg_lesson)
+        self.pg_main = Main_page(self.stackedWidget, self.pg_lesson, self.pg_lessons)
         self.pg_main.setObjectName("pg_main")
         self.stackedWidget.addWidget(self.pg_main)
         self.pg_progress = Progress_page()
         self.pg_progress.setObjectName("pg_progress")
         self.stackedWidget.addWidget(self.pg_progress)
         
-        self.pg_lessons = Lessons_page(self.stackedWidget, self.pg_lesson)
-        self.pg_lessons.setObjectName("pg_lessons")
         self.stackedWidget.addWidget(self.pg_lessons)
         
         self.pg_courses = Course_page(self.stackedWidget, self.pg_lessons)
@@ -249,3 +245,41 @@ class Ui_MainWindow(object):
         
         self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def handle_menu_click(self, button_widget, page_identifier):
+        self._update_button_states(button_widget)
+
+        target_page_attr_name = f"pg_{page_identifier.split('_')[1]}"
+        target_widget = getattr(self, target_page_attr_name, None)
+
+        if target_widget:
+            self.stackedWidget.setCurrentWidget(target_widget)
+            if page_identifier == "btn_settings":
+                if hasattr(target_widget, '_load_user_data') and callable(getattr(target_widget, '_load_user_data')):
+                    target_widget._load_user_data()
+                else:
+                    print(f"Warning: {target_page_attr_name} does not have _load_user_data method") # Or log this
+            elif page_identifier == "btn_lessons":
+                if target_page_attr_name == "pg_lessons":
+                    if hasattr(self.pg_lessons, 'refresh_content') and callable(getattr(self.pg_lessons, 'refresh_content')):
+                        self.pg_lessons.refresh_content()
+                    else:
+                        print(f"Warning: self.pg_lessons does not have refresh_content method")
+
+    def _update_button_states(self, clicked_button):
+        for name, btn in self.buttons_dict.items():
+            icon_config = next((item for item in self.menu_buttons if item["name"] == name), None)
+            if not icon_config: continue
+
+            if btn == clicked_button:
+                icon_path = icon_config["icon_active"]
+                btn.setIcon(QtGui.QIcon(icon_path))
+                btn.setChecked(True)
+            else:
+                icon_path = icon_config["icon_normal"]
+                btn.setIcon(QtGui.QIcon(icon_path))
+                btn.setChecked(False)
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))

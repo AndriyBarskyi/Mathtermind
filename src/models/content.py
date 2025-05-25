@@ -13,7 +13,6 @@ class Content(ABC):
     order: int
     lesson_id: str
     description: Optional[str] = None
-    estimated_time: int = 0  # in minutes
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -35,19 +34,6 @@ class Content(ABC):
         if not self.updated_at:
             return "N/A"
         return self.updated_at.strftime("%d %B %Y")
-    
-    @property
-    def formatted_duration(self) -> str:
-        """Return formatted duration string"""
-        hours = self.estimated_time // 60
-        minutes = self.estimated_time % 60
-        
-        if hours > 0 and minutes > 0:
-            return f"Тривалість: {hours} год {minutes} хв"
-        elif hours > 0:
-            return f"Тривалість: {hours} год"
-        else:
-            return f"Тривалість: {minutes} хв"
 
 
 @dataclass

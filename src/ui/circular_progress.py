@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QPen, QFont,QColor
+from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtGui import QPainter, QPen, QFont, QColor
 
 class CircularProgress(QWidget):
     def __init__(self, parent=None):
@@ -16,7 +16,7 @@ class CircularProgress(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        rect = self.rect().adjusted(10, 10, -10, -10) 
+        rect = QRectF(self.rect().adjusted(10, 10, -10, -10))
         center = rect.center()
         radius = min(rect.width(), rect.height()) // 2
         pen = QPen(QColor(234, 235, 239), 10)
@@ -32,14 +32,18 @@ class CircularProgress(QWidget):
         else:
             pen.setColor(QColor(4, 214, 87))
         painter.setPen(pen)
+        
+        # Convert float to int for the span angle
+        span_angle = int(-self.value * 3.6 * 16)
         painter.drawArc(
             rect,  
             -90 * 16,
-            -self.value * 3.6 * 16 
+            span_angle 
         )
-
 
         painter.setPen(Qt.black)
         painter.setFont(QFont("MS Shell Dlg 2", 16, QFont.Bold))
         text = f"{self.value}%"
         painter.drawText(self.rect(), Qt.AlignCenter, text)
+        
+        painter.end()

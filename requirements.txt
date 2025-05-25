@@ -28,4 +28,6 @@ black>=21.5b2
 flake8>=3.9.0
 
 # Additional dependencies
-PyQtWebEngine==5.15.6 
+PyQtWebEngine==5.15.6
+
+markdown>=3.5.1

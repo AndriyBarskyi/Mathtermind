@@ -48,6 +48,30 @@ class SessionManager:
     in-memory storage.
     """
     
+    # Class variable to store the current user
+    _current_user = None
+    
+    @classmethod
+    def set_current_user(cls, user):
+        """
+        Set the current user.
+        
+        Args:
+            user: The user to set as the current user
+        """
+        cls._current_user = user
+        logger.info(f"Current user set to: {getattr(user, 'username', str(user))}")
+    
+    @classmethod
+    def get_current_user(cls):
+        """
+        Get the current user.
+        
+        Returns:
+            The current user or None if no user is set
+        """
+        return cls._current_user
+    
     def __init__(self, use_redis: bool = True, redis_url: str = "redis://localhost:6379/0"):
         """
         Initialize the session manager.

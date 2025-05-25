@@ -362,3 +362,26 @@ QTextEdit{
     background-color:transparent;
 }
 
+QPushButton[type="lb_name_course"] {
+    border-radius: 25px;
+    background-color: rgb(221, 243, 246);
+    border: 2px solid rgb(221, 243, 246);
+    color: #516ed9;
+    font: 75 14pt "MS Shell Dlg 2";
+    font-weight: bold;
+    padding: 0 16px;
+    min-height: 50px;
+    min-width: 180px;
+}
+
+QPushButton[type="lb_name_course"][active="true"] {
+    background-color: #d1d8f6;
+    color: #3250B4;
+    border: 2px solid #d1d8f6;
+    font-weight: bold;
+}
+
+QPushButton[type="lb_name_course"]:hover {
+    background-color: #bbebee;
+}
+

@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets, QtCore
+from src.services import AuthService, SessionManager
 
 
 class LoginPage(QtWidgets.QWidget):
@@ -58,7 +59,10 @@ class LoginPage(QtWidgets.QWidget):
     def check_credentials(self):
         login = self.input_login.text()
         password = self.input_password.text()
-        if login == "1" and password == "1":
+        auth_service = AuthService()
+        success, session_token, user_data = auth_service.login(login, password)
+        if success and user_data:
+            SessionManager.set_current_user(user_data)
             self.login_successful.emit()
         else:
             QtWidgets.QMessageBox.warning(self, "Помилка", "Невірний логін або пароль")

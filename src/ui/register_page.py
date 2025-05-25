@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets, QtCore
+from src.services import AuthService
 
 class RegisterPage(QtWidgets.QWidget):
     back_to_login = QtCore.pyqtSignal()  
@@ -14,7 +15,7 @@ class RegisterPage(QtWidgets.QWidget):
         self.label_title.setStyleSheet("font-size: 28px; font-weight: bold;")
 
         self.input_username = QtWidgets.QLineEdit()
-        self.input_username.setPlaceholderText("Ім’я користувача")
+        self.input_username.setPlaceholderText("Ім'я користувача")
         self.input_username.setProperty("type", "settings")
         self.input_username.setMinimumSize(QtCore.QSize(200, 50))
         self.input_username.setMaximumSize(QtCore.QSize(400, 50))
@@ -41,6 +42,7 @@ class RegisterPage(QtWidgets.QWidget):
         self.input_confirm.setMaximumSize(QtCore.QSize(400, 50))
 
         self.btn_register = QtWidgets.QPushButton("Зареєструватися")
+        self.btn_register.clicked.connect(self.register_user)
         self.btn_register.setProperty("type", "start_continue")
         self.btn_register.setMinimumSize(QtCore.QSize(200, 50))
         self.btn_register.setMaximumSize(QtCore.QSize(400, 50))
@@ -59,3 +61,22 @@ class RegisterPage(QtWidgets.QWidget):
         layout.addWidget(self.input_confirm)
         layout.addWidget(self.btn_register)
         layout.addWidget(self.btn_back)
+
+    def register_user(self):
+        username = self.input_username.text()
+        email = self.input_email.text()
+        password = self.input_password.text()
+        confirm_password = self.input_confirm.text()
+
+        if password != confirm_password:
+            QtWidgets.QMessageBox.warning(self, "Помилка", "Паролі не співпадають")
+            return
+
+        auth_service = AuthService()
+        success, message = auth_service.register_user(username, password, email)
+
+        if success:
+            QtWidgets.QMessageBox.information(self, "Успіх", "Користувача успішно зареєстровано. Тепер ви можете увійти.")
+            self.back_to_login.emit()
+        else:
+            QtWidgets.QMessageBox.warning(self, "Помилка", message)
